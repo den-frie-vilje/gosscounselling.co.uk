@@ -3,8 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>John Goss — Counsellor &amp; Clinical Supervisor, Milton Keynes</title>
-<meta name="description" content="Counselling and clinical supervision in Bletchley, Milton Keynes, and online. Individual, relationship and psychosexual therapy. Call or email John Goss.">
+<title>Counselling in Milton Keynes — Fees &amp; Availability | John Goss</title>
+<link rel="canonical" href="https://gosscounselling.co.uk/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_GB">
+<meta property="og:site_name" content="John Goss — Counselling &amp; Supervision">
+<meta name="geo.region" content="GB-MIK">
+<meta name="geo.placename" content="Bletchley, Milton Keynes">
+<meta name="description" content="Counselling and supervision in Bletchley, Milton Keynes, and online. Fees, session lengths and what happens when you get in touch, set out in full.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
@@ -123,6 +129,15 @@ section{padding:var(--section) 0}
 .sechead h2{font-size:clamp(28px,3.7vw,42px)}
 .sechead p{color:var(--muted);margin:16px 0 0;font-size:18px}
 
+/* the three-step sequence: this direction answers the practical questions first */
+.stepList{list-style:none;margin:52px 0 0;padding:0;display:grid;gap:28px}
+@media(min-width:860px){.stepList{grid-template-columns:repeat(3,1fr);gap:36px}}
+.stepList li{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start;min-width:0}
+.stepList span{font-family:var(--display);font-weight:700;font-size:15px;color:#fff;background:var(--teal);
+  width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:none}
+.stepList h3{font-size:19px;margin-bottom:8px}
+.stepList p{margin:0;color:var(--muted);font-size:16.5px}
+
 /* services as numbered rows */
 .rows{margin-top:52px;border-top:1px solid var(--line)}
 .row{min-width:0;display:grid;gap:14px 40px;padding:36px 0;border-bottom:1px solid var(--line)}
@@ -227,6 +242,36 @@ footer .wrap{border-top:1px solid rgba(255,255,255,.15);padding-top:28px;display
 footer a{color:#d3e6ea}
 @media(max-width:419px){.brand span{display:none}.bar{gap:12px}}
 </style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"ProfessionalService","@id":"https://gosscounselling.co.uk/#practice",
+  "name":"John Goss — Counselling & Clinical Supervision",
+  "description":"Counselling and clinical supervision in Bletchley, Milton Keynes, and online. Individual, relationship and psychosexual therapy, and clinical supervision for therapists.",
+  "url":"https://gosscounselling.co.uk/","telephone":"+44 7776 153426","email":"info@gosscounselling.co.uk",
+  "priceRange":"\u00a345\u2013\u00a3110",
+  "address":{"@type":"PostalAddress","addressLocality":"Bletchley","addressRegion":"Milton Keynes","postalCode":"MK3","addressCountry":"GB"},
+  "areaServed":[{"@type":"City","name":"Milton Keynes"},{"@type":"Country","name":"United Kingdom"}],
+  "availableLanguage":"en-GB","provider":{"@id":"https://gosscounselling.co.uk/#john"},
+  "hasOfferCatalog":{"@type":"OfferCatalog","name":"Services","itemListElement":[
+    {"@type":"Offer","itemOffered":{"@type":"Service","name":"Individual counselling","description":"One to one counselling from age 11, including anxiety, depression and bereavement."}},
+    {"@type":"Offer","itemOffered":{"@type":"Service","name":"Relationship counselling","description":"Relationship counselling for couples, throuples and poly dynamics."}},
+    {"@type":"Offer","itemOffered":{"@type":"Service","name":"Psychosexual therapy","description":"Sex therapy for painful sex, unreliable erections, delayed ejaculation, low desire, vaginismus, orgasm difficulties and vulvodynia."}},
+    {"@type":"Offer","itemOffered":{"@type":"Service","name":"Clinical supervision","description":"Clinical supervision for therapists and helping professionals."}}]}},
+ {"@type":"Person","@id":"https://gosscounselling.co.uk/#john","name":"John Goss",
+  "jobTitle":"Counsellor and Clinical Supervisor","worksFor":{"@id":"https://gosscounselling.co.uk/#practice"},
+  "memberOf":[{"@type":"Organization","name":"National Counselling & Psychotherapy Society"},
+              {"@type":"Organization","name":"College of Sex & Relationship Therapists"}],
+  "hasCredential":[
+   {"@type":"EducationalOccupationalCredential","name":"Level 4 Diploma in Therapeutic Counselling","dateCreated":"2015"},
+   {"@type":"EducationalOccupationalCredential","name":"Level 6 Diploma in Clinical Supervision","dateCreated":"2022"},
+   {"@type":"EducationalOccupationalCredential","name":"CICS Diploma in Psychosexual & Relationship Therapy","dateCreated":"2026"}]},
+ {"@type":"FAQPage","@id":"https://gosscounselling.co.uk/#faq","mainEntity":[
+  {"@type":"Question","name":"How many sessions will I need?","acceptedAnswer":{"@type":"Answer","text":"There isn't necessarily a set amount of therapy you need \u2014 it depends on what you're coming for and what you'd like from the sessions. We can discuss it when we start, and keep it under review."}},
+  {"@type":"Question","name":"What sort of therapy do you offer?","acceptedAnswer":{"@type":"Answer","text":"An integrative approach: all of my training is used to support you, rather than sticking to one type of theory."}},
+  {"@type":"Question","name":"What is psychosexual therapy?","acceptedAnswer":{"@type":"Answer","text":"Psychosexual therapy generally focuses on a sexual issue \u2014 unreliable erections, delayed ejaculation, loss of sexual desire, vaginismus, painful sex, orgasm problems or vulvodynia. People also come to talk about porn use, intimacy with a partner or partners, fetishes, or exploring kinks."}},
+  {"@type":"Question","name":"Is there a difference between counselling, therapy and psychotherapy?","acceptedAnswer":{"@type":"Answer","text":"No. In the UK the terms counsellor, therapist and psychotherapist aren't protected by law, so people use them interchangeably."}},
+  {"@type":"Question","name":"Why is therapy so expensive?","acceptedAnswer":{"@type":"Answer","text":"Therapists are self-employed, with training, qualifications, continuing professional development, professional membership, room hire and insurance to cover. The session fee has to take account of all of it."}}]}]}
+</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -254,8 +299,9 @@ footer a{color:#d3e6ea}
     <div>
       <p class="eyebrow">Bletchley, Milton Keynes &middot; and online</p>
       <h1>Counselling and clinical supervision, without the runaround.</h1>
-      <p class="lede">I'm John Goss. I've been practising since 2015, seeing people one to one, as
-        couples, and as a supervisor to other therapists.</p>
+      <p class="lede">I'm John Goss. Practising since 2015, seeing people one to one, as couples,
+        and as a supervisor to other therapists. In person in Bletchley, Milton Keynes, or online
+        anywhere in the UK.</p>
       <div class="actions">
         <a class="btn btn-primary" href="tel:+447776153426">Call 07776 153 426</a>
         <a class="btn btn-ghost" href="mailto:info@gosscounselling.co.uk">Email me</a>
@@ -279,6 +325,23 @@ footer a{color:#d3e6ea}
     <a class="cta" href="#fees">See the fees</a>
   </div>
 </div>
+
+<section class="steps mist">
+  <div class="wrap">
+    <p class="kicker">No mystery</p>
+    <h2>What happens when you get in touch</h2>
+    <ol class="stepList">
+      <li><span>1</span><div><h3>You ring, email or WhatsApp</h3>
+        <p>It comes straight to me. If I can't answer, leave a message and I'll ring you back.</p></div></li>
+      <li><span>2</span><div><h3>We talk about what's going on</h3>
+        <p>A short conversation about what you're looking for, what I do, and whether I'm the right
+          person for it. There's no charge for that and no obligation either way.</p></div></li>
+      <li><span>3</span><div><h3>We agree a time and a fee</h3>
+        <p>Sessions are 50 or 90 minutes, in person in MK3 or online. We settle the fee from the
+          published range before we start, so nothing is a surprise.</p></div></li>
+    </ol>
+  </div>
+</section>
 
 <section id="help">
   <div class="wrap">
@@ -329,6 +392,10 @@ footer a{color:#d3e6ea}
             helping professions.</p>
           <p>Supervision isn't only about bringing your client work — it's about bringing yourself
             too, so we can explore that work more collaboratively.</p>
+          <p>I hold a Level 6 Diploma in Clinical Supervision (2022) and I'm an NCPS Accredited
+            Member, so the hours count towards your professional requirements. If you work with
+            sexual behaviour, harmful sexual behaviour or risk, that is territory I have specific
+            training in — see the qualifications below.</p>
           <a class="more" href="/supervision">More about clinical supervision →</a>
         </div>
       </article>

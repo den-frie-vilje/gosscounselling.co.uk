@@ -3,7 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>John Goss — Counsellor &amp; Clinical Supervisor, Milton Keynes</title>
+<title>Counsellor &amp; Clinical Supervisor, Milton Keynes | John Goss</title>
+<link rel="canonical" href="https://gosscounselling.co.uk/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_GB">
+<meta property="og:site_name" content="John Goss — Counselling &amp; Supervision">
+<meta name="geo.region" content="GB-MIK">
+<meta name="geo.placename" content="Bletchley, Milton Keynes">
 <meta name="description" content="Counselling and clinical supervision in Bletchley, Milton Keynes, and online. Individual, relationship and psychosexual therapy. Call or email John Goss.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -57,6 +63,11 @@ nav a:hover{color:var(--accent-dk);text-decoration:underline;text-underline-offs
 .eyebrow{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 22px}
 .hero h1{font-size:clamp(36px,5.4vw,60px)}
 .hero .lede{font-size:clamp(18px,2vw,21px);color:var(--muted);max-width:42ch;margin:24px 0 0;line-height:1.65}
+/* Set apart from the lead above it — smaller, in the serif, and hung off a quiet
+   rule — so it reads as an aside rather than as a second sentence of the pitch. */
+.hero .aside{font-family:var(--serif);font-size:16.5px;font-style:italic;line-height:1.6;
+  color:var(--muted);max-width:40ch;margin:26px 0 0;padding-left:16px;
+  border-left:2px solid var(--line)}
 .heroGrid{display:grid;gap:44px;align-items:center}
 @media(min-width:860px){.heroGrid{grid-template-columns:1.15fr .85fr;gap:64px}}
 /* Cutout — background removed. His shoulders are cut by the edges of the source
@@ -213,6 +224,36 @@ footer .wrap{border-top:1px solid rgba(255,255,255,.14);padding-top:28px;display
 footer a{color:#d7e2dc}
 @media(max-width:419px){.brand span{display:none}.bar{gap:12px}}
 </style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"ProfessionalService","@id":"https://gosscounselling.co.uk/#practice",
+  "name":"John Goss — Counselling & Clinical Supervision",
+  "description":"Counselling and clinical supervision in Bletchley, Milton Keynes, and online. Individual, relationship and psychosexual therapy, and clinical supervision for therapists.",
+  "url":"https://gosscounselling.co.uk/","telephone":"+44 7776 153426","email":"info@gosscounselling.co.uk",
+  "priceRange":"\u00a345\u2013\u00a3110",
+  "address":{"@type":"PostalAddress","addressLocality":"Bletchley","addressRegion":"Milton Keynes","postalCode":"MK3","addressCountry":"GB"},
+  "areaServed":[{"@type":"City","name":"Milton Keynes"},{"@type":"Country","name":"United Kingdom"}],
+  "availableLanguage":"en-GB","provider":{"@id":"https://gosscounselling.co.uk/#john"},
+  "hasOfferCatalog":{"@type":"OfferCatalog","name":"Services","itemListElement":[
+    {"@type":"Offer","itemOffered":{"@type":"Service","name":"Individual counselling","description":"One to one counselling from age 11, including anxiety, depression and bereavement."}},
+    {"@type":"Offer","itemOffered":{"@type":"Service","name":"Relationship counselling","description":"Relationship counselling for couples, throuples and poly dynamics."}},
+    {"@type":"Offer","itemOffered":{"@type":"Service","name":"Psychosexual therapy","description":"Sex therapy for painful sex, unreliable erections, delayed ejaculation, low desire, vaginismus, orgasm difficulties and vulvodynia."}},
+    {"@type":"Offer","itemOffered":{"@type":"Service","name":"Clinical supervision","description":"Clinical supervision for therapists and helping professionals."}}]}},
+ {"@type":"Person","@id":"https://gosscounselling.co.uk/#john","name":"John Goss",
+  "jobTitle":"Counsellor and Clinical Supervisor","worksFor":{"@id":"https://gosscounselling.co.uk/#practice"},
+  "memberOf":[{"@type":"Organization","name":"National Counselling & Psychotherapy Society"},
+              {"@type":"Organization","name":"College of Sex & Relationship Therapists"}],
+  "hasCredential":[
+   {"@type":"EducationalOccupationalCredential","name":"Level 4 Diploma in Therapeutic Counselling","dateCreated":"2015"},
+   {"@type":"EducationalOccupationalCredential","name":"Level 6 Diploma in Clinical Supervision","dateCreated":"2022"},
+   {"@type":"EducationalOccupationalCredential","name":"CICS Diploma in Psychosexual & Relationship Therapy","dateCreated":"2026"}]},
+ {"@type":"FAQPage","@id":"https://gosscounselling.co.uk/#faq","mainEntity":[
+  {"@type":"Question","name":"How many sessions will I need?","acceptedAnswer":{"@type":"Answer","text":"There isn't necessarily a set amount of therapy you need \u2014 it depends on what you're coming for and what you'd like from the sessions. We can discuss it when we start, and keep it under review."}},
+  {"@type":"Question","name":"What sort of therapy do you offer?","acceptedAnswer":{"@type":"Answer","text":"An integrative approach: all of my training is used to support you, rather than sticking to one type of theory."}},
+  {"@type":"Question","name":"What is psychosexual therapy?","acceptedAnswer":{"@type":"Answer","text":"Psychosexual therapy generally focuses on a sexual issue \u2014 unreliable erections, delayed ejaculation, loss of sexual desire, vaginismus, painful sex, orgasm problems or vulvodynia. People also come to talk about porn use, intimacy with a partner or partners, fetishes, or exploring kinks."}},
+  {"@type":"Question","name":"Is there a difference between counselling, therapy and psychotherapy?","acceptedAnswer":{"@type":"Answer","text":"No. In the UK the terms counsellor, therapist and psychotherapist aren't protected by law, so people use them interchangeably."}},
+  {"@type":"Question","name":"Why is therapy so expensive?","acceptedAnswer":{"@type":"Answer","text":"Therapists are self-employed, with training, qualifications, continuing professional development, professional membership, room hire and insurance to cover. The session fee has to take account of all of it."}}]}]}
+</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -246,7 +287,9 @@ footer a{color:#d7e2dc}
         <a class="btn btn-ghost" href="mailto:info@gosscounselling.co.uk">Email me</a>
       </div>
       <p class="reassure">Phone, email or <a href="https://wa.me/447776153426">WhatsApp</a> me and
-        we'll find a time to talk. You'll be speaking to me, not to a receptionist.</p>
+        we'll find a time to talk.</p>
+      <p class="aside">If you've been putting off making this call, that's a common place to start
+        from. You don't have to have the words ready.</p>
     </div>
     <figure class="portrait">
       <span class="cutframe"><img src="assets/john-cutout.webp?v17" alt="John Goss" width="1800" height="1452" fetchpriority="high"></span>
@@ -269,7 +312,8 @@ footer a{color:#d7e2dc}
         <p>We meet one to one to explore what's challenging you. For some people that's anxiety,
           depression or bereavement. You might be looking to explore your relationship with
           pornography or sex.</p>
-        <p>Whatever brings you to counselling, you are assured of a space to talk openly about it.</p>
+        <p>Whatever brings you to counselling, you are assured of a space to talk openly about it.
+        Plenty of people arrive having never done this before.</p>
         <a class="more" href="/counselling/individual">More about individual counselling →</a>
       </article>
       <article class="card">
@@ -285,7 +329,7 @@ footer a{color:#d7e2dc}
           be for you. That covers pain during sex, unreliable erections, delayed ejaculation, low
           or absent desire, vaginismus, orgasm difficulties and vulvodynia.</p>
         <p>People also come to talk about porn use, intimacy with a partner or partners, fetishes,
-          or exploring kink.</p>
+          or exploring kink. None of it is unusual to hear, and none of it needs an apology first.</p>
         <a class="more" href="/counselling/psychosexual-therapy">More about psychosexual therapy →</a>
       </article>
       <article class="card">
@@ -396,6 +440,12 @@ footer a{color:#d7e2dc}
   <div class="wrap">
     <div class="sechead"><h2>Questions people ask</h2></div>
     <div class="faqlist">
+      <details>
+        <summary>What if I can't say it out loud yet?</summary>
+        <div class="body"><p>Then we start with whatever you can say. People often come with
+          something they have never told anyone, and it usually takes a while to arrive. There is no
+          need to have it ready before the first session — that is what the sessions are for.</p></div>
+      </details>
       <details>
         <summary>How many sessions will I need?</summary>
         <div class="body"><p>There isn't necessarily a set amount of therapy you 'need' — it
