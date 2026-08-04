@@ -1,0 +1,3 @@
+# Design prototypes. Not the site, and never to be indexed.
+User-agent: *
+Disallow: /

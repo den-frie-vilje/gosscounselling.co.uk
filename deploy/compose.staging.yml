@@ -1,0 +1,43 @@
+# Staging stack — gosscounselling-co-uk.stage.denfrievilje.dk
+#
+# Reconciled by the nas-sites pull-only agent within ~5 minutes of a push to
+# `staging`. Two containers only: the front door and the static prototypes.
+# No CMS, no OAuth proxy — there is no app yet.
+
+name: gosscounselling-staging
+
+networks:
+  nas-deploy:
+    external: true
+  internal:
+
+services:
+  caddy:
+    image: caddy:2-alpine@sha256:834468128c7696cec0ceea6172f7d692daf645ae51983ca76e39da54a97c570d
+    restart: unless-stopped
+    networks: [nas-deploy, internal]
+    ports:
+      - "127.0.0.1:${CADDY_PORT:-8083}:80"
+    volumes:
+      - ./Caddyfile.staging:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      site:
+        condition: service_started
+
+  site:
+    image: ghcr.io/den-frie-vilje/gosscounselling:staging-latest
+    restart: unless-stopped
+    networks: [internal]
+    pull_policy: always
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  caddy_data:
+  caddy_config:

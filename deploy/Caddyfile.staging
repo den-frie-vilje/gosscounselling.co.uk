@@ -1,0 +1,33 @@
+# Front door for gosscounselling-co-uk.stage.denfrievilje.dk.
+#
+# DSM Web Station proxies the staging hostname to 127.0.0.1:${CADDY_PORT};
+# this Caddy speaks plain HTTP on the docker network and fronts one upstream.
+# No OAuth proxy and no feed proxy — there is no CMS and no podcast here yet.
+
+{
+    admin off
+    auto_https off
+}
+
+:80 {
+    handle {
+        reverse_proxy site:8080
+    }
+
+    encode gzip zstd
+
+    # Belt and braces with the image's own robots.txt and meta: this is a
+    # client's name, phone number and fee list sitting on a public hostname
+    # while he decides. It must never enter an index.
+    header X-Robots-Tag "noindex, nofollow, noarchive, nosnippet"
+
+    # Prototypes change hourly — never serve a stale one.
+    header Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+    header Pragma "no-cache"
+    header Expires "0"
+
+    log {
+        output stdout
+        format json
+    }
+}
