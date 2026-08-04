@@ -335,6 +335,26 @@ footer a{color:#d3e6ea}
 @media(min-width:1000px){.barcta{display:none}}
 .sitenav{margin-left:0}
 @media(max-width:519px){.sitenav{margin-left:auto}}
+
+/* ---- prototype chip ---------------------------------------------------
+   Says which of the four directions this is, and gets back to the picker
+   without the browser's back button. Prototype furniture — it comes out the
+   moment a direction is chosen. z-index sits below the header's 60 so the
+   full-page menu covers it rather than fighting it. */
+.protochip{position:fixed;left:16px;bottom:16px;z-index:40;display:inline-flex;align-items:baseline;
+  gap:9px;padding:9px 15px;border-radius:999px;text-decoration:none;font-family:var(--sans);
+  line-height:1;white-space:nowrap;background:var(--deep);color:#f4f7f8;border:1px solid rgba(244,247,248,.18);
+  box-shadow:0 3px 14px rgba(11,42,52,.30);transition:transform .18s ease,box-shadow .18s ease}
+.protochip:hover{box-shadow:0 7px 22px rgba(11,42,52,.30)}
+.protochip .k{font-size:10.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#8ad6ea}
+.protochip .ar{font-size:15px;line-height:1;font-weight:400;transition:transform .18s ease}
+.protochip:hover .ar{transform:translateX(-3px)}
+.protochip .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);
+  clip-path:inset(50%);white-space:nowrap}
+.protochip .n{font-size:13.5px;font-weight:600;color:#f4f7f8}
+@media(max-width:479px){.protochip{left:12px;bottom:12px;padding:8px 13px;gap:7px}
+  .protochip .k{font-size:10px}.protochip .n{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.protochip,.protochip .ar{transition:none}.protochip:hover .ar{transform:none}}
 </style>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
@@ -712,5 +732,11 @@ footer a{color:#d3e6ea}
   </div>
 </footer>
 
+<a class="protochip" href="index.html">
+  <span class="ar" aria-hidden="true">&#8592;</span>
+  <span class="vh">Back to all four directions: </span>
+  <span class="k">Direction C</span>
+  <span class="n">Clear Water</span>
+</a>
 </body>
 </html>

@@ -301,6 +301,26 @@ footer .fine a{color:#b9c6d6}
 @media(min-width:1180px){.barcta{display:none}}
 .sitenav{margin-left:0}
 @media(max-width:519px){.sitenav{margin-left:auto}}
+
+/* ---- prototype chip ---------------------------------------------------
+   Says which of the four directions this is, and gets back to the picker
+   without the browser's back button. Prototype furniture — it comes out the
+   moment a direction is chosen. z-index sits below the header's 60 so the
+   full-page menu covers it rather than fighting it. */
+.protochip{position:fixed;left:16px;bottom:16px;z-index:40;display:inline-flex;align-items:baseline;
+  gap:9px;padding:9px 15px;border-radius:999px;text-decoration:none;font-family:var(--sans);
+  line-height:1;white-space:nowrap;background:var(--slate-dk);color:#f4f1ec;border:1px solid rgba(244,241,236,.18);
+  box-shadow:0 3px 14px rgba(36,52,73,.30);transition:transform .18s ease,box-shadow .18s ease}
+.protochip:hover{box-shadow:0 7px 22px rgba(36,52,73,.30)}
+.protochip .k{font-size:10.5px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:#e0b18d}
+.protochip .ar{font-size:15px;line-height:1;font-weight:400;transition:transform .18s ease}
+.protochip:hover .ar{transform:translateX(-3px)}
+.protochip .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);
+  clip-path:inset(50%);white-space:nowrap}
+.protochip .n{font-size:13.5px;font-weight:600;color:#f4f1ec}
+@media(max-width:479px){.protochip{left:12px;bottom:12px;padding:8px 13px;gap:7px}
+  .protochip .k{font-size:10px}.protochip .n{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.protochip,.protochip .ar{transition:none}.protochip:hover .ar{transform:none}}
 </style>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
@@ -744,12 +764,20 @@ footer .fine a{color:#b9c6d6}
         <li>and online, UK-wide</li>
       </ul>
     </div>
-    <p class="fine">&copy; John Goss, Counselling &amp; Supervision. Photographs of the surrounding
-      area by David Martin, Philip Jeffrey and Steve Daniels, from
-      <a href="https://www.geograph.org.uk/">Geograph</a>, used under
-      <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a>.</p>
+    <p class="fine"><b>The photographs are placeholders</b> — they show the kind of local scene the
+      design is built around, not the final pictures. Currently by David Martin, Philip Jeffrey and
+      Steve Daniels, from <a href="https://www.geograph.org.uk/">Geograph</a>, under
+      <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a>, which is a
+      share-alike licence and a decision to make before launch rather than after.</p>
+    <p class="fine">&copy; John Goss, Counselling &amp; Supervision.</p>
   </div>
 </footer>
 
+<a class="protochip" href="index.html">
+  <span class="ar" aria-hidden="true">&#8592;</span>
+  <span class="vh">Back to all four directions: </span>
+  <span class="k">Direction D</span>
+  <span class="n">Consulting Room</span>
+</a>
 </body>
 </html>

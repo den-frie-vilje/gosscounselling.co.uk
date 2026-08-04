@@ -135,10 +135,12 @@ picks it up within about five minutes. Nothing else to do per deploy.
   front door), but anyone with the URL can read it. His phone number, fees and
   qualifications are on it — all already public on his current site, so this is
   not a new disclosure, but the link should not be posted anywhere.
-- **The photographs in direction D are CC BY-SA 2.0** (Geograph). Attribution is
-  in that page's footer and share-alike applies. That is a different bargain
-  from the Pexels licence, and it is a decision to make before launch rather
-  than after: either keep them and carry the credit, or replace them with
+- **The photographs in direction D are placeholders**, and both the page and the
+  picker now say so. They stand for the kind of local scene the design is built
+  around rather than the pictures that would ship. They are CC BY-SA 2.0
+  (Geograph); attribution is in that page's footer and share-alike applies,
+  which is a different bargain from the Pexels licence. A decision for before
+  launch rather than after: keep them and carry the credit, or replace them with
   licensed or commissioned photography.
 - **The detail-page links go nowhere yet** — `/counselling/individual` and its
   siblings 302 back to the picker. That is deliberate, so John can see where the
