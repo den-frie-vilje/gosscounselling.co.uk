@@ -400,8 +400,17 @@ footer a:hover{color:#fff}
    there was no way to keep the X on top. Out here the burger simply stays where
    it is and the panel opens underneath it. */
 .sitenav{position:relative;z-index:3}
-.navPanel{display:none;z-index:2}
-.sitenav[open] ~ .navPanel{display:block}
+/* The menu wipes down from above and retracts the same way, rather than
+   appearing. It stays in the DOM so the retraction can animate, but is
+   visibility:hidden and pointer-events:none while closed, so it is out of the
+   accessibility tree and cannot be tabbed into. */
+.navPanel{z-index:2;visibility:hidden;pointer-events:none;transform:translateY(-100%);
+  transition:transform .42s cubic-bezier(.4,0,.2,1),visibility 0s linear .42s}
+.sitenav[open] ~ .navPanel{visibility:visible;pointer-events:auto;transform:translateY(0);
+  transition:transform .42s cubic-bezier(.4,0,.2,1),visibility 0s}
+@media(prefers-reduced-motion:reduce){
+  .navPanel,.sitenav[open] ~ .navPanel{transition:visibility 0s}
+}
 .sitenav .burger{display:inline-block;width:22px;height:2px;background:currentColor;position:relative;
   transition:background-color .18s ease .16s}
 .sitenav .burger::before,.sitenav .burger::after{content:"";position:absolute;left:0;width:22px;height:2px;
