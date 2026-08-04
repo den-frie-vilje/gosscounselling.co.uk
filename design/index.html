@@ -44,7 +44,11 @@
 html{-webkit-text-size-adjust:100%}
 body{margin:0;font-family:var(--font-body);font-weight:300;background:var(--surface);color:var(--ink);
   line-height:1.6;-webkit-font-smoothing:antialiased}
-h1,h2,h3{font-family:var(--font-heading);letter-spacing:-0.02em;margin:0;font-weight:500;line-height:1.15}
+/* Type scale lifted from denfrievilje.dk's components, not approximated:
+   page h1  clamp(2.5rem,5vw,4rem) bold, leading .92, tight tracking
+   section  clamp(2rem,4vw,3.5rem) semibold, leading none, over a border
+   prose    Lora 400 at clamp(.95rem,1.5vw,1.1rem), line-height 1.8, 65ch */
+h1,h2,h3{font-family:var(--font-heading);letter-spacing:-0.025em;margin:0}
 a{color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .wrap{max-width:var(--max-w);margin:0 auto;padding-inline:var(--gutter)}
@@ -60,13 +64,18 @@ a{color:inherit}
 header{padding:clamp(2.25rem,6vw,4rem) 0 0}
 .eyebrow{font-family:var(--font-heading);font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;
   color:var(--ink-2);margin:0 0 1.4rem}
-h1{font-size:clamp(2rem,5.2vw,3.4rem)}
+h1{font-size:clamp(2.5rem,5vw,4rem);font-weight:700;line-height:.92;
+  /* gosscounselling.co.uk is one unbreakable token and pushed the page 75px
+     wide on a phone */
+  overflow-wrap:anywhere}
 h1 em{font-style:normal;color:var(--accent)}
-.sub{max-width:62ch;margin:1.5rem 0 0;font-size:clamp(1rem,1.5vw,1.15rem);color:var(--ink-2)}
-.meta{margin:.9rem 0 0;font-family:var(--font-serif);font-style:italic;color:var(--ink-2);font-size:1rem}
+.sub{max-width:65ch;margin:1.75rem 0 0;font-family:var(--font-serif);font-weight:400;
+  font-size:clamp(.95rem,1.5vw,1.1rem);line-height:1.8;color:var(--ink)}
+.meta{margin:.9rem 0 0;font-family:var(--font-serif);font-style:italic;color:var(--ink-2);
+  font-size:clamp(.95rem,1.5vw,1.1rem);line-height:1.8}
 hr.rule{border:0;border-top:1px solid var(--border);margin:clamp(2.5rem,6vw,4rem) 0 0}
 
-main{padding:clamp(2rem,5vw,3.5rem) 0 clamp(4rem,9vw,7rem)}
+main{padding:clamp(2rem,5vw,3.5rem) 0 clamp(5rem,10vw,10rem)}
 .cards{display:grid;gap:1.5rem;margin:0;padding:0;list-style:none}
 @media(min-width:640px){.cards{grid-template-columns:1fr 1fr}}
 @media(min-width:1100px){.cards{grid-template-columns:repeat(4,1fr);gap:1.25rem}}
@@ -78,7 +87,7 @@ main{padding:clamp(2rem,5vw,3.5rem) 0 clamp(4rem,9vw,7rem)}
 .card .body{padding:1.35rem 1.35rem 1.5rem;display:flex;flex-direction:column;flex:1}
 .tag{font-family:var(--font-heading);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;
   color:var(--ink-2);margin:0 0 .7rem}
-.card h2{font-size:1.3rem;margin:0 0 .5rem}
+.card h2{font-size:1.35rem;font-weight:600;line-height:1.1;margin:0 0 .55rem}
 .card p{margin:0;color:var(--ink-2);font-size:.95rem}
 .go{margin-top:auto;padding-top:1.1rem;font-family:var(--font-heading);font-size:.9rem;font-weight:500;
   color:var(--accent)}
@@ -86,13 +95,18 @@ main{padding:clamp(2rem,5vw,3.5rem) 0 clamp(4rem,9vw,7rem)}
 
 .notes{margin-top:clamp(3rem,7vw,5rem);display:grid;gap:2.5rem}
 @media(min-width:900px){.notes{grid-template-columns:1.15fr .85fr;gap:4rem}}
-.notes h3{font-size:1.15rem;margin:0 0 1rem}
-.notes p{margin:0 0 1rem;color:var(--ink-2);max-width:62ch}
-.notes ul{margin:0;padding-left:1.15rem;color:var(--ink-2);max-width:62ch}
-.notes li{margin:.55rem 0}
+/* Section header: the site's own pattern — heading over a rule, generous space */
+.notes h3{font-family:var(--font-heading);font-size:clamp(1.5rem,2.6vw,2rem);font-weight:600;
+  line-height:1;letter-spacing:-0.025em;margin:0 0 1.25rem;padding-bottom:1.25rem;
+  border-bottom:1px solid var(--border)}
+.notes p{margin:0 0 1em;color:var(--ink);max-width:65ch;font-family:var(--font-serif);
+  font-size:clamp(.95rem,1.5vw,1.1rem);line-height:1.8}
+.notes ul{margin:0;padding-left:1.5em;color:var(--ink);max-width:65ch;font-family:var(--font-serif);
+  font-size:clamp(.95rem,1.5vw,1.1rem);line-height:1.8}
+.notes li{margin-bottom:.3em}
 .notes li strong{color:var(--ink);font-weight:500}
 .aside{border-left:2px solid var(--accent-subtle);padding-left:1.4rem}
-.aside p{font-family:var(--font-serif);font-style:italic}
+.aside p{font-style:italic;color:var(--ink-2)}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86em;
   background:var(--accent-subtle);padding:.1em .35em;border-radius:2px;font-style:normal}
 
