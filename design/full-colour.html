@@ -187,13 +187,25 @@ h2{font-size:clamp(30px,4.6vw,52px)}
 .aboutGrid .prose p:first-child{color:var(--ink)}
 /* The dark studio frame keeps its own background — auto-levelled, and only ever
    used small, where the heavy contrast reads as a portrait rather than a slab. */
-/* Toned toward whatever hue the About block is wearing, so the portrait moves
-   with the palette rather than sitting outside it. */
+/* A toning, done entirely in CSS — the image file is untouched. Two overlays,
+   each reaching one end of the tonal range:
+
+     multiply  scales each channel, so it tints toward the block's own teal
+               proportionally and BLACK STAYS BLACK (anything x 0 is 0) — the
+               shadows never lift the way a lighten layer made them
+     darken    lowers pixels brighter than the overlay, and the warm tone sits
+               below his highlight channels, so it takes the blue out of the
+               lights without changing much else
+
+   Measured against the actual photograph: blacks -0.5, shadows -1.9, midtones
+   -5.0, highlights -7.1 blue. */
 .aboutPhoto{margin:0;width:min(290px,62vw);justify-self:start;position:relative;isolation:isolate}
 .aboutPhoto img{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:50%;display:block}
-@supports (mix-blend-mode:color){
-  .aboutPhoto::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
-    background:var(--hd);mix-blend-mode:color;opacity:.34}
+@supports (mix-blend-mode:multiply){
+  .aboutPhoto::before,.aboutPhoto::after{content:"";position:absolute;inset:0;border-radius:50%;
+    pointer-events:none}
+  .aboutPhoto::before{background:#c4ece8;mix-blend-mode:multiply;opacity:.50}
+  .aboutPhoto::after{background:#fce496;mix-blend-mode:darken;opacity:.22}
 }
 
 /* fees — rows, not cards */

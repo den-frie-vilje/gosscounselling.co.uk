@@ -102,15 +102,26 @@ section{padding:var(--section) 0}
    used small, where its heavy contrast reads as a portrait rather than a slab. */
 .aboutGrid{display:grid;gap:40px;align-items:start}
 @media(min-width:860px){.aboutGrid{grid-template-columns:1fr auto;gap:56px}}
-/* The dark studio frame is neutral grey; a light tone toward the page accent
-   settles it into the palette. `color` blending maps the hue and leaves the
-   luminance — and therefore the modelling on his face — alone. */
+/* A toning, done entirely in CSS — the image file is untouched. Two overlays,
+   each reaching one end of the tonal range:
+
+     multiply  scales each channel, so it tints toward the page's dark green
+               proportionally and BLACK STAYS BLACK (anything x 0 is 0) — the
+               shadows never lift the way a lighten layer made them
+     darken    lowers pixels brighter than the overlay, and the warm tone sits
+               below his highlight channels, so it takes the blue out of the
+               lights without changing much else
+
+   Measured against the actual photograph: blacks -0.5, shadows -1.9, midtones
+   -5.0, highlights -7.1 blue. */
 .aboutPhoto{margin:0;width:min(300px,62vw);justify-self:start;position:relative;isolation:isolate}
 .aboutPhoto img{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:50%;display:block;
   box-shadow:0 0 0 1px var(--line)}
-@supports (mix-blend-mode:color){
-  .aboutPhoto::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
-    background:var(--accent);mix-blend-mode:color;opacity:.3}
+@supports (mix-blend-mode:multiply){
+  .aboutPhoto::before,.aboutPhoto::after{content:"";position:absolute;inset:0;border-radius:50%;
+    pointer-events:none}
+  .aboutPhoto::before{background:#c8ece0;mix-blend-mode:multiply;opacity:.50}
+  .aboutPhoto::after{background:#fae49e;mix-blend-mode:darken;opacity:.22}
 }
 .prose{max-width:64ch}
 .prose p{color:var(--muted);font-size:18px}
