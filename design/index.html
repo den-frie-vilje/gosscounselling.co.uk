@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gosscounselling.co.uk — three design directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f7f4ee;--ink:#22302b;--muted:#55635c;--line:#ded6c7}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,sans-serif;
+  font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:64px 24px 96px}
+h1{font-family:'Fraunces',Georgia,serif;font-size:clamp(30px,4.4vw,44px);line-height:1.15;margin:0 0 16px;letter-spacing:-.015em}
+.sub{color:var(--muted);max-width:62ch;margin:0 0 12px;font-size:18px}
+.meta{color:var(--muted);font-size:15px;margin:0 0 48px}
+.cards{display:grid;gap:20px}
+@media(min-width:800px){.cards{grid-template-columns:repeat(3,1fr)}}
+.card{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:8px;
+  overflow:hidden;background:#fffdf8}
+.card:hover{box-shadow:0 8px 28px rgba(34,48,43,.12)}
+.swatch{height:96px;display:flex}
+.swatch i{flex:1}
+.card .body{padding:24px}
+.card h2{font-family:'Fraunces',Georgia,serif;font-size:23px;margin:0 0 6px;letter-spacing:-.01em}
+.card .tag{font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 12px}
+.card p{margin:0;color:var(--muted);font-size:16px}
+.card .go{display:inline-block;margin-top:16px;font-weight:600;color:#24483f}
+.note{margin-top:56px;padding:26px 28px;border-left:3px solid #2f5d50;background:#fffdf8;border-radius:0 8px 8px 0}
+.note h3{font-family:'Fraunces',Georgia,serif;font-size:20px;margin:0 0 10px}
+.note p{margin:0 0 12px;color:var(--muted)}
+.note ul{margin:0;padding-left:20px;color:var(--muted)}
+.note li{margin:6px 0}
+a:focus-visible{outline:3px solid #2f5d50;outline-offset:3px}
+code{background:#ede7dc;padding:2px 6px;border-radius:3px;font-size:14.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>gosscounselling.co.uk — three directions</h1>
+  <p class="sub">Same content, same structure, three different temperaments. Each is one scroll,
+    with the phone number and email address repeated down the page and no booking system anywhere.</p>
+  <p class="meta">Built from John's brief and from measurements of the four sites he named.
+    Prototypes, not the finished build — the words are his own, lightly edited.</p>
+
+  <div class="cards">
+    <a class="card" href="quiet-practice.html">
+      <span class="swatch">
+        <i style="background:#f7f4ee"></i><i style="background:#ede7dc"></i>
+        <i style="background:#2f5d50"></i><i style="background:#1b332c"></i>
+      </span>
+      <span class="body">
+        <p class="tag">Direction A</p>
+        <h2>Quiet Practice</h2>
+        <p>Warm paper, ink green, serif headlines. Editorial and discreet — the closest in feel to
+          Chris's site, but its own thing.</p>
+        <span class="go">Open →</span>
+      </span>
+    </a>
+
+    <a class="card" href="open-door.html">
+      <span class="swatch">
+        <i style="background:#fdf8f0"></i><i style="background:#f6ecdd"></i>
+        <i style="background:#f2a93b"></i><i style="background:#a9541f"></i>
+      </span>
+      <span class="body">
+        <p class="tag">Direction B</p>
+        <h2>Open Door</h2>
+        <p>Apricot and clay on cream, rounded type, three doors into the practice. Warm and
+          unintimidating, in the register of sccc-la.org.</p>
+        <span class="go">Open →</span>
+      </span>
+    </a>
+
+    <a class="card" href="clear-water.html">
+      <span class="swatch">
+        <i style="background:#ffffff"></i><i style="background:#ece2d8"></i>
+        <i style="background:#0e6e86"></i><i style="background:#0b2a34"></i>
+      </span>
+      <span class="body">
+        <p class="tag">Direction C</p>
+        <h2>Clear Water</h2>
+        <p>Teal and sand, crisp geometric headings, numbered sections. Calm and professional, in
+          the register of deepeddypsychotherapy.com.</p>
+        <span class="go">Open →</span>
+      </span>
+    </a>
+  </div>
+
+  <div class="note">
+    <h3>What to look for</h3>
+    <p>They differ on temperature and on how the page introduces the practice, not on what it says:</p>
+    <ul>
+      <li><strong>A</strong> opens with a portrait and a sentence. Quietest; assumes the visitor
+        already knows they want therapy.</li>
+      <li><strong>B</strong> opens with three doors — <em>counselling</em>, <em>as a couple</em>,
+        <em>supervision</em> — so people can self-select. Friendliest; least formal.</li>
+      <li><strong>C</strong> puts fees front and centre in a band right under the hero. Most
+        matter-of-fact; strongest for someone comparing therapists.</li>
+    </ul>
+    <p style="margin-top:14px">All three treat psychosexual work in plain words, keep the
+      couples/throuples/poly wording, and lead with <code>tel:</code> and <code>mailto:</code>.
+      Mixing is fine — B's doors could sit on A's palette.</p>
+  </div>
+</div>
+</body>
+</html>
