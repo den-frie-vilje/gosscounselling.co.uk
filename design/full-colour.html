@@ -390,6 +390,7 @@ footer a:hover{color:#fff}
 .sitenav summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
   width:46px;height:46px;background:transparent;border:0;color:inherit}
 .sitenav summary::-webkit-details-marker{display:none}
+.sitenav summary::marker{content:""}
 /* The control never moves. Rather than re-anchoring it when the menu opens —
    which made it jump — the panel is given a lower layer than the summary inside
    the header's own stacking context, so the X appears exactly where the burger
