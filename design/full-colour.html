@@ -349,6 +349,14 @@ footer a:hover{color:#fff}
 .surface details summary::after{color:var(--tx-strong)}
 .surface .big>a{border-top-color:rgba(255,255,255,.3);color:var(--tx)}
 /* each service is now its own block, so the old per-item rules go */
+/* the list this direction is built around: naming people rather than implying
+   them, so nobody has to open with an explanation */
+.explainList{list-style:none;margin:40px 0 0;padding:0;display:grid;gap:16px;max-width:76ch}
+@media(min-width:820px){.explainList{grid-template-columns:1fr 1fr;gap:18px 48px}}
+.explainList li{position:relative;padding-left:34px;min-width:0}
+.explainList li::before{content:"";position:absolute;left:0;top:13px;width:18px;height:2px;
+  background:currentColor;opacity:.6}
+
 .svcItem{padding:calc(var(--section)*.62) 0;border:0}
 .svcItem .wrap{display:grid;gap:14px 44px;min-width:0}
 @media(min-width:860px){.svcItem .wrap{grid-template-columns:minmax(0,16rem) minmax(0,1fr)}}
@@ -447,6 +455,26 @@ footer a:hover{color:#fff}
       <a class="num" href="tel:+447776153426">07776 153 426</a>
       <a class="em" href="mailto:info@gosscounselling.co.uk">info@gosscounselling.co.uk</a>
     </div>
+  </div>
+</section>
+
+<section id="welcome" class="surface s-magenta">
+  <div class="wrap">
+    <p class="kicker">Before you get here</p>
+    <h2>Things you won't have to explain to me</h2>
+    <p class="lead">People spend a lot of a first session bringing a therapist up to speed. With
+      some of it, you won't need to.</p>
+    <ul class="explainList">
+      <li>That your relationship has more than two people in it, and that this isn't the thing
+        you're ringing about.</li>
+      <li>What being trans, non-binary, gay, bi or queer has to do with any of it — including when
+        the answer is nothing.</li>
+      <li>What a kink is, or why yours isn't a symptom.</li>
+      <li>That watching porn isn't automatically an addiction, and that you might still want to
+        talk about it.</li>
+      <li>That sex can hurt, or stop working, without that meaning something is wrong with you.</li>
+      <li>That you're fourteen and would rather talk to someone who isn't your parent.</li>
+    </ul>
   </div>
 </section>
 
