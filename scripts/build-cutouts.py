@@ -285,13 +285,15 @@ def solid_matte():
         F = estimate_foreground_ml(np.clip(I / 255.0, 0, 1), alpha,
                                    regularization=5e-3, gradient_weight=0.1) * 255.0
         lw = np.array([0.2126, 0.7152, 0.0722])
+        F[settled] = I[settled]                       # alpha == 1 => F == I, exactly
         if gamut:
+            # after the settled overwrite, so it also reaches the hand-painted crown,
+            # whose fuzz was synthesised while the figure still sat on white
             Yf = (_srgb_to_linear(F) * lw).sum(-1)
             Yp = (Fplin * lw).sum(-1)
             cap = np.where(band | hold, np.minimum(
                 1.0, 1.15 * np.maximum(Yp, 1e-4) / np.maximum(Yf, 1e-6)), 1.0)
             F = np.clip(_linear_to_srgb(_srgb_to_linear(F) * cap[..., None]), 0, 255)
-        F[settled] = I[settled]                       # alpha == 1 => F == I, exactly
 
         # -- 4. inverse light wrap: fit psi = E_backdrop / E_key, divide it out -------
         Flin = _srgb_to_linear(F)
@@ -315,16 +317,16 @@ def solid_matte():
         return F, np.clip(_linear_to_srgb(Flin / (1.0 + psi)[..., None]), 0, 255), psi
 
     _, Fd0, _ = delight(A, gamut=False)               # exactly what the previous method gave
-    F, Fd, psi = delight(An)
+    _, Fd, psi = delight(An)
 
     Image.fromarray(np.dstack([Fd, An * 255.0]).round().astype(np.uint8), "RGBA") \
          .save(f"{OUT}/john-cutout-dark.webp", "WEBP",
                quality=92, alpha_quality=100, exact=True, method=6)
-    _verify_solid_matte(master_rgb, A, An, F, Fd, Fd0, psi, D, core, top,
+    _verify_solid_matte(master_rgb, A, An, Fd, Fd0, psi, D, core, top,
                         np.vstack([xs, ys]), hold, I)
 
 
-def _verify_solid_matte(master_rgb, A, An, F, Fd, Fd0, psi, D, core, top, curve, hold, I):
+def _verify_solid_matte(master_rgb, A, An, Fd, Fd0, psi, D, core, top, curve, hold, I):
     """Every number the brief asks for, measured on the file that was just written.
 
     `before` throughout is the PREVIOUS published method recomputed from scratch on the
