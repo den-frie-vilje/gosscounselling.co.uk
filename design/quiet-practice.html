@@ -329,6 +329,25 @@ footer a{color:#d7e2dc}
 @media(max-width:479px){.protochip{left:12px;bottom:12px;padding:8px 13px;gap:7px}
   .protochip .k{font-size:10px}.protochip .n{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.protochip,.protochip .ar{transition:none}.protochip:hover .ar{transform:none}}
+/* ---- narrow screens: don't pay the gutter twice ----------------------
+   A boxed card carries its own padding on top of the 24px page gutter, so at
+   320px the text inside a card ran 212px wide against 272px for the section
+   intro directly above it: a 22% narrower measure, and about six characters
+   a line, purely from stacked insets. The box keeps a comfortable inset from
+   its own edge; it is the doubling that has to go, so the padding relaxes as
+   the viewport does rather than staying at its desktop value. Measured: at
+   320px the card text runs 242px against 212px before, and the shortfall
+   against the prose above it falls from 60px to 30px. */
+@media(max-width:600px){
+  .card{padding:26px 18px}
+  .fee{padding:24px 18px}
+  .bodies{padding:24px 18px}
+}
+@media(max-width:380px){
+  .card{padding:24px 15px}
+  .fee{padding:22px 15px}
+  .bodies{padding:22px 15px}
+}
 </style>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
