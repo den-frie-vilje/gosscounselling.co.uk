@@ -23,7 +23,7 @@
      ON TOP of it as a separate layer, so on hover the sheen travels across the
      button while the ink itself stays exactly where it is. Worst stop against
      the white label is 7.41:1; under the brightest part of the sheen, 5.20:1. */
-  --cta-sheen:radial-gradient(closest-side,rgba(255,255,255,.30),rgba(255,255,255,.10) 55%,rgba(255,255,255,0) 100%);
+  --cta-sheen:radial-gradient(closest-side,rgba(253,229,196,.20),rgba(253,229,196,.11) 42%,rgba(253,229,196,0) 100%);
   --cta-ink:linear-gradient(168deg,#a01e5c 0%,#6d2f8a 100%);
   --container:1140px; --section:100px;
   --display:'Bricolage Grotesque',ui-sans-serif,system-ui,sans-serif;
@@ -54,14 +54,11 @@ header::after{content:"";display:block;height:3px;background:var(--grad-soft)}
 nav{margin-left:auto;display:flex;gap:24px;min-width:0}
 nav a{font-size:16px;text-decoration:none;color:var(--muted);font-weight:500;white-space:nowrap;display:none}
 nav a:hover{color:var(--clay-dk)}
-.headcta{margin-left:auto;display:inline-flex;align-items:center;color:#fff;
-  background-image:var(--cta-sheen),var(--cta-ink);
-  background-size:150% 300%,100% 100%;
-  background-position:-40% 50%,0 0;
-  background-repeat:no-repeat,no-repeat;
+.headcta{margin-left:auto;position:relative;overflow:hidden;display:inline-flex;align-items:center;color:#fff;
+  background-image:var(--cta-ink);
   text-decoration:none;font-weight:600;font-size:16px;padding:11px 20px;white-space:nowrap;flex:none;
-  border-radius:6px;transition:background-position 1.15s cubic-bezier(.33,0,.2,1)}
-.headcta:hover,.headcta:focus-visible{background-position:140% 50%,0 0}
+  border-radius:6px}
+
 .cta-long{display:none}
 @media(min-width:430px){.cta-short{display:none}.cta-long{display:inline}}
 @media(min-width:700px){nav a[data-nav="help"]{display:inline}}
@@ -84,14 +81,22 @@ nav a:hover{color:var(--clay-dk)}
 .field .g1{inset:-80% -40% -50% -35%;
   background:radial-gradient(closest-side,rgba(140,26,64,.85),rgba(140,26,64,.3) 55%,transparent 78%);
   animation:drift1 54s ease-in-out infinite alternate}
-.field .g2{inset:-50% -35% -70% -10%;
-  background:radial-gradient(closest-side,rgba(69,36,115,.82),rgba(69,36,115,.3) 52%,transparent 76%);
+.field .g2{inset:-85% -60% -105% -28%;
+  background:radial-gradient(closest-side,rgba(69,36,115,.82),rgba(69,36,115,.32) 56%,transparent 80%);
   animation:drift2 82s ease-in-out infinite alternate}
 .field .g3{inset:-40% -50% -40% 20%;
   background:radial-gradient(closest-side,rgba(122,60,10,.5),transparent 70%);
   animation:drift3 68s ease-in-out infinite alternate}
+/* A very soft sheen crossing the block horizontally, on its own long cycle.
+   Capped at 10% white: over the ramp's lightest point that still leaves the
+   white type at 5.13:1, where 18% would have dropped it to 4.41. */
+.field .sheen{inset:-30% -70%;
+  background:linear-gradient(100deg,transparent 0%,rgba(255,255,255,.05) 32%,rgba(255,255,255,.10) 50%,
+    rgba(255,255,255,.05) 68%,transparent 100%);
+  animation:sweep 46s ease-in-out infinite alternate}
+@keyframes sweep{from{transform:translate3d(-32%,0,0)}to{transform:translate3d(32%,0,0)}}
 @keyframes drift1{from{transform:translate3d(-14%,7%,0) scale(1)}to{transform:translate3d(18%,-6%,0) scale(1.32)}}
-@keyframes drift2{from{transform:translate3d(16%,-9%,0) scale(1.18)}to{transform:translate3d(-17%,11%,0) scale(.88)}}
+@keyframes drift2{from{transform:translate3d(13%,-7%,0) scale(1.3)}to{transform:translate3d(-14%,9%,0) scale(1.02)}}
 @keyframes drift3{from{transform:translate3d(9%,12%,0) scale(1.05)}to{transform:translate3d(-13%,-8%,0) scale(1.35)}}
 @media(prefers-reduced-motion:reduce){.field>.pool{animation:none}}
 .heroGrid{display:grid;gap:32px;align-items:end}
@@ -106,15 +111,28 @@ nav a:hover{color:var(--clay-dk)}
    back when the pointer leaves — the movement is the feedback, not a colour
    swap. Every stop of the ramp clears AA against white (6.13 to 8.78:1), so the
    label is legible at any point in the travel. */
-.btn-primary{color:#fff;background-image:var(--cta-sheen),var(--cta-ink);
-  background-size:130% 300%,100% 100%;
-  background-position:-35% 50%,0 0;
-  background-repeat:no-repeat,no-repeat;
-  transition:background-position 1.15s cubic-bezier(.33,0,.2,1)}
-.btn-primary:hover,.btn-primary:focus-visible{background-position:135% 50%,0 0}
+.btn-primary{color:#fff;position:relative;overflow:hidden;background-image:var(--cta-ink)}
+
+/* The sheen is a warm, wide, soft pass in the page's own cream tone — not a cold
+   white glint. It always travels left to right: on hover it crosses in 1.25s, on
+   leave it fades out where it stands and resets off-screen once it is invisible,
+   so it never runs backwards. Peak 20% over the ink leaves the white label at
+   5.23:1 (28% would have dropped it to 4.48). */
+.headcta::before,.btn-primary::before{content:"";position:absolute;z-index:0;pointer-events:none;
+  top:-90%;bottom:-90%;left:0;width:160%;opacity:0;transform:translate3d(-120%,0,0);
+  background:var(--cta-sheen);
+  transition:transform 0s linear 1.3s,opacity .32s ease}
+.headcta:hover::before,.headcta:focus-visible::before,
+.btn-primary:hover::before,.btn-primary:focus-visible::before{
+  opacity:1;transform:translate3d(120%,0,0);
+  transition:transform 1.25s cubic-bezier(.33,0,.2,1),opacity .22s ease}
+.headcta>span,.btn-primary>span,.headcta{isolation:auto}
+.headcta span,.btn-primary{position:relative}
+.headcta span{z-index:1}
+@media(prefers-reduced-motion:reduce){.headcta::before,.btn-primary::before{display:none}}
 .surface .btn-primary{background-image:none;background-color:#fff;color:var(--sf)}
 .surface .btn-primary:hover{background-color:var(--hd)}
-@media(prefers-reduced-motion:reduce){.headcta,.btn-primary{transition:none}}
+
 .btn-ghost{border-color:var(--ink);color:var(--ink)}
 .btn-ghost:hover{background:var(--oat)}
 .reassure{margin-top:20px;font-size:16px;color:var(--muted);max-width:46ch;padding-bottom:8px}
@@ -237,9 +255,13 @@ details .body ul{margin:0 0 14px;padding-left:20px}
 @media(max-width:400px){.big .v{font-size:19px}}
 .big .h{display:block;margin-top:10px;color:#d8c7ce;font-size:16px}
 .big .h a{color:#ffd9c9}
-footer{background:var(--ink);color:#b6a4ad;font-size:15px;padding:0 0 60px}
-footer .wrap{border-top:1px solid rgba(255,255,255,.16);padding-top:28px;display:flex;flex-wrap:wrap;gap:12px 32px}
-footer a{color:#efe2ea}
+/* Inverted: the contact block above is aubergine, so the page finishes on light
+   rather than stacking two dark bands. */
+footer{background:var(--cream);color:var(--muted);font-size:15px;padding:36px 0 56px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 32px;border-top:3px solid transparent;
+  border-image:var(--spectrum) 1;padding-top:28px}
+footer a{color:var(--magenta)}
+footer a:hover{color:var(--ink)}
 @media(max-width:419px){.brand span{display:none}.bar{gap:12px}}
 /* ---- full-width colour surfaces: one hue per block, type in a lighter tint of
    the same hue. Every surface/tint pair measures AA (6.2 to 8.7:1). ---- */
@@ -322,7 +344,7 @@ footer a{color:#efe2ea}
 </section>
 
 <section class="strip surface s-coral field">
-  <span class="pool g1" aria-hidden="true"></span><span class="pool g2" aria-hidden="true"></span><span class="pool g3" aria-hidden="true"></span>
+  <span class="pool g1" aria-hidden="true"></span><span class="pool g2" aria-hidden="true"></span><span class="pool g3" aria-hidden="true"></span><span class="pool sheen" aria-hidden="true"></span>
   <div class="wrap">
     <div>
       <h2>The first step is a conversation.</h2>
