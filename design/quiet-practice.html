@@ -114,11 +114,14 @@ section{padding:var(--section) 0}
 .sechead p{color:var(--muted);margin:16px 0 0;font-size:18px}
 .grid{display:grid;min-width:0;gap:22px;margin-top:48px}
 @media(min-width:700px){.grid{grid-template-columns:1fr 1fr}}
-.card{min-width:0;background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:32px 30px}
+/* Cards in a row are the same height, so their links should agree — the card is
+   a column and the link is pushed to the bottom of it. */
+.card{min-width:0;background:var(--raised);border:1px solid var(--line);border-radius:6px;
+  padding:32px 30px;display:flex;flex-direction:column}
 .card h3{font-size:23px;margin-bottom:12px}
 .card p{margin:0;color:var(--muted)}
 .card p + p{margin-top:14px}
-.card .more{display:inline-block;margin-top:18px;font-weight:600;font-size:15.5px;color:var(--accent-dk);text-decoration:none;text-wrap:pretty}
+.card .more{display:inline-block;align-self:start;margin-top:auto;padding-top:18px;font-weight:600;font-size:15.5px;color:var(--accent-dk);text-decoration:none;text-wrap:pretty}
 .card .more:hover{text-decoration:underline;text-underline-offset:4px}
 .card .who{display:block;font-family:var(--sans);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--accent-dk);font-weight:600;margin-bottom:10px}
