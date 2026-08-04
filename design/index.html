@@ -4,137 +4,227 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>gosscounselling.co.uk — four design directions</title>
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="description" content="Four design directions for John Goss, counsellor and clinical supervisor in Milton Keynes. Prepared by Den Frie Vilje.">
+<link rel="icon" href="assets/dfv-logo.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Space+Grotesk:wght@400;500;600&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
 <style>
-:root{--paper:#f7f4ee;--ink:#22302b;--muted:#55635c;--line:#ded6c7}
+/* Den Frie Vilje house style. The tokens are taken from denfrievilje.dk's own
+   app.css rather than approximated: Space Grotesk for headings, DM Sans at
+   weight 300 for body, Lora for the italic asides, the near-white surface, and
+   the chartreuse accent — including the dark palette the site switches to. */
+:root{
+  --font-heading:'Space Grotesk',sans-serif;
+  --font-body:'DM Sans',sans-serif;
+  --font-serif:'Lora',serif;
+  --surface:oklch(0.98 0.003 100);
+  --ink:oklch(0.12 0.01 260);
+  --ink-2:oklch(0.5 0.01 260);
+  --accent:oklch(0.75 0.3 150);
+  --accent-hover:oklch(0.7 0.35 150);
+  --accent-subtle:oklch(0.95 0.06 150);
+  --border:oklch(0.93 0.003 100);
+  --logo-ink:oklch(0.12 0.01 260);
+  --max-w:1280px;
+  --gutter:clamp(1.5rem,5vw,4rem);
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --surface:oklch(0.3 0.012 270);
+    --ink:oklch(0.93 0.005 260);
+    --ink-2:oklch(0.68 0.008 265);
+    --accent-subtle:oklch(0.35 0.04 150);
+    --border:oklch(0.37 0.01 270);
+    --logo-ink:oklch(0.93 0.005 260);
+  }
+}
 *,*::before,*::after{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,sans-serif;
-  font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased}
-.wrap{max-width:1000px;margin:0 auto;padding:64px 24px 96px}
-h1{font-family:'Fraunces',Georgia,serif;font-size:clamp(30px,4.4vw,44px);line-height:1.15;margin:0 0 16px;letter-spacing:-.015em}
-.sub{color:var(--muted);max-width:62ch;margin:0 0 12px;font-size:18px}
-.meta{color:var(--muted);font-size:15px;margin:0 0 48px}
-.cards{display:grid;gap:20px}
-@media(min-width:700px){.cards{grid-template-columns:1fr 1fr}}
-@media(min-width:1100px){.cards{grid-template-columns:repeat(4,1fr)}}
-.card{display:block;text-decoration:none;color:inherit;border:1px solid var(--line);border-radius:8px;
-  overflow:hidden;background:#fffdf8}
-.card:hover{box-shadow:0 8px 28px rgba(34,48,43,.12)}
-.swatch{height:96px;display:flex}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:var(--font-body);font-weight:300;background:var(--surface);color:var(--ink);
+  line-height:1.6;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--font-heading);letter-spacing:-0.02em;margin:0;font-weight:500;line-height:1.15}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.wrap{max-width:var(--max-w);margin:0 auto;padding-inline:var(--gutter)}
+
+/* masthead */
+.masthead{padding:clamp(1.75rem,4vw,2.5rem) 0 0}
+.masthead .wrap{display:flex;align-items:center;gap:.9rem}
+.mark{width:34px;height:34px;flex:none;display:block}
+.wordmark{font-family:var(--font-heading);font-size:.95rem;font-weight:500;letter-spacing:-.01em;
+  color:var(--ink);text-decoration:none}
+.wordmark span{display:block;font-family:var(--font-body);font-weight:300;font-size:.75rem;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+
+header{padding:clamp(2.25rem,6vw,4rem) 0 0}
+.eyebrow{font-family:var(--font-heading);font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-2);margin:0 0 1.4rem}
+h1{font-size:clamp(2rem,5.2vw,3.4rem)}
+h1 em{font-style:normal;color:var(--accent)}
+.sub{max-width:62ch;margin:1.5rem 0 0;font-size:clamp(1rem,1.5vw,1.15rem);color:var(--ink-2)}
+.meta{margin:.9rem 0 0;font-family:var(--font-serif);font-style:italic;color:var(--ink-2);font-size:1rem}
+hr.rule{border:0;border-top:1px solid var(--border);margin:clamp(2.5rem,6vw,4rem) 0 0}
+
+main{padding:clamp(2rem,5vw,3.5rem) 0 clamp(4rem,9vw,7rem)}
+.cards{display:grid;gap:1.5rem;margin:0;padding:0;list-style:none}
+@media(min-width:640px){.cards{grid-template-columns:1fr 1fr}}
+@media(min-width:1100px){.cards{grid-template-columns:repeat(4,1fr);gap:1.25rem}}
+.card{display:flex;flex-direction:column;text-decoration:none;border:1px solid var(--border);
+  min-width:0;height:100%;transition:border-color .2s ease,transform .2s ease}
+.card:hover{border-color:var(--accent);transform:translateY(-3px)}
+.swatch{display:flex;height:5.5rem}
 .swatch i{flex:1}
-.card .body{display:block;padding:26px 26px 28px}
-.card h2{font-family:'Fraunces',Georgia,serif;font-size:23px;margin:0 0 10px;letter-spacing:-.01em}
-.card .tag{font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 14px;display:block}
-.card p{margin:0;color:var(--muted);font-size:16px}
-.card .body p{margin:0}
-.card .go{display:inline-block;margin-top:20px;font-weight:600;color:#24483f}
-.note{margin-top:56px;padding:26px 28px;border-left:3px solid #2f5d50;background:#fffdf8;border-radius:0 8px 8px 0}
-.note h3{font-family:'Fraunces',Georgia,serif;font-size:20px;margin:0 0 10px}
-.note p{margin:0 0 12px;color:var(--muted)}
-.note ul{margin:0;padding-left:20px;color:var(--muted)}
-.note li{margin:6px 0}
-a:focus-visible{outline:3px solid #2f5d50;outline-offset:3px}
-code{background:#ede7dc;padding:2px 6px;border-radius:3px;font-size:14.5px}
+.card .body{padding:1.35rem 1.35rem 1.5rem;display:flex;flex-direction:column;flex:1}
+.tag{font-family:var(--font-heading);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-2);margin:0 0 .7rem}
+.card h2{font-size:1.3rem;margin:0 0 .5rem}
+.card p{margin:0;color:var(--ink-2);font-size:.95rem}
+.go{margin-top:auto;padding-top:1.1rem;font-family:var(--font-heading);font-size:.9rem;font-weight:500;
+  color:var(--accent)}
+.card:hover .go{color:var(--accent-hover)}
+
+.notes{margin-top:clamp(3rem,7vw,5rem);display:grid;gap:2.5rem}
+@media(min-width:900px){.notes{grid-template-columns:1.15fr .85fr;gap:4rem}}
+.notes h3{font-size:1.15rem;margin:0 0 1rem}
+.notes p{margin:0 0 1rem;color:var(--ink-2);max-width:62ch}
+.notes ul{margin:0;padding-left:1.15rem;color:var(--ink-2);max-width:62ch}
+.notes li{margin:.55rem 0}
+.notes li strong{color:var(--ink);font-weight:500}
+.aside{border-left:2px solid var(--accent-subtle);padding-left:1.4rem}
+.aside p{font-family:var(--font-serif);font-style:italic}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86em;
+  background:var(--accent-subtle);padding:.1em .35em;border-radius:2px;font-style:normal}
+
+footer{border-top:1px solid var(--border);padding:2rem 0 3.5rem;color:var(--ink-2);font-size:.9rem}
+footer .wrap{display:flex;flex-wrap:wrap;gap:.6rem 2rem;align-items:center}
+footer a{color:var(--ink)}
+@media(prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>gosscounselling.co.uk — four directions</h1>
-  <p class="sub">Same content, same structure, three different temperaments. Each is one scroll,
-    with the phone number and email address repeated down the page and calling or emailing as the
-    only thing the page ever asks for.</p>
-  <p class="meta">Built from John's brief and from measurements of the four sites he named.
-    Prototypes, not the finished build — the words are his own, lightly edited.</p>
 
-  <div class="cards">
-    <a class="card" href="quiet-practice.html">
-      <span class="swatch">
-        <i style="background:#f7f4ee"></i><i style="background:#ede7dc"></i>
-        <i style="background:#2f5d50"></i><i style="background:#1b332c"></i>
-      </span>
-      <span class="body">
-        <p class="tag">Direction A</p>
-        <h2>Quiet Practice</h2>
-        <p>Warm paper, ink green, serif headlines. Editorial and discreet — the closest in feel to
-          Chris's site, but its own thing.</p>
-        <span class="go">Open →</span>
-      </span>
-    </a>
-
-    <a class="card" href="full-colour.html">
-      <span class="swatch">
-        <i style="background:#fdf7f0"></i><i style="background:#e04a2f"></i>
-        <i style="background:#c02a72"></i><i style="background:#6d3ba8"></i>
-      </span>
-      <span class="body">
-        <p class="tag">Direction B</p>
-        <h2>Full Colour</h2>
-        <p>A scroll of full-width colour blocks — one hue per section, type in a lighter tint of
-          the same hue. Optimistic, and unmistakably at ease with people.</p>
-        <span class="go">Open →</span>
-      </span>
-    </a>
-
-    <a class="card" href="clear-water.html">
-      <span class="swatch">
-        <i style="background:#ffffff"></i><i style="background:#ece2d8"></i>
-        <i style="background:#0e6e86"></i><i style="background:#0b2a34"></i>
-      </span>
-      <span class="body">
-        <p class="tag">Direction C</p>
-        <h2>Clear Water</h2>
-        <p>Teal and sand, crisp geometric headings, numbered sections. Calm and professional,
-          with the fees answered before you have to ask.</p>
-        <span class="go">Open →</span>
-      </span>
-    </a>
-    <a class="card" href="consulting-room.html">
-      <span class="swatch">
-        <i style="background:#f4f1ec"></i><i style="background:#e9e4db"></i>
-        <i style="background:#8f5334"></i><i style="background:#243449"></i>
-      </span>
-      <span class="body">
-        <p class="tag">Direction D</p>
-        <h2>Consulting Room</h2>
-        <p>The conventional practice site: heavy navigation, teaser cards into deeper content, and
-          full-bleed photographs of the lanes and fields around Bletchley, fixed so they wipe as you
-          scroll.</p>
-        <span class="go">Open →</span>
-      </span>
-    </a>
-  </div>
-
-  <div class="note">
-    <h3>What to look for</h3>
-    <p>They differ on temperature and on how the page introduces the practice, not on what it says:</p>
-    <ul>
-      <li><strong>A</strong> opens with a portrait and a sentence. Quietest; assumes the visitor
-        already knows they want therapy.</li>
-      <li><strong>B</strong> puts his phone number in a full-width gradient band immediately under
-        the hero, then runs the practice as plain typographic blocks, each with its own hue. The
-        colour is doing quiet work: it says this is somewhere you can bring anything, without a
-        badge announcing it. Boldest of the three.</li>
-      <li><strong>C</strong> puts fees front and centre in a band right under the hero. Most
-        matter-of-fact; strongest for someone comparing therapists.</li>
-      <li><strong>D</strong> is the traditional one, closest in shape to the practices he pointed
-        at: a full navigation bar, four teasers into long sections, and local landscape rather than
-        portraiture. His photograph appears once, small and round. Weighted for a general audience
-        — but the psychosexual and supervision sections are written out in full, so the two
-        audiences that need detail still get it.</li>
-    </ul>
-    <p style="margin-top:14px">All three treat psychosexual work in plain words, keep the
-      couples/throuples/poly wording, and lead with <code>tel:</code> and <code>mailto:</code>.
-      Each service block links to a future detail page, so the single scroll can grow into
-      <code>/counselling/psychosexual-therapy</code> and friends without a redesign — see
-      <code>docs/information-architecture.md</code>. Mixing is fine.</p>
-    <p style="margin-top:14px">The light portrait is knocked out of its background in all three;
-      his shoulders are cut by the edge of the original photograph, so it always sits in a frame
-      narrower than the image and the crop is made by the frame or the viewport. The top of his
-      head is clipped in the source photograph and is pending a retouch. The dark studio frame
-      keeps its background, tone-curved, and is only used small and round.</p>
+<div class="masthead">
+  <div class="wrap">
+    <img class="mark" src="assets/dfv-logo.svg" alt="" width="34" height="34">
+    <a class="wordmark" href="https://denfrievilje.dk">Den Frie Vilje<span>Design &amp; development</span></a>
   </div>
 </div>
+
+<header>
+  <div class="wrap">
+    <p class="eyebrow">Prepared for John Goss</p>
+    <h1>Four directions for <em>gosscounselling.co.uk</em></h1>
+    <p class="sub">The same practice, four different temperaments — and four different voices, since
+      a look without a register is only half a choice. Every fee, qualification and service is
+      identical across all four; what changes is what gets said first, and who the page is visibly
+      speaking to.</p>
+    <p class="meta">Prototypes, not the finished site. The words are John's own, lightly edited.</p>
+    <hr class="rule">
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <ul class="cards">
+      <li><a class="card" href="quiet-practice.html">
+        <span class="swatch" aria-hidden="true">
+          <i style="background:#f7f4ee"></i><i style="background:#ede7dc"></i>
+          <i style="background:#2f5d50"></i><i style="background:#1b332c"></i>
+        </span>
+        <span class="body">
+          <span class="tag">Direction A</span>
+          <h2>Quiet Practice</h2>
+          <p>Warm paper, ink green, serif headlines. Discreet — it speaks to the person embarrassed
+            to be looking at all, and names the hesitation once before leaving it alone.</p>
+          <span class="go">Open &rarr;</span>
+        </span>
+      </a></li>
+
+      <li><a class="card" href="full-colour.html">
+        <span class="swatch" aria-hidden="true">
+          <i style="background:#fdf7f0"></i><i style="background:#e04a2f"></i>
+          <i style="background:#c02a72"></i><i style="background:#6d3ba8"></i>
+        </span>
+        <span class="body">
+          <span class="tag">Direction B</span>
+          <h2>Full Colour</h2>
+          <p>A scroll of full-width colour blocks, each with its type in a lighter tint of its own
+            hue. Speaks to the people most likely to expect a flinch, and lists plainly what they
+            won't have to explain.</p>
+          <span class="go">Open &rarr;</span>
+        </span>
+      </a></li>
+
+      <li><a class="card" href="clear-water.html">
+        <span class="swatch" aria-hidden="true">
+          <i style="background:#ffffff"></i><i style="background:#ece2d8"></i>
+          <i style="background:#0e6e86"></i><i style="background:#0b2a34"></i>
+        </span>
+        <span class="body">
+          <span class="tag">Direction C</span>
+          <h2>Clear Water</h2>
+          <p>Teal and sand, crisp geometric headings. Straight answers — what it costs, how long,
+            where, what happens after you ring — and supervision written colleague to colleague.</p>
+          <span class="go">Open &rarr;</span>
+        </span>
+      </a></li>
+
+      <li><a class="card" href="consulting-room.html">
+        <span class="swatch" aria-hidden="true">
+          <i style="background:#f4f1ec"></i><i style="background:#e9e4db"></i>
+          <i style="background:#8f5334"></i><i style="background:#243449"></i>
+        </span>
+        <span class="body">
+          <span class="tag">Direction D</span>
+          <h2>Consulting Room</h2>
+          <p>The conventional practice site: full navigation, teasers into long sections, and
+            photographs of the lanes and fields around Bletchley, fixed so they wipe as you scroll.</p>
+          <span class="go">Open &rarr;</span>
+        </span>
+      </a></li>
+    </ul>
+
+    <div class="notes">
+      <div>
+        <h3>What to look for</h3>
+        <p>They differ on temperature, on what the page leads with, and on who it is visibly
+          addressing — not on what it says:</p>
+        <ul>
+          <li><strong>A</strong> opens with a portrait and a sentence. Quietest; assumes the visitor
+            already knows they want therapy.</li>
+          <li><strong>B</strong> puts the phone number in a gradient band under the hero, then runs
+            the practice as colour blocks. The colour does quiet work — it says this is somewhere you
+            can bring anything, without a badge announcing it.</li>
+          <li><strong>C</strong> answers the practical questions before they are asked, and is the
+            strongest of the four for someone comparing therapists in three tabs.</li>
+          <li><strong>D</strong> is closest in shape to the practices John pointed at. Weighted for a
+            general audience, but psychosexual therapy and supervision are written out in full, so
+            the two groups who need detail still get it.</li>
+        </ul>
+      </div>
+      <div class="aside">
+        <h3>Notes</h3>
+        <p>All four treat sexual difficulties in plain words, keep John's own “couples, throuples or
+          poly dynamics”, and lead with <code>tel:</code> and <code>mailto:</code> — there is no
+          booking system anywhere.</p>
+        <p>Each service block already links to a detail page that doesn't exist yet, so the single
+          scroll can grow into <code>/counselling/psychosexual-therapy</code> and its siblings
+          without a redesign. Those links come back here for now.</p>
+        <p>Mixing is expected. A palette from one and a structure from another is a normal outcome
+          of this stage.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Prepared by <a href="https://denfrievilje.dk">Den Frie Vilje</a> for John Goss.</span>
+    <span>Not indexed and not linked from anywhere — please don't pass the address on.</span>
+  </div>
+</footer>
+
 </body>
 </html>
