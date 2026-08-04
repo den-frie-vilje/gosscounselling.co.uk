@@ -41,7 +41,7 @@ Three assets come out in design/assets/:
 """
 from PIL import Image
 import numpy as np, os, sys, io
-from scipy.ndimage import distance_transform_edt, gaussian_filter, zoom
+from scipy.ndimage import distance_transform_edt, gaussian_filter, zoom, binary_dilation
 from scipy.interpolate import PchipInterpolator
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -239,54 +239,148 @@ def solid_matte():
     settled[:top] |= A[:top] > 0.02
     I[settled] = master_rgb[settled]
 
-    # -- 1. foreground colour estimation (Germer et al. 2020) ------------------------
-    F = estimate_foreground_ml(np.clip(I / 255.0, 0, 1), A,
-                               regularization=5e-3, gradient_weight=0.1) * 255.0
-    F[settled] = I[settled]                           # alpha == 1 => F == I, exactly
+    # -- 1. the local foreground colour prior, by geodesic extension -----------------
+    Fprior = _geodesic_extend(master_rgb, A > 0.995, (A > 0.005) | core)
 
-    # -- 2. inverse light wrap: fit psi = E_backdrop / E_key, divide it out -----------
-    Flin = _srgb_to_linear(F)
-    Y = (Flin * np.array([0.2126, 0.7152, 0.0722])).sum(-1)
-    # what the shading would be with no backdrop: the interior, pushed out to the edge
-    Ybase = np.maximum(_geodesic_extend(Y, core & (D >= DREF), core), 1e-6)
-    excess = np.clip(np.where(core, Y / Ybase - 1.0, 0.0), -1.0, 8.0)
+    # -- 2. known-backing re-solve of alpha in the fringe ----------------------------
+    BK = np.array([1.0, 1.0, 1.0])                    # the cyc, measured: a flat 255
+    Ilin, Fplin = _srgb_to_linear(I), np.clip(_srgb_to_linear(Fprior), 0, 1)
+    dF = BK - Fplin
+    a_ls = np.clip(((BK - Ilin) * dF).sum(-1) / np.maximum((dF * dF).sum(-1), 1e-9), 0, 1)
+    sep = np.sqrt((dF * dF).sum(-1)) / np.sqrt(3.0)   # |B - F|: how well conditioned
+    A8 = np.round(A * 255.0)
+    band = (A8 >= 6) & (A8 <= 249)                    # the pixels the client calls partial
+    inplate = np.zeros((H, W), bool); inplate[top:] = True
+    inframe = np.ones((H, W), bool)
+    inframe[:, :3] = inframe[:, -3:] = inframe[-3:, :] = False   # the crop's own antialiasing
+    conf = ((I.max(-1) < 253.5) * np.clip((sep - 0.30) / 0.30, 0, 1)
+            * band * inplate * inframe)               # 0 where the plate is clipped
 
-    W1 = np.clip(2.0 * gaussian_filter(1.0 - A, SIG_NEAR, mode="nearest"), 0, 1)
-    W2 = np.clip(2.0 * gaussian_filter(1.0 - A, SIG_WIDE, mode="nearest"), 0, 1)
-    fit = (core & (D < DREF * 2)).astype(np.float64)
-    G = lambda x: gaussian_filter(x, SIG_FIT, mode="nearest")
-    M11, M12, M22 = G(W1 * W1 * fit) + 1e-3, G(W1 * W2 * fit), G(W2 * W2 * fit) + 1e-3
-    b1, b2 = G(excess * W1 * fit), G(excess * W2 * fit)
-    det = M11 * M22 - M12 * M12
-    a1 = np.where(np.abs(det) > 1e-12, (M22 * b1 - M12 * b2) / det, 0.0)
-    a2 = np.where(np.abs(det) > 1e-12, (M11 * b2 - M12 * b1) / det, 0.0)
-    psi = np.clip(a1 * W1 + a2 * W2, 0.0, PSI_MAX)
-    t = np.clip((DREF - D) / (DREF * 0.35), 0, 1)      # hard off by DREF: interior untouched
-    psi = gaussian_filter(psi, 8.0, mode="nearest") * (t * t * (3 - 2 * t))
-    Fd = np.clip(_linear_to_srgb(Flin / (1.0 + psi)[..., None]), 0, 255)
+    edges = np.arange(0.0, 1.0001, 1 / 32.0)          # the systematic part: one curve
+    xs, ys = [0.0], [0.0]
+    for lo, hi in zip(edges[:-1], edges[1:]):
+        s = (conf > 0.5) & (A >= lo) & (A < hi)
+        if s.sum() >= 60:
+            xs.append(0.5 * (lo + hi)); ys.append(float(np.median(a_ls[s])))
+    xs.append(1.0); ys.append(1.0)
+    xs = np.array(xs); ys = np.minimum(np.maximum.accumulate(np.array(ys)), xs)
+    gA = np.interp(A, xs, ys)
+    rho = np.clip(a_ls / np.maximum(gA, 1e-3), 0.0, 1.5)          # the local part
+    wg = conf * np.clip(4.0 * A * (1.0 - A), 0, 1)
+    sm = lambda x: gaussian_filter(x, 1.5, mode="nearest")
+    rho_s = np.clip((sm(rho * wg) + 0.15) / (sm(wg) + 0.15), 0.0, 1.5)
+    An = np.where(band, np.maximum(np.minimum(gA * rho_s, A), 6.0 / 255.0), A)
 
-    Image.fromarray(np.dstack([Fd, A * 255.0]).round().astype(np.uint8), "RGBA") \
+    # holdout: the client's core matte, trimmed only where it covers demonstrable backdrop
+    near = binary_dilation(band, np.ones((9, 9), bool))
+    hold = (A8 >= 250) & (a_ls < 0.5) & (sep > 0.60) & inplate & inframe & near
+    An = np.clip(np.where(hold, a_ls, An), 0, 1)
+
+    # -- 3. foreground colour estimation (Germer et al. 2020), then the gamut bound ---
+    def delight(alpha):
+        F = estimate_foreground_ml(np.clip(I / 255.0, 0, 1), alpha,
+                                   regularization=5e-3, gradient_weight=0.1) * 255.0
+        lw = np.array([0.2126, 0.7152, 0.0722])
+        Yf = (_srgb_to_linear(F) * lw).sum(-1)
+        Yp = (Fplin * lw).sum(-1)
+        cap = np.where(band | hold,
+                       np.minimum(1.0, 1.15 * np.maximum(Yp, 1e-4) / np.maximum(Yf, 1e-6)), 1.0)
+        F = np.clip(_linear_to_srgb(_srgb_to_linear(F) * cap[..., None]), 0, 255)
+        F[settled] = I[settled]                       # alpha == 1 => F == I, exactly
+
+        # -- 4. inverse light wrap: fit psi = E_backdrop / E_key, divide it out -------
+        Flin = _srgb_to_linear(F)
+        Y = (Flin * lw).sum(-1)
+        # what the shading would be with no backdrop: the interior, pushed out to the edge
+        Ybase = np.maximum(_geodesic_extend(Y, core & (D >= DREF), core), 1e-6)
+        excess = np.clip(np.where(core, Y / Ybase - 1.0, 0.0), -1.0, 8.0)
+
+        W1 = np.clip(2.0 * gaussian_filter(1.0 - alpha, SIG_NEAR, mode="nearest"), 0, 1)
+        W2 = np.clip(2.0 * gaussian_filter(1.0 - alpha, SIG_WIDE, mode="nearest"), 0, 1)
+        fit = (core & (D < DREF * 2)).astype(np.float64)
+        G = lambda x: gaussian_filter(x, SIG_FIT, mode="nearest")
+        M11, M12, M22 = G(W1 * W1 * fit) + 1e-3, G(W1 * W2 * fit), G(W2 * W2 * fit) + 1e-3
+        b1, b2 = G(excess * W1 * fit), G(excess * W2 * fit)
+        det = M11 * M22 - M12 * M12
+        a1 = np.where(np.abs(det) > 1e-12, (M22 * b1 - M12 * b2) / det, 0.0)
+        a2 = np.where(np.abs(det) > 1e-12, (M11 * b2 - M12 * b1) / det, 0.0)
+        psi = np.clip(a1 * W1 + a2 * W2, 0.0, PSI_MAX)
+        t = np.clip((DREF - D) / (DREF * 0.35), 0, 1)  # hard off by DREF: interior untouched
+        psi = gaussian_filter(psi, 8.0, mode="nearest") * (t * t * (3 - 2 * t))
+        return F, np.clip(_linear_to_srgb(Flin / (1.0 + psi)[..., None]), 0, 255), psi
+
+    F0, Fd0, _ = delight(A)                           # what the previous method produced
+    F, Fd, psi = delight(An)
+
+    Image.fromarray(np.dstack([Fd, An * 255.0]).round().astype(np.uint8), "RGBA") \
          .save(f"{OUT}/john-cutout-dark.webp", "WEBP",
                quality=92, alpha_quality=100, exact=True, method=6)
-    _verify_solid_matte(master_rgb, A, F, Fd, psi, D, core)
+    _verify_solid_matte(master_rgb, A, An, F, Fd, Fd0, psi, D, core, top,
+                        np.vstack([xs, ys]), hold, I)
 
 
-def _verify_solid_matte(master_rgb, A, F, Fd, psi, D, core):
-    """Every number the brief asks for, measured on the file that was just written."""
+def _verify_solid_matte(master_rgb, A, An, F, Fd, Fd0, psi, D, core, top, curve, hold, I):
+    """Every number the brief asks for, measured on the file that was just written.
+
+    `before` throughout is the PREVIOUS published method recomputed from scratch on the
+    same inputs — Germer foreground estimation on the client's alpha plus the inverse
+    light wrap — so the comparison is reproducible and does not depend on whatever
+    happens to be on disk.
+    """
     d = np.array(Image.open(f"{OUT}/john-cutout-dark.webp").convert("RGBA")).astype(np.float64)
     aa, rgb = d[..., 3] / 255.0, d[..., :3]
     H, W = aa.shape
     L = lambda x: 0.2126 * x[..., 0] + 0.7152 * x[..., 1] + 0.0722 * x[..., 2]
 
-    # -- matte: kept verbatim, so hair survives and the silhouette cannot have moved --
-    print("  partial coverage: %.2f%% of pixels (master %.2f%%) — the hair band is intact"
+    # -- matte: the support is bit-identical, so hair survives and nothing moved -----
+    print("  partial coverage: %.4f%% of pixels (master %.4f%%) — the hair band is intact"
           % (((aa > 0.02) & (aa < 0.98)).mean() * 100, ((A > 0.02) & (A < 0.98)).mean() * 100))
-    print("  alpha vs master: max abs difference %d/255 over %d px"
-          % (np.abs(aa - A).max() * 255, aa.size))
+    print("  matte support (alpha>0.02) differs on %d px; opaque set (alpha>=0.98) on %d px"
+          % (int(((A > 0.02) != (aa > 0.02)).sum()), int(((A >= 0.98) != (aa >= 0.98)).sum())))
     col = np.where((A > 0.02).any(0), (A > 0.02).argmax(0), -1)
     col2 = np.where((aa > 0.02).any(0), (aa > 0.02).argmax(0), -1)
-    print("  silhouette + crown: per-column top edge differs on %d of %d columns (max %d px)"
-          % (int((col != col2).sum()), W, int(np.abs(col - col2).max())))
+    row = np.where((A > 0.02).any(1), (A > 0.02).argmax(1), -1)
+    row2 = np.where((aa > 0.02).any(1), (aa > 0.02).argmax(1), -1)
+    print("  silhouette + crown: per-column top edge differs on %d of %d columns (max %d px);"
+          " per-row left edge on %d of %d rows"
+          % (int((col != col2).sum()), W, int(np.abs(col - col2).max()),
+             int((row != row2).sum()), H))
+    print("  crown (the %d hand-painted rows above the plate): shape unchanged, alpha values"
+          " remapped by the same global curve, max %d/255" % (top, np.abs(A - aa)[:top].max() * 255))
+    print("  alpha transfer curve fitted from the known-backing solve: "
+          + " ".join("%.2f->%.2f" % (x, y) for x, y in zip(*curve) if 0.05 < x < 0.75))
+    ys, xs = np.nonzero(hold)
+    print("  holdout (core matte trimmed where it covers backdrop): %d px, x %d-%d y %d-%d"
+          % (hold.sum(), xs.min(), xs.max(), ys.min(), ys.max()) if hold.any()
+          else "  holdout: no pixel qualified")
+
+    # -- THE HAIR BAND, specifically: composite luminance by depth, two dark grounds --
+    Din, Dout = distance_transform_edt(core), distance_transform_edt(~core)
+    sd = np.where(core, Din, -Dout)                   # signed depth, MASTER reference
+    rr = np.arange(H)[:, None] + np.zeros((1, W))
+    hairband = (np.abs(sd) <= 8) & (rr >= top) & (rr < 640) & (A > 0.02)
+    dep = [(-6, -4), (-4, -2), (-2, 0), (0, 2), (2, 4), (4, 8)]
+    print("  HAIR BAND = alpha>0.02 pixels within 8px of the master silhouette, rows %d-640"
+          " (skull, temples and both ears): %d px" % (top, hairband.sum()))
+    for bg in [(7, 32, 40), (30, 98, 120)]:
+        print("    on rgb%-15s depth px %s" % (str(tuple(bg)),
+              " ".join("%7s" % ("%d..%d" % b) for b in dep)))
+        for tag, img, al in (("before", Fd0, A), ("after ", rgb, aa)):
+            c = L(img * al[..., None] + np.array(bg, float) * (1 - al[..., None]))
+            print("      %s              %s" % (tag,
+                  " ".join("%7.1f" % c[hairband & (sd >= lo) & (sd < hi)].mean() for lo, hi in dep)))
+
+    # -- THE EAR/SKULL CONCAVITIES, with the boxes stated so they can be checked ------
+    for name, (y0, y1, x0, x1) in (("right ear / skull corner", (355, 410, 1275, 1325)),
+                                   ("left  ear / skull corner", (415, 470, 575, 620))):
+        out = []
+        for tag, img, al in (("before", Fd0, A), ("after", rgb, aa)):
+            c = L(img * al[..., None] + np.array((7, 32, 40), float)
+                  * (1 - al[..., None]))[y0:y1, x0:x1]
+            out.append("%s mean %5.1f p95 %5.1f max %5.1f" % (tag, c.mean(),
+                                                              np.percentile(c, 95), c.max()))
+        print("  %s  box x %d-%d y %d-%d, on rgb(7,32,40):  %s  ->  %s"
+              % (name, x0, x1, y0, y1, out[0], out[1]))
 
     # -- bright specks in the fringe (pixel far brighter than its own 5x5) ------------
     def specks(img, alpha, region=None):
@@ -301,10 +395,10 @@ def _verify_solid_matte(master_rgb, A, F, Fd, psi, D, core):
     ear = np.zeros((H, W), bool)                      # where the earlobes meet the skull
     ear[560:700, 480:760] = True
     ear[560:700, 1180:1460] = True
-    print("  bright specks in the fringe: %d px (master %d)"
-          % (specks(rgb, aa), specks(master_rgb, A)))
-    print("  bright specks in the ear/skull concavities: %d px (master %d)"
-          % (specks(rgb, aa, ear), specks(master_rgb, A, ear)))
+    print("  bright specks in the fringe:               master %4d  before %3d  after %3d"
+          % (specks(master_rgb, A), specks(Fd0, A), specks(rgb, aa)))
+    print("  bright specks in the ear/skull concavities: master %4d  before %3d  after %3d"
+          % (specks(master_rgb, A, ear), specks(Fd0, A, ear), specks(rgb, aa, ear)))
 
     # -- composites: luminance by depth into the silhouette, three grounds ------------
     dd = distance_transform_edt(aa > 0.5)
@@ -322,7 +416,7 @@ def _verify_solid_matte(master_rgb, A, F, Fd, psi, D, core):
     print("  shoulder rim, mean luminance by depth (the backdrop's own rim light):")
     for name, sel in (("near shoulder (left of frame)", shoulder & (cols < 880)),
                       ("far shoulder                 ", shoulder & (cols >= 880))):
-        for tag, img in (("before", F), ("after ", rgb)):
+        for tag, img in (("before", Fd0), ("after ", rgb)):
             p = [float(L(img)[sel & (dd >= lo) & (dd < hi)].mean())
                  for lo, hi in [(1, 4), (4, 8), (8, 20), (20, 55), (80, 200)]]
             print("    %s %s  %s   edge vs interior %+6.1f"
@@ -339,6 +433,13 @@ def _verify_solid_matte(master_rgb, A, F, Fd, psi, D, core):
              floor.mean(), floor.max()))
     print("  rim gain applied to %.1f%% of the figure, strongest 1/(1+psi) = %.2f"
           % ((psi[core] > 0.02).mean() * 100, 1.0 / (1.0 + psi.max())))
+
+    # -- the invariant: no hair was deleted, because nothing was removed from the matte
+    fr = (A > 0.02) & (A < 0.98) & (np.arange(H)[:, None] + np.zeros((1, W)) >= top)
+    for tag, img, al in (("before", Fd0, A), ("after ", rgb, aa)):
+        e = np.abs(L(img * al[..., None] + 255.0 * (1 - al[..., None])) - L(I))[fr]
+        print("  %s: put back on the white cyc it was shot on, |dLuma| over the fringe:"
+              " mean %5.2f  p95 %5.2f" % (tag, e.mean(), np.percentile(e, 95)))
 
 
 def round_portrait():

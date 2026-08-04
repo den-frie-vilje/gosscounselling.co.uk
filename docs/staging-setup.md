@@ -29,36 +29,54 @@ the NAS is configured, re-run the job (or push again) and it will go green.
 
 ---
 
-## 1. Create the site directory on the NAS
+## 1. Run the agent's bootstrap script
 
-Site directories on the NAS carry the apex domain, `.co.uk` included:
+Everything on the NAS side is one interactive script. From a root shell:
 
-```bash
-mkdir -p /volume1/docker/gosscounselling.co.uk/staging
-cd /volume1/docker/gosscounselling.co.uk/staging
+```sh
+sudo /volume1/docker/nas-sites/repo/tools/bootstrap-site.sh
 ```
 
-Copy in the two files from the repo (`deploy/compose.staging.yml` and
-`deploy/Caddyfile.staging`), or let the deploy agent clone the repo the way it
-does for the other sites — whichever matches how chrishemmings is set up on
-this NAS. There is no env file: this stack publishes no host port and needs no
-secrets.
+Answer:
 
-## 2. Register the site with the deploy agent
+| Prompt | Value |
+| --- | --- |
+| domain | `gosscounselling.co.uk` |
+| environment | `staging` |
+| repo | `den-frie-vilje/gosscounselling.co.uk` |
+| branch | `staging` |
+| compose file | `deploy/compose.staging.yml` |
 
-Create `/volume1/docker/nas-sites/sites.d/gosscounselling-staging.env` from
-`nas-sites/nas-agent/sites.env.example`. It needs the repo, the branch, the
-compose file and the working directory — copy the chrishemmings staging entry
-and change the names. The agent will then, on its next 5-minute fire:
+It then creates `/volume1/docker/gosscounselling.co.uk/{repo,staging}/` owned by
+`deploy:users`, clones the repo at `staging`, writes the two config files with
+the right `root:docker 0640` permissions, and offers a one-off agent fire as a
+smoke test. Take the smoke test — it is the fastest way to find out whether the
+signature verifies.
 
-1. pull `staging`,
+Two of its prompts open `$EDITOR` and both can be left as they are:
+
+- **the per-stack `staging.env`** — for compose-time `${VAR}` substitutions.
+  This stack has none: no host port to set and no OAuth secrets. Save it empty.
+- **`CF_API_TOKEN` / `CF_ZONE_IDS`** in the sites.d file — Cloudflare cache
+  purge. Staging is not behind Cloudflare, so leave both empty and the agent
+  skips purging entirely.
+
+Nothing else in the sites.d file needs touching. `SITE_SERVICE` defaults to
+`site`, which is what the compose file calls the container.
+
+## 2. What the agent will do
+
+On its next fire, and every 5–15 minutes after:
+
+1. pull `staging` in `/volume1/docker/gosscounselling.co.uk/repo`,
 2. cosign-verify `ghcr.io/den-frie-vilje/gosscounselling:staging-latest`
-   against the `den-frie-vilje/*` workflow identity,
-3. `docker compose pull && up -d --wait` if the digest moved.
+   against the `den-frie-vilje/*` build-and-sign workflow identity,
+3. if the digest moved, `docker compose pull && up -d --wait`, then recreate
+   just the `site` service.
 
-Nothing deploys if the signature does not verify — that is the point of the
-model, so if it stays down, check the agent log before assuming the image is
-bad.
+It fails closed: an unverifiable signature deploys nothing. So if the stack
+never comes up, read the agent log before suspecting the image —
+`/volume1/docker/nas-sites/` holds the agent state and its log.
 
 ## 3. DNS and the front door
 
@@ -89,6 +107,9 @@ matches the head of `staging`, the whole chain is working.
 
 Then re-run the failed deploy job so the verify step goes green and stays that
 way for future pushes.
+
+After this, the loop is: push to `staging` → CI builds and signs → the agent
+picks it up within about five minutes. Nothing else to do per deploy.
 
 ---
 
