@@ -140,10 +140,16 @@ section{padding:var(--section) 0}
 
 /* services as numbered rows */
 .rows{margin-top:52px;border-top:1px solid var(--line)}
-/* Each row has one destination, so the row is the link. */
-.row{min-width:0;display:grid;gap:14px 40px;padding:36px 0;border-bottom:1px solid var(--line);
-  text-decoration:none;color:inherit;transition:background-color .2s ease,padding .2s ease}
+/* Each row has one destination, so the row is the link.
+   The hover ground is pulled out sideways by exactly the container's own
+   gutter — negative margin, matching padding — so the text does not move but
+   the highlight breathes, and at narrow widths it runs clean to the screen
+   edge instead of stopping short of it. */
+.row{min-width:0;display:grid;gap:14px 40px;padding:36px 24px;margin-inline:-24px;
+  border-bottom:1px solid var(--line);
+  text-decoration:none;color:inherit;transition:background-color .2s ease}
 .row:hover{background:var(--mist)}
+.row:focus-visible{outline-offset:-3px}
 .row:focus-visible{outline:3px solid var(--teal);outline-offset:-3px}
 @media(prefers-reduced-motion:reduce){.row{transition:none}}
 @media(min-width:820px){.row{min-width:0;grid-template-columns:auto 1fr 1.5fr;align-items:start}}
