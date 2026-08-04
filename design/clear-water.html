@@ -53,13 +53,15 @@ nav a:hover{color:var(--teal)}
    t-shirt meets the band directly — at a flat #0b2a34 the two are 1.19:1 apart
    and the edge simply bleeds. There the ground lifts: mostly vertical but
    raked a little toward the lower left, which is where the near shoulder sits
-   and where the problem is worst. Against the lifted #17495a the shirt reads at
-   1.82:1, and the copy is unaffected — 9.83:1 for the headline, 5.05:1 for the
-   eyebrow, measured at the lightest stop. */
+   and where the problem is worst. The lightest stop is #236c84, which puts the
+   shirt at 3.02:1 instead of 1.19:1. The copy can take it because none of it
+   reaches down there — measured element by element against the gradient
+   evaluated under each one, the lightest ground under any hero text is
+   rgb(15,53,68). */
 .hero{color:#eaf3f5;padding:calc(var(--section)*.85) 0 0;position:relative;isolation:isolate;overflow:clip;
   background:var(--deep)}
 @media(max-width:879px){
-  .hero{background:linear-gradient(199deg,#0a2530 0%,#0b2a34 38%,#10394a 72%,#17495a 100%)}
+  .hero{background:linear-gradient(199deg,#0a2530 0%,#0b2a34 34%,#164b5d 72%,#236c84 100%)}
 }
 /* A very large, very quiet dark round behind the top left, so the corner has
    some weight and the eye starts there. */
@@ -148,12 +150,12 @@ section{padding:var(--section) 0}
    red-minus-blue — that is the warmth, measured rather than guessed. */
 .aboutPhoto{margin:0;width:min(300px,62vw);justify-self:start;position:relative;isolation:isolate}
 .aboutPhoto img{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:50%;display:block;
-  box-shadow:0 0 0 1px var(--line);filter:brightness(1.18)}
+  box-shadow:0 0 0 1px var(--line);filter:brightness(1.10)}
 @supports (mix-blend-mode:multiply){
   .aboutPhoto::before,.aboutPhoto::after{content:"";position:absolute;inset:0;border-radius:50%;
     pointer-events:none}
-  .aboutPhoto::before{background:#e0f6fa;mix-blend-mode:multiply;opacity:.30}
-  .aboutPhoto::after{background:#ffff73;mix-blend-mode:darken;opacity:.70}
+  .aboutPhoto::before{background:#e8f8fb;mix-blend-mode:multiply;opacity:.22}
+  .aboutPhoto::after{background:#ffffc3;mix-blend-mode:darken;opacity:.30}
 }
 
 /* fees */
@@ -262,7 +264,7 @@ footer a{color:#d3e6ea}
         directly — you'll be speaking to me, not to a receptionist.</p>
     </div>
     <figure class="heroFig">
-      <img src="assets/john-cutout-dark.webp?v15" alt="John Goss" width="1800" height="1452" fetchpriority="high">
+      <img src="assets/john-cutout-dark.webp?v16" alt="John Goss" width="1800" height="1452" fetchpriority="high">
     </figure>
   </div>
 </section>
@@ -351,7 +353,7 @@ footer a{color:#d3e6ea}
       </div>
     </div>
     <figure class="aboutPhoto">
-      <img src="assets/john-portrait-round.webp?v15" alt="John Goss" width="620" height="620" loading="lazy">
+      <img src="assets/john-portrait-round.webp?v16" alt="John Goss" width="620" height="620" loading="lazy">
     </figure>
   </div>
 </section>

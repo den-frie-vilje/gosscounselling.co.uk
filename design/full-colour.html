@@ -209,13 +209,17 @@ h2{font-size:clamp(30px,4.6vw,52px)}
 /* A toning, done entirely in CSS — the image file is untouched. Two overlays,
    each reaching one end of the tonal range:
 
-     multiply  scales each channel, so it tints toward the block's own teal
-               proportionally and BLACK STAYS BLACK (anything x 0 is 0) — the
-               shadows never lift the way a lighten layer made them
+     multiply  a very pale tint of the page's own hue. Multiply scales each
+               channel, so black stays black — but it also bites hardest where
+               the picture is brightest, so it is kept pale: at 50%% of a deeper
+               tint it was pulling 9.6 luminance out of his highlights and
+               cooling them by 5.2, which cancelled the warm layer entirely.
+
      darken    with R and G both at 255, so the layer can only ever pull the
-               BLUE channel — the lights warm and nothing gets darker. Measured:
-               highlights +20 red-minus-blue at -1.5 luminance, midtones and
-               shadows unchanged to two decimal places.
+               BLUE channel — the lights warm and nothing gets darker. Kept
+               deliberately shallow: at a blue limit of 115 it added 38 points
+               of yellowness to his face, which reads as jaundice rather than
+               warmth. At 195 it adds 2.1, which is a hint.
 
    Measured against the actual photograph: blacks -0.5, shadows -1.9, midtones
    -5.0, highlights -7.1 blue. */
@@ -224,8 +228,8 @@ h2{font-size:clamp(30px,4.6vw,52px)}
 @supports (mix-blend-mode:multiply){
   .aboutPhoto::before,.aboutPhoto::after{content:"";position:absolute;inset:0;border-radius:50%;
     pointer-events:none}
-  .aboutPhoto::before{background:#c4ece8;mix-blend-mode:multiply;opacity:.50}
-  .aboutPhoto::after{background:#ffff73;mix-blend-mode:darken;opacity:.70}
+  .aboutPhoto::before{background:#e4f4f1;mix-blend-mode:multiply;opacity:.28}
+  .aboutPhoto::after{background:#ffffc3;mix-blend-mode:darken;opacity:.30}
 }
 
 /* fees — rows, not cards */
@@ -389,7 +393,7 @@ footer a:hover{color:#fff}
         whichever feels easiest today.</p>
     </div>
     <figure class="heroFig">
-      <img src="assets/john-cutout.webp?v15" alt="John Goss" width="1800" height="1452" fetchpriority="high">
+      <img src="assets/john-cutout.webp?v16" alt="John Goss" width="1800" height="1452" fetchpriority="high">
     </figure>
   </div>
 </section>
@@ -495,7 +499,7 @@ footer a:hover{color:#fff}
         <a class="more" href="/about">More about me and how I work</a>
       </div>
       <figure class="aboutPhoto">
-        <img src="assets/john-portrait-round.webp?v15" alt="John Goss" width="620" height="620" loading="lazy">
+        <img src="assets/john-portrait-round.webp?v16" alt="John Goss" width="620" height="620" loading="lazy">
       </figure>
     </div>
   </div>
