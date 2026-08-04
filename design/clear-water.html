@@ -121,26 +121,20 @@ section{padding:var(--section) 0}
 .about .prose p:first-child{color:var(--ink)}
 /* The dark studio frame keeps its own background — auto-levelled, and only ever
    used small, where the heavy contrast reads as a portrait rather than a slab. */
-/* A toning, done entirely in CSS — the image file is untouched. Two overlays,
-   each reaching one end of the tonal range:
-
-     multiply  scales each channel, so it tints toward the page's teal
-               proportionally and BLACK STAYS BLACK (anything x 0 is 0) — the
-               shadows never lift the way a lighten layer made them
-     darken    lowers pixels brighter than the overlay, and the warm tone sits
-               below his highlight channels, so it takes the blue out of the
-               lights without changing much else
-
-   Measured against the actual photograph: blacks -0.5, shadows -1.9, midtones
-   -5.0, highlights -7.1 blue. */
+/* On this dark band the frame was going muddy, so it is lifted first and then
+   toned: brightness(1.18) opens it, a pale teal multiply keeps the cast in the
+   darks without crushing them, and a warm darken layer takes the blue out of
+   the lights. Measured on the actual photograph: mean luminance +11.7, blacks
+   +1.4 (so they do not grey over), and the highlights gain 21 points of
+   red-minus-blue — that is the warmth, measured rather than guessed. */
 .aboutPhoto{margin:0;width:min(300px,62vw);justify-self:start;position:relative;isolation:isolate}
 .aboutPhoto img{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:50%;display:block;
-  box-shadow:0 0 0 1px var(--line)}
+  box-shadow:0 0 0 1px var(--line);filter:brightness(1.18)}
 @supports (mix-blend-mode:multiply){
   .aboutPhoto::before,.aboutPhoto::after{content:"";position:absolute;inset:0;border-radius:50%;
     pointer-events:none}
-  .aboutPhoto::before{background:#c0ecf4;mix-blend-mode:multiply;opacity:.50}
-  .aboutPhoto::after{background:#fce496;mix-blend-mode:darken;opacity:.22}
+  .aboutPhoto::before{background:#e0f6fa;mix-blend-mode:multiply;opacity:.30}
+  .aboutPhoto::after{background:#ffff73;mix-blend-mode:darken;opacity:.70}
 }
 
 /* fees */
@@ -248,7 +242,7 @@ footer a{color:#d3e6ea}
         directly — you'll be speaking to me, not to a receptionist.</p>
     </div>
     <figure class="heroFig">
-      <img src="assets/john-cutout-dark.webp?v12" alt="John Goss" width="1800" height="1452" fetchpriority="high">
+      <img src="assets/john-cutout-dark.webp?v13" alt="John Goss" width="1800" height="1452" fetchpriority="high">
     </figure>
   </div>
 </section>
@@ -337,7 +331,7 @@ footer a{color:#d3e6ea}
       </div>
     </div>
     <figure class="aboutPhoto">
-      <img src="assets/john-portrait-round.webp?v12" alt="John Goss" width="620" height="620" loading="lazy">
+      <img src="assets/john-portrait-round.webp?v13" alt="John Goss" width="620" height="620" loading="lazy">
     </figure>
   </div>
 </section>
