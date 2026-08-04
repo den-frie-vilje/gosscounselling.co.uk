@@ -36,7 +36,7 @@ a{color:var(--teal)}
 .skip{position:absolute;left:-9999px}
 .skip:focus{left:12px;top:12px;z-index:99;background:var(--deep);color:#fff;padding:10px 16px}
 
-header{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+header{position:sticky;top:0;z-index:20;background:var(--white);border-bottom:1px solid var(--line)}
 .bar{display:flex;align-items:center;gap:20px;min-height:72px;flex-wrap:nowrap}
 .brand{font-family:var(--display);font-weight:700;font-size:19px;text-decoration:none;color:var(--ink);line-height:1.2;letter-spacing:-.01em;white-space:nowrap}
 .brand span{display:block;font-family:var(--sans);font-size:12px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:2px;white-space:nowrap}
@@ -83,9 +83,9 @@ nav a:hover{color:var(--teal)}
 }
 .heroGrid{display:grid;gap:44px;align-items:center}
 @media(min-width:880px){.heroGrid{grid-template-columns:1.1fr .9fr;gap:64px}}
-.eyebrow{font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:#7fc4d8;font-weight:600;margin:0 0 20px}
+.eyebrow{font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:#c8ecf5;font-weight:600;margin:0 0 20px}
 .hero h1{font-size:clamp(34px,5.2vw,56px);color:#fff}
-.hero .lede{font-size:clamp(18px,2vw,21px);color:#c3d8de;max-width:44ch;margin:22px 0 0}
+.hero .lede{font-size:clamp(18px,2vw,21px);color:#dbeaee;max-width:44ch;margin:22px 0 0}
 .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:32px}
 .btn{display:inline-flex;align-items:center;gap:9px;text-decoration:none;font-weight:600;font-size:16.5px;
   padding:14px 24px;border-radius:4px;border:2px solid transparent}
@@ -93,8 +93,8 @@ nav a:hover{color:var(--teal)}
 .btn-primary:hover{background:#3fb3d0}
 .btn-ghost{border-color:#5f97a8;color:#eaf3f5}
 .btn-ghost:hover{background:rgba(255,255,255,.09)}
-.reassure{margin-top:18px;font-size:15px;color:#a8c6ce}
-.hero .reassure a{color:#9ddcee}
+.reassure{margin-top:18px;font-size:15px;color:#d8e9ee}
+.hero .reassure a{color:#c9ecf7}
 /* Cutout: his shoulders are cut by the edges of the source photograph, so the
    image is always wider than its frame — the visible cut is made by the frame
    on desktop and by the viewport on mobile. Bottom-anchored: he stands on the
@@ -140,7 +140,12 @@ section{padding:var(--section) 0}
 
 /* services as numbered rows */
 .rows{margin-top:52px;border-top:1px solid var(--line)}
-.row{min-width:0;display:grid;gap:14px 40px;padding:36px 0;border-bottom:1px solid var(--line)}
+/* Each row has one destination, so the row is the link. */
+.row{min-width:0;display:grid;gap:14px 40px;padding:36px 0;border-bottom:1px solid var(--line);
+  text-decoration:none;color:inherit;transition:background-color .2s ease,padding .2s ease}
+.row:hover{background:var(--mist)}
+.row:focus-visible{outline:3px solid var(--teal);outline-offset:-3px}
+@media(prefers-reduced-motion:reduce){.row{transition:none}}
 @media(min-width:820px){.row{min-width:0;grid-template-columns:auto 1fr 1.5fr;align-items:start}}
 .row .num{font-family:var(--display);font-weight:700;font-size:15px;color:var(--gold);padding-top:6px;font-variant-numeric:tabular-nums}
 .row h3{font-size:24px}
@@ -148,7 +153,7 @@ section{padding:var(--section) 0}
 .row .txt p{margin:0;color:var(--muted)}
 .row .txt p+p{margin-top:14px}
 .row .more{display:inline-block;margin-top:16px;font-weight:600;font-size:15.5px;color:var(--teal);text-decoration:none;text-wrap:pretty}
-.row .more:hover{text-decoration:underline;text-underline-offset:4px}
+.row:hover .more{text-decoration:underline;text-underline-offset:4px}
 
 /* about */
 .about{display:grid;gap:44px;align-items:start}
@@ -203,14 +208,14 @@ section{padding:var(--section) 0}
 
 /* faq */
 .faqlist{margin-top:40px;border-top:1px solid var(--line)}
-details{border-bottom:1px solid var(--line)}
-details summary{cursor:pointer;list-style:none;padding:22px 44px 22px 0;position:relative;
+.faqlist details{border-bottom:1px solid var(--line)}
+.faqlist details summary{cursor:pointer;list-style:none;padding:22px 44px 22px 0;position:relative;
   font-family:var(--display);font-size:19px;font-weight:600}
-details summary::-webkit-details-marker{display:none}
-details summary::after{content:"";position:absolute;right:8px;top:29px;width:14px;height:2px;background:var(--teal)}
-details summary::before{content:"";position:absolute;right:14px;top:23px;width:2px;height:14px;background:var(--teal)}
-details[open] summary::before{display:none}
-details .body{padding:0 0 24px;color:var(--muted);max-width:66ch}
+.faqlist details summary::-webkit-details-marker{display:none}
+.faqlist details summary::after{content:"";position:absolute;right:8px;top:29px;width:14px;height:2px;background:var(--teal)}
+.faqlist details summary::before{content:"";position:absolute;right:14px;top:23px;width:2px;height:14px;background:var(--teal)}
+.faqlist details[open] summary::before{display:none}
+.faqlist details .body{padding:0 0 24px;color:var(--muted);max-width:66ch}
 details .body p{margin:0 0 14px}
 details .body ul{margin:0 0 14px;padding-left:20px}
 
@@ -241,6 +246,69 @@ footer{background:var(--deep);color:#9fbcc4;font-size:14.5px;padding:0 0 56px}
 footer .wrap{border-top:1px solid rgba(255,255,255,.15);padding-top:28px;display:flex;flex-wrap:wrap;gap:12px 32px}
 footer a{color:#d3e6ea}
 @media(max-width:419px){.brand span{display:none}.bar{gap:12px}}
+
+/* ---- navigation: a burger to a full-page menu below 1000px, a heavy bar above ----
+   The full-page menu carries the contact details as well as the links, because on
+   a phone "how do I reach him" and "where do I go" are the same question. It is a
+   native <details>, so it works with the keyboard and without script. */
+.sitenav{margin-left:auto}
+/* No frame, no border, no circle — the mark alone. The 46px box is only the
+   touch target, which stays at the WCAG minimum without being drawn. */
+.sitenav summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  width:46px;height:46px;background:transparent;border:0;color:inherit}
+.sitenav summary::-webkit-details-marker{display:none}
+/* When the panel is up it covers the header, so the control comes with it —
+   otherwise the X is behind the menu and there is no way out. */
+.sitenav[open] summary{position:fixed;top:14px;right:14px;z-index:70;background:transparent;border:0}
+@media(min-width:600px){.sitenav[open] summary{top:24px;right:28px}}
+.sitenav .burger{display:inline-block;width:22px;height:2px;background:currentColor;position:relative;
+  transition:background-color .18s ease .16s}
+.sitenav .burger::before,.sitenav .burger::after{content:"";position:absolute;left:0;width:22px;height:2px;
+  background:currentColor;transition:top .18s ease .16s,transform .2s ease}
+.sitenav .burger::before{top:-7px}
+.sitenav .burger::after{top:7px}
+.sitenav[open] .burger{background:transparent;transition:background-color .12s ease}
+.sitenav[open] .burger::before{top:0;transform:rotate(45deg);transition:top .18s ease,transform .22s ease .16s}
+.sitenav[open] .burger::after{top:0;transform:rotate(-45deg);transition:top .18s ease,transform .22s ease .16s}
+@media(prefers-reduced-motion:reduce){.sitenav .burger,.sitenav .burger::before,.sitenav .burger::after{transition:none}}
+.navPanel{position:fixed;inset:0;z-index:60;background:var(--white);overflow-y:auto;
+  padding:96px 0 56px;-webkit-overflow-scrolling:touch}
+.navPanel ul{list-style:none;margin:0;padding:0}
+.navPanel li+li{border-top:1px solid var(--line)}
+.navPanel a{display:block;padding:18px 0;text-decoration:none;color:var(--ink);font-family:var(--display);
+  font-size:clamp(24px,6vw,34px);font-weight:600;line-height:1.15}
+.navPanel a:hover{color:var(--teal)}
+.navContact{margin-top:40px;padding-top:28px;border-top:2px solid var(--line);display:grid;gap:14px}
+.navContact .k{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);font-weight:700}
+.navContact a{font-size:clamp(19px,4.4vw,24px);padding:0;font-weight:700}
+.navContact .place{color:var(--muted);font-size:16px}
+@media(min-width:1000px){
+  .sitenav{display:none}
+  nav.heavy{margin-left:auto;display:block}
+  nav.heavy ul{display:flex;gap:28px;list-style:none;margin:0;padding:0;align-items:center}
+  nav.heavy a{font-size:16px;font-weight:700;letter-spacing:.02em;text-decoration:none;color:var(--ink);
+    white-space:nowrap;padding:10px 0;border-bottom:3px solid transparent}
+  nav.heavy a:hover{border-bottom-color:var(--teal)}
+  nav.heavy .navcta a{border:0;background:var(--teal);color:#fff;padding:12px 20px}
+  nav.heavy .navcta a:hover{filter:brightness(1.08)}
+}
+@media(max-width:999px){nav.heavy{display:none}}
+
+/* ---- staggered header: the call button is the last thing to go ----
+   >= 1180px  brand + full nav + call
+   860-1179px  brand + burger + "Call 07776 153 426"
+   520-859px    brand + burger + "Call"
+   < 520px      brand + burger only, because at that width the number costs the
+                brand its second line and the burger its breathing room */
+.barcta{margin-left:auto;display:none;align-items:center;background:var(--teal);color:#fff;text-decoration:none;
+  font-weight:700;font-size:15.5px;padding:11px 18px;border-radius:4px;white-space:nowrap;flex:none}
+.barcta:hover{background:var(--deep)}
+.barcta .short{display:none}
+@media(min-width:520px){.barcta{display:inline-flex}.barcta .short{display:inline}.barcta .long{display:none}}
+@media(min-width:860px){.barcta .short{display:none}.barcta .long{display:inline}}
+@media(min-width:1000px){.barcta{display:none}}
+.sitenav{margin-left:0}
+@media(max-width:519px){.sitenav{margin-left:auto}}
 </style>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
@@ -279,13 +347,37 @@ footer a{color:#d3e6ea}
 <header>
   <div class="wrap bar">
     <a class="brand" href="#top">John Goss<span>Counselling &amp; Supervision</span></a>
-    <nav aria-label="Sections">
-      <a data-nav="help" href="#help">How I can help</a>
-      <a data-nav="fees" href="#fees">Fees</a>
-      <a data-nav="about" href="#about">About me</a>
-      <a data-nav="faq" href="#faq">Questions</a>
+    <nav class="heavy" aria-label="Main">
+      <ul>
+        <li><a href="#help">How I can help</a></li>
+        <li><a href="#fees">Fees</a></li>
+        <li><a href="#about">About me</a></li>
+        <li><a href="#faq">Questions</a></li>
+        <li class="navcta"><a href="tel:+447776153426">07776 153 426</a></li>
+      </ul>
     </nav>
-    <a class="headcta" href="tel:+447776153426"><span class="cta-short">Call</span><span class="cta-long">07776 153 426</span></a>
+    <a class="barcta" href="tel:+447776153426"><span class="short">Call</span><span class="long">Call 07776 153 426</span></a>
+    <details class="sitenav">
+      <summary aria-label="Open menu"><span class="burger" aria-hidden="true"></span></summary>
+      <div class="navPanel">
+        <div class="wrap">
+          <ul>
+            <li><a href="#help">How I can help</a></li>
+            <li><a href="#fees">Fees</a></li>
+            <li><a href="#about">About me</a></li>
+            <li><a href="#faq">Questions</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+          <div class="navContact">
+            <span class="k">Contact John</span>
+            <a href="tel:+447776153426">07776 153 426</a>
+            <a href="mailto:info@gosscounselling.co.uk">info@gosscounselling.co.uk</a>
+            <a href="https://wa.me/447776153426">WhatsApp</a>
+            <span class="place">Bletchley, Milton Keynes MK3 &middot; and online</span>
+          </div>
+        </div>
+      </div>
+    </details>
   </div>
 </header>
 
@@ -310,7 +402,7 @@ footer a{color:#d3e6ea}
         directly — you'll be speaking to me, not to a receptionist.</p>
     </div>
     <figure class="heroFig">
-      <img src="assets/john-cutout-dark.webp?v17" alt="John Goss" width="1800" height="1452" fetchpriority="high">
+      <img src="assets/john-cutout-dark.webp?v18" alt="John Goss" width="1800" height="1452" fetchpriority="high">
     </figure>
   </div>
 </section>
@@ -352,7 +444,7 @@ footer a{color:#d3e6ea}
         These are the four ways I usually work.</p>
     </div>
     <div class="rows">
-      <article class="row">
+      <a class="row" href="/counselling/individual">
         <div class="num">01</div>
         <div><h3>Individual counselling</h3><span class="who">From age 11 upwards</span></div>
         <div class="txt">
@@ -360,19 +452,19 @@ footer a{color:#d3e6ea}
             depression or bereavement. You might be looking to explore your relationship with
             pornography or sex.</p>
           <p>Whatever brings you to counselling, you are assured of a space to talk openly about it.</p>
-          <a class="more" href="/counselling/individual">More about individual counselling →</a>
+          <span class="more">More about individual counselling →</span>
         </div>
-      </article>
-      <article class="row">
+      </a>
+      <a class="row" href="/counselling/relationship">
         <div class="num">02</div>
         <div><h3>Relationship counselling</h3><span class="who">Couples, throuples, poly dynamics</span></div>
         <div class="txt">
           <p>Relationship counselling puts the focus on the relationship itself, whatever shape it
             takes. You won't need to explain or justify that shape to me before we start.</p>
-          <a class="more" href="/counselling/relationship">More about relationship counselling →</a>
+          <span class="more">More about relationship counselling →</span>
         </div>
-      </article>
-      <article class="row">
+      </a>
+      <a class="row" href="/counselling/psychosexual-therapy">
         <div class="num">03</div>
         <div><h3>Psychosexual therapy</h3><span class="who">Also called sex therapy</span></div>
         <div class="txt">
@@ -381,10 +473,10 @@ footer a{color:#d3e6ea}
             vaginismus, orgasm difficulties, vulvodynia.</p>
           <p>People also come to talk about porn use, intimacy with a partner or partners,
             fetishes, or exploring kink.</p>
-          <a class="more" href="/counselling/psychosexual-therapy">More about psychosexual therapy →</a>
+          <span class="more">More about psychosexual therapy →</span>
         </div>
-      </article>
-      <article class="row">
+      </a>
+      <a class="row" href="/supervision">
         <div class="num">04</div>
         <div><h3>Clinical supervision</h3><span class="who">For therapists &amp; helping professionals</span></div>
         <div class="txt">
@@ -396,9 +488,9 @@ footer a{color:#d3e6ea}
             Member, so the hours count towards your professional requirements. If you work with
             sexual behaviour, harmful sexual behaviour or risk, that is territory I have specific
             training in — see the qualifications below.</p>
-          <a class="more" href="/supervision">More about clinical supervision →</a>
+          <span class="more">More about clinical supervision →</span>
         </div>
-      </article>
+      </a>
     </div>
   </div>
 </section>
@@ -420,7 +512,7 @@ footer a{color:#d3e6ea}
       </div>
     </div>
     <figure class="aboutPhoto">
-      <img src="assets/john-portrait-round.webp?v17" alt="John Goss" width="620" height="620" loading="lazy">
+      <img src="assets/john-portrait-round.webp?v18" alt="John Goss" width="620" height="620" loading="lazy">
     </figure>
   </div>
 </section>

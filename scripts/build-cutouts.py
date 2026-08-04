@@ -19,17 +19,15 @@ Three assets come out in design/assets/:
                           narrower than the image: the crop is made by the frame or the viewport,
                           never by a line floating mid-section.
 
-  john-cutout-dark.webp   the same figure with a hard, honest matte: subject
-                          colour in every pixel and almost no partial coverage,
-                          so it composites correctly against any ground rather
-                          than being tuned to one. A matte pulled from a white
-                          backdrop carries light wrap on the silhouette, which glows when
-                          composited onto a dark band — the same problem as green spill. Treated
-                          the standard keyer way: colour edge-extend (partially covered pixels
-                          take the nearest fully opaque colour, so no backdrop-contaminated
-                          colour survives), a ~0.6px matte choke, and a narrow negative light
-                          wrap. Verified by compositing on the real band colour and profiling
-                          luminance inward: it rises monotonically, so no halo, no dark outline.
+  john-cutout-dark.webp   the same figure, same matte, with the white cyclorama taken back
+                          out of his COLOUR so `F*a + ground*(1-a)` is right on any ground.
+                          Two published steps, both in solid_matte() below: fast multi-level
+                          foreground estimation (Germer et al., ICPR 2020, via PyMatting) for
+                          the partially covered pixels, then an inverse light wrap — a fitted
+                          per-pixel gain 1/(1+psi) in linear light — for the real rim light the
+                          backdrop threw onto his shoulders. The matte is the client's,
+                          verbatim: no choke, no dilate, so the silhouette and the retouched
+                          crown cannot move. Needs `python3 -m pip install pymatting`.
 
   john-portrait-round.webp  the dark studio frame, which KEEPS its own background, graded and
                           cropped square on his face for circular use at small sizes.
@@ -42,8 +40,8 @@ Three assets come out in design/assets/:
                           (median 38 -> 55) and leaving the highlights where they were.
 """
 from PIL import Image
-import numpy as np, os, sys
-from scipy.ndimage import distance_transform_edt
+import numpy as np, os, sys, io
+from scipy.ndimage import distance_transform_edt, gaussian_filter, zoom
 from scipy.interpolate import PchipInterpolator
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -63,77 +61,215 @@ def knockout():
     print(f"  knockout: {im.size[0]}x{im.size[1]}")
 
 
-def solid_matte():
-    """One asset that composites correctly against ANY ground, without losing him.
+def _srgb_to_linear(x):
+    x = np.clip(x, 0.0, 255.0) / 255.0
+    return np.where(x <= 0.04045, x / 12.92, ((x + 0.055) / 1.055) ** 2.4)
 
-    The point is to make the matte honest rather than tuned to one background:
-    if every pixel carries the SUBJECT's colour, then
-    `out = subject x alpha + ground x (1 - alpha)` is correct wherever it lands.
 
-    Two things must not be done in the name of that, both learned the hard way:
+def _linear_to_srgb(y):
+    y = np.clip(y, 0.0, 1.0)
+    return np.where(y <= 0.0031308, y * 12.92, 1.055 * y ** (1 / 2.4) - 0.055) * 255.0
 
-      * do not choke hard. Hair and stubble live at alpha 0.2-0.5; a 0.30 choke
-        deletes them and he loses his edge entirely.
-      * do not fill the fringe from the nearest opaque pixel by straight
-        distance. Where the earlobe meets the skull the nearest opaque pixel is
-        across the crevice — bright cheek — so the gap fills with white blips.
-        Colour is grown outward one ring at a time instead, so it travels along
-        the surface and each fringe pixel inherits from its own neighbourhood.
+
+def _geodesic_extend(vals, known, mask, scale=2, schedule=((3.0, 70), (2.0, 90), (1.2, 90))):
+    """Diffuse `vals` outward from `known` across `mask` by normalised convolution.
+
+    Geodesic, not Euclidean: the value travels *through* the mask, so a pixel in the
+    ear/skull crevice inherits from its own surface and not from the bright cheek on
+    the far side of the gap. That crossing-the-gap mistake is what put white blips in
+    the concavities in earlier attempts.
     """
-    m = np.array(Image.open(f"{OUT}/john-cutout.webp").convert("RGBA")).astype(np.float32)
-    A = m[..., 3:4] / 255.0
-    RGB = m[..., :3].copy()
-    known = A[..., 0] >= 0.92
-    filled = RGB.copy()
-    have = known.copy()
-    # grow colour outward one ring at a time — along the surface, not across gaps
-    for _ in range(14):
-        h = have.astype(np.float32)
-        num = np.zeros_like(filled)
-        den = np.zeros_like(h)
-        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)):
-            wgt = 1.0 if abs(dy) + abs(dx) == 1 else 0.5
-            num += np.roll(np.roll(filled * h[..., None], dy, 0), dx, 1) * wgt
-            den += np.roll(np.roll(h, dy, 0), dx, 1) * wgt
-        grow = (den > 0) & (~have)
-        filled[grow] = (num[grow] / den[grow][..., None])
-        have |= grow
-        if have.all():
-            break
-    # keep his own colour where the pixel is essentially opaque; take the grown
-    # colour where it is not, since that is where the backdrop contaminated it
-    w = np.clip((A - 0.10) / 0.82, 0, 1)
-    RGB2 = RGB * w + filled * (1 - w)
-    A2 = np.clip((A - 0.05) / 0.95, 0, 1)          # a whisker of choke, no more
-    Image.fromarray(np.dstack([np.clip(RGB2, 0, 255), np.clip(A2 * 255, 0, 255)]).astype(np.uint8),
-                    "RGBA").save(f"{OUT}/john-cutout-dark.webp", "WEBP",
-                                 quality=92, alpha_quality=100, exact=True, method=6)
+    H, W = mask.shape
+    k = known[::scale, ::scale].astype(np.float64)
+    mk = mask[::scale, ::scale].astype(np.float64)
+    src = vals[::scale, ::scale]
+    cur = src * k
+    for sigma, iters in schedule:
+        for _ in range(iters):
+            u = gaussian_filter(cur * mk, sigma, mode="nearest")
+            w = gaussian_filter(mk, sigma, mode="nearest")
+            cur = np.where(k > 0.5, src, u / np.maximum(w, 1e-12))
+    out = zoom(cur, (H / cur.shape[0], W / cur.shape[1]), order=1)
+    return out[:H, :W]
 
-    d = np.array(Image.open(f"{OUT}/john-cutout-dark.webp").convert("RGBA")).astype(np.float32)
-    aa = d[..., 3:4] / 255.0
-    partial = ((aa > 0.02) & (aa < 0.98)).mean() * 100
-    orig_partial = ((A > 0.02) & (A < 0.98)).mean() * 100
-    print("  partial coverage kept: %.2f%% of pixels (original matte %.2f%%) — that is the hair"
-          % (partial, orig_partial))
-    # blips: fringe pixels far brighter than their own neighbourhood
-    fringe = (aa[..., 0] > 0.05) & (aa[..., 0] < 0.95)
-    lumd = 0.2126 * d[..., 0] + 0.7152 * d[..., 1] + 0.0722 * d[..., 2]
-    loc = np.zeros_like(lumd)
-    for dy in (-2, -1, 0, 1, 2):
-        for dx in (-2, -1, 0, 1, 2):
-            loc += np.roll(np.roll(lumd, dy, 0), dx, 1)
-    loc /= 25.0
-    blips = int((fringe & (lumd - loc > 45)).sum())
-    print("  bright specks in the fringe: %d px" % blips)
-    for bg in [(7, 32, 40), (30, 98, 120)]:
-        bgv = np.array(bg, float)
-        comp = d[..., :3] * aa + bgv * (1 - aa)
-        cl = 0.2126 * comp[..., 0] + 0.7152 * comp[..., 1] + 0.0722 * comp[..., 2]
-        dd = distance_transform_edt(aa[..., 0] > 0.5)
-        prof = [float(cl[(dd >= lo) & (dd < hi) & (aa[..., 0] > 0.5)].mean())
-                for lo, hi in [(1, 2), (2, 4), (4, 8), (8, 20)]]
-        print("    on rgb%-15s edge %s -> rim vs interior %+.1f"
-              % (str(tuple(bg)), " ".join(f"{v:.0f}" for v in prof), prof[0] - prof[-1]))
+
+def solid_matte():
+    """The dark-ground cutout: straight alpha that is correct on ANY background.
+
+    `out = F * alpha + ground * (1 - alpha)` is only right if F is the SUBJECT's own
+    colour — not the colour he had in front of a white cyclorama. Two separate things
+    contaminate F here, and the literature treats them as two separate problems:
+
+    1. MATTE CONTAMINATION — partially covered pixels are a mixture of him and the
+       backdrop. Solved by estimating F from the plate and the matte, using
+       "Fast Multi-Level Foreground Estimation" (Germer, Uelwer, Conrad & Harmeling,
+       ICPR 2020, arXiv:2006.14970), as shipped in PyMatting
+       (`pymatting.estimate_foreground_ml`). It minimises Levin, Lischinski & Weiss's
+       closed-form F/B colour cost ("A Closed-Form Solution to Natural Image Matting",
+       PAMI 30(2) 2008, eq. 2) — the compositing residual plus alpha-gradient-weighted
+       smoothness on F and B — as a 2x2 local solve run over an image pyramid, so
+       foreground colour propagates a long way into the transparent region.
+
+       This is what replaces the hand-rolled fills. It is not a fill: nothing is
+       chosen by distance, so the earlobe/skull concavity cannot inherit the cheek
+       across the gap, and nothing is blended toward a chosen ground, so the asset is
+       not tuned to one background.
+
+    2. BACKDROP RIM LIGHT — the white cyc is a large area source and threw real light
+       onto his silhouette. It is in the plate, so unpremultiplying cannot touch it.
+       Smith & Blinn ("Blue Screen Matting", SIGGRAPH 96, "Blue Spill") model exactly
+       this as an extra additive layer alpha_s * C_k carried by the foreground, and
+       leave it open. With a WHITE backing the usual Vlahos/Ultimatte channel-
+       difference despill degenerates — the spill is achromatic, so there is no hue to
+       key on — and only the SPATIAL signature is left. Nuke's LightWrap builds that
+       signature the other way round: blur the matte, multiply by the backdrop, add.
+       So we invert it.
+
+       Illumination is additive and albedo is multiplicative, so in linear light
+           F_observed = rho * (E_key + E_backdrop),  F_wanted = rho * E_key
+           F_wanted = F_observed / (1 + psi),        psi = E_backdrop / E_key
+       A per-pixel GAIN. That is the de-lighting formulation used for photogrammetry
+       textures (Unity Labs / Lagarde, De-Lighting Tool) and the shading half of an
+       intrinsic decomposition (Aksoy et al., "Colorful Diffuse Intrinsic Image
+       Decomposition in the Wild", SIGGRAPH Asia 2024) — divide the illumination out,
+       leave the albedo alone. Because it is a gain, hair and stubble keep their
+       contrast and hue exactly; a blunt subtraction would flatten them.
+
+       psi is fitted, not dialled: the excess of measured luminance over the interior
+       shading (extrapolated geodesically out to the silhouette) is regressed onto two
+       LightWrap kernels — Gaussian blurs of (1 - alpha) at 6px and 30px — with the
+       amplitudes smoothed along the silhouette so only the low-frequency lighting
+       term is taken and per-strand detail is not. psi is forced to zero by 55px in,
+       so the interior of the shirt is bit-identical to the master.
+
+    The matte itself is NOT touched: alpha is the client's, verbatim. No choke — hair
+    lives at alpha 0.2-0.5 and a choke deletes it — and no dilate, so the silhouette
+    and the retouched crown are unchanged by construction.
+    """
+    try:
+        from pymatting import estimate_foreground_ml
+    except ImportError:
+        sys.exit("solid_matte needs pymatting:  python3 -m pip install pymatting")
+
+    m = np.array(Image.open(f"{OUT}/john-cutout.webp").convert("RGBA")).astype(np.float64)
+    A = np.clip(m[..., 3] / 255.0, 0, 1)
+    H, W = A.shape
+    master_rgb = m[..., :3]
+
+    # -- the observed image I: the untouched plate, aligned on the bottom edge --------
+    plate = np.array(Image.open(f"{SRC}/John-Goss-1.jpg").convert("RGB")).astype(np.float64)
+    top = H - plate.shape[0]
+    I = np.full((H, W, 3), 255.0)                     # blown-out white cyc, measured 255
+    I[top:top + plate.shape[0]] = plate
+    core = A > 0.5
+    D = distance_transform_edt(core)
+    DREF, SIG_NEAR, SIG_WIDE, SIG_FIT, PSI_MAX = 55.0, 6.0, 30.0, 40.0, 3.0
+    # The client's file is the authority wherever the backdrop cannot have reached: on
+    # solid pixels, deep inside the figure, and in the crown he painted above the plate.
+    settled = (A > 0.995) | (D >= DREF)
+    settled[:top] |= A[:top] > 0.02
+    I[settled] = master_rgb[settled]
+
+    # -- 1. foreground colour estimation (Germer et al. 2020) ------------------------
+    F = estimate_foreground_ml(np.clip(I / 255.0, 0, 1), A,
+                               regularization=5e-3, gradient_weight=0.1) * 255.0
+    F[settled] = I[settled]                           # alpha == 1 => F == I, exactly
+
+    # -- 2. inverse light wrap: fit psi = E_backdrop / E_key, divide it out -----------
+    Flin = _srgb_to_linear(F)
+    Y = (Flin * np.array([0.2126, 0.7152, 0.0722])).sum(-1)
+    # what the shading would be with no backdrop: the interior, pushed out to the edge
+    Ybase = np.maximum(_geodesic_extend(Y, core & (D >= DREF), core), 1e-6)
+    excess = np.clip(np.where(core, Y / Ybase - 1.0, 0.0), -1.0, 8.0)
+
+    W1 = np.clip(2.0 * gaussian_filter(1.0 - A, SIG_NEAR, mode="nearest"), 0, 1)
+    W2 = np.clip(2.0 * gaussian_filter(1.0 - A, SIG_WIDE, mode="nearest"), 0, 1)
+    fit = (core & (D < DREF * 2)).astype(np.float64)
+    G = lambda x: gaussian_filter(x, SIG_FIT, mode="nearest")
+    M11, M12, M22 = G(W1 * W1 * fit) + 1e-3, G(W1 * W2 * fit), G(W2 * W2 * fit) + 1e-3
+    b1, b2 = G(excess * W1 * fit), G(excess * W2 * fit)
+    det = M11 * M22 - M12 * M12
+    a1 = np.where(np.abs(det) > 1e-12, (M22 * b1 - M12 * b2) / det, 0.0)
+    a2 = np.where(np.abs(det) > 1e-12, (M11 * b2 - M12 * b1) / det, 0.0)
+    psi = np.clip(a1 * W1 + a2 * W2, 0.0, PSI_MAX)
+    t = np.clip((DREF - D) / (DREF * 0.35), 0, 1)      # hard off by DREF: interior untouched
+    psi = gaussian_filter(psi, 8.0, mode="nearest") * (t * t * (3 - 2 * t))
+    Fd = np.clip(_linear_to_srgb(Flin / (1.0 + psi)[..., None]), 0, 255)
+
+    Image.fromarray(np.dstack([Fd, A * 255.0]).round().astype(np.uint8), "RGBA") \
+         .save(f"{OUT}/john-cutout-dark.webp", "WEBP",
+               quality=92, alpha_quality=100, exact=True, method=6)
+    _verify_solid_matte(master_rgb, A, F, Fd, psi, D, core)
+
+
+def _verify_solid_matte(master_rgb, A, F, Fd, psi, D, core):
+    """Every number the brief asks for, measured on the file that was just written."""
+    d = np.array(Image.open(f"{OUT}/john-cutout-dark.webp").convert("RGBA")).astype(np.float64)
+    aa, rgb = d[..., 3] / 255.0, d[..., :3]
+    H, W = aa.shape
+    L = lambda x: 0.2126 * x[..., 0] + 0.7152 * x[..., 1] + 0.0722 * x[..., 2]
+
+    # -- matte: kept verbatim, so hair survives and the silhouette cannot have moved --
+    print("  partial coverage: %.2f%% of pixels (master %.2f%%) — the hair band is intact"
+          % (((aa > 0.02) & (aa < 0.98)).mean() * 100, ((A > 0.02) & (A < 0.98)).mean() * 100))
+    print("  alpha vs master: max abs difference %d/255 over %d px"
+          % (np.abs(aa - A).max() * 255, aa.size))
+    col = np.where((A > 0.02).any(0), (A > 0.02).argmax(0), -1)
+    col2 = np.where((aa > 0.02).any(0), (aa > 0.02).argmax(0), -1)
+    print("  silhouette + crown: per-column top edge differs on %d of %d columns (max %d px)"
+          % (int((col != col2).sum()), W, int(np.abs(col - col2).max())))
+
+    # -- bright specks in the fringe (pixel far brighter than its own 5x5) ------------
+    def specks(img, alpha, region=None):
+        fr = (alpha > 0.05) & (alpha < 0.95)
+        if region is not None:
+            fr = fr & region
+        lum = L(img)
+        loc = sum(np.roll(np.roll(lum, dy, 0), dx, 1)
+                  for dy in (-2, -1, 0, 1, 2) for dx in (-2, -1, 0, 1, 2)) / 25.0
+        return int((fr & (lum - loc > 45)).sum())
+
+    ear = np.zeros((H, W), bool)                      # where the earlobes meet the skull
+    ear[560:700, 480:760] = True
+    ear[560:700, 1180:1460] = True
+    print("  bright specks in the fringe: %d px (master %d)"
+          % (specks(rgb, aa), specks(master_rgb, A)))
+    print("  bright specks in the ear/skull concavities: %d px (master %d)"
+          % (specks(rgb, aa, ear), specks(master_rgb, A, ear)))
+
+    # -- composites: luminance by depth into the silhouette, three grounds ------------
+    dd = distance_transform_edt(aa > 0.5)
+    bands = [(1, 2), (2, 4), (4, 8), (8, 20)]
+    for bg in [(7, 32, 40), (30, 98, 120), (247, 244, 238)]:
+        for tag, img, al in (("master", master_rgb, A), ("new   ", rgb, aa)):
+            cl = L(img * al[..., None] + np.array(bg, float) * (1 - al[..., None]))
+            p = [float(cl[(dd >= lo) & (dd < hi) & (aa > 0.5)].mean()) for lo, hi in bands]
+            print("    on rgb%-16s %s  1px %s  rim vs 8-20px %+6.1f"
+                  % (str(tuple(bg)), tag, " ".join("%5.1f" % v for v in p), p[0] - p[-1]))
+
+    # -- shoulder rim: measured on the shoulders only, before and after ---------------
+    rows, cols = np.arange(H)[:, None], np.arange(W)[None, :]
+    shoulder = (aa > 0.9) & (rows > 1010)
+    print("  shoulder rim, mean luminance by depth (the backdrop's own rim light):")
+    for name, sel in (("near shoulder (left of frame)", shoulder & (cols < 880)),
+                      ("far shoulder                 ", shoulder & (cols >= 880))):
+        for tag, img in (("before", F), ("after ", rgb)):
+            p = [float(L(img)[sel & (dd >= lo) & (dd < hi)].mean())
+                 for lo, hi in [(1, 4), (4, 8), (8, 20), (20, 55), (80, 200)]]
+            print("    %s %s  %s   edge vs interior %+6.1f"
+                  % (name, tag, " ".join("%5.1f" % v for v in p), p[0] - p[-1]))
+    deep = shoulder & (dd > 80)
+    buf = io.BytesIO()
+    Image.fromarray(np.dstack([master_rgb, A * 255.0]).round().astype(np.uint8), "RGBA") \
+         .save(buf, "WEBP", quality=92, alpha_quality=100, exact=True, method=6)
+    floor = np.abs(np.array(Image.open(buf).convert("RGBA")).astype(np.float64)[..., :3]
+                   - master_rgb)[deep]
+    print("  shirt interior (>80px in): %.3f/255 mean before the encode (max %.1f);"
+          " re-encoding the master alone already costs %.3f (max %.1f)"
+          % (np.abs(Fd - master_rgb)[deep].mean(), np.abs(Fd - master_rgb)[deep].max(),
+             floor.mean(), floor.max()))
+    print("  rim gain applied to %.1f%% of the figure, strongest 1/(1+psi) = %.2f"
+          % ((psi[core] > 0.02).mean() * 100, 1.0 / (1.0 + psi.max())))
 
 
 def round_portrait():

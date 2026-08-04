@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counselling &amp; Clinical Supervision in Milton Keynes | John Goss</title>
+<link rel="canonical" href="https://gosscounselling.co.uk/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_GB">
+<meta property="og:site_name" content="John Goss — Counselling &amp; Supervision">
+<meta name="geo.region" content="GB-MIK">
+<meta name="geo.placename" content="Bletchley, Milton Keynes">
+<meta name="description" content="Counselling, psychosexual therapy and clinical supervision in Bletchley, Milton Keynes, and online. Established practice, NCPS accredited. 07776 153 426.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --stone:#f4f1ec; --white:#fff; --band:#e9e4db; --line:#d8d1c5;
+  --ink:#1f2733; --muted:#4d5b6b;
+  --slate:#33475e; --slate-dk:#243449; --copper:#8f5334; --copper-dk:#74421f;
+  --container:1180px; --section:80px;
+  --serif:'Source Serif 4',ui-serif,Georgia,serif;
+  --sans:'Source Sans 3',ui-sans-serif,system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;background:var(--stone);-webkit-text-size-adjust:100%}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--stone);
+  font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+[id]{scroll-margin-top:118px}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:600;line-height:1.2;margin:0;text-wrap:balance;color:var(--slate-dk)}
+a{color:var(--copper-dk)}
+:focus-visible{outline:3px solid var(--copper);outline-offset:2px}
+.wrap{max-width:var(--container);margin:0 auto;padding:0 24px}
+@media(min-width:900px){.wrap{padding:0 40px}}
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:12px;top:12px;z-index:99;background:var(--slate-dk);color:#fff;padding:10px 16px}
+
+/* ---- utility bar + full navigation: the conventional two-row practice header,
+   which is what the sites he pointed at all do ---- */
+.util{background:var(--slate-dk);color:#dbe3ec;font-size:14.5px}
+.util .wrap{display:flex;flex-wrap:wrap;gap:6px 26px;align-items:center;padding-top:8px;padding-bottom:8px}
+.util a{color:#fff;text-decoration:none;font-weight:600;white-space:nowrap}
+.util a:hover{text-decoration:underline}
+.util .loc{color:#b9c6d6}
+header{position:sticky;top:0;z-index:30;background:var(--stone);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;gap:20px;min-height:78px;flex-wrap:nowrap}
+.brand{display:flex;align-items:baseline;gap:10px;text-decoration:none;color:var(--slate-dk);white-space:nowrap}
+.brand b{font-family:var(--serif);font-weight:700;font-size:23px;letter-spacing:-.01em}
+.brand span{font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+@media(max-width:560px){.brand span{display:none}/* No frame, no border, no circle — the mark alone. The 46px box is only the
+   touch target, which stays at the WCAG minimum without being drawn. */
+.sitenav summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  width:46px;height:46px;background:transparent;border:0;color:inherit}}
+nav.main{margin-left:auto;display:none}
+nav.main ul{display:flex;gap:26px;list-style:none;margin:0;padding:0}
+nav.main a{font-size:16px;font-weight:600;text-decoration:none;color:var(--slate);white-space:nowrap;
+  padding:6px 0;border-bottom:2px solid transparent}
+nav.main a:hover,nav.main a[aria-current]{border-bottom-color:var(--copper);color:var(--slate-dk)}
+@media(min-width:1000px){nav.main{display:block}.menu{display:none}}
+/* small screens: a native disclosure menu, no script */
+.menu{margin-left:auto}
+.menu summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:9px;
+  font-weight:700;color:var(--slate-dk);border:1px solid var(--line);padding:9px 14px;background:var(--white)}
+.menu summary::-webkit-details-marker{display:none}
+.menu[open] summary{background:var(--band)}
+.menu ul{list-style:none;margin:0;padding:10px 0;position:absolute;left:0;right:0;background:var(--white);
+  border-bottom:1px solid var(--line);box-shadow:0 12px 24px rgba(31,39,51,.09)}
+.menu li{border-top:1px solid var(--line)}
+.menu li:first-child{border-top:0}
+.menu a{display:block;padding:13px 24px;text-decoration:none;color:var(--slate-dk);font-weight:600}
+.menu a:hover{background:var(--band)}
+
+/* ---- photographic panels ----------------------------------------------
+   The photograph is position:fixed and the section clips it (clip-path on an
+   ancestor clips fixed descendants). So the picture stays still and the
+   section's window travels over it: each panel wipes as you scroll, and the
+   local landscape reads as one continuous place behind the page.
+
+   The toning is all CSS, so the files stay untouched and reusable: a slate
+   multiply to cool and unify the frames, a copper screen to put warmth back
+   into the lights, and a vertical scrim to seat the type. */
+.panel{position:relative;isolation:isolate;clip-path:inset(0);background:var(--slate-dk);color:#eef2f6}
+.panel .bg,.panel .tone{position:fixed;inset:0;pointer-events:none}
+.panel .bg{z-index:-3}
+.panel .bg img{width:100%;height:100%;object-fit:cover;display:block}
+.panel .tone{z-index:-2;background:var(--slate-dk);mix-blend-mode:multiply;opacity:.78}
+.panel::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(178deg,rgba(18,26,38,.62) 0%,rgba(18,26,38,.34) 45%,rgba(18,26,38,.70) 100%)}
+.panel .warm{position:fixed;inset:0;z-index:-2;pointer-events:none;background:#c9814e;
+  mix-blend-mode:screen;opacity:.13}
+/* A fixed backdrop can be uncomfortable for anyone sensitive to motion, so it
+   stops travelling and simply sits in place. */
+@media(prefers-reduced-motion:reduce){
+  .panel .bg,.panel .tone,.panel .warm{position:absolute}
+}
+.hero{background:var(--slate-dk)}
+.heroInner{padding:calc(var(--section)*1.15) 0;color:#f2f4f7;max-width:44rem}
+.hero .kicker{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#e3b79c;font-weight:700;margin:0 0 18px}
+.hero h1{font-size:clamp(32px,4.6vw,50px);color:#fff;line-height:1.15}
+.hero p{font-size:clamp(17.5px,1.7vw,20px);color:#e4e9ef;margin:20px 0 0;max-width:40rem}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:30px}
+.btn{display:inline-flex;align-items:center;text-decoration:none;font-weight:700;font-size:17px;
+  padding:14px 26px;border:2px solid transparent;white-space:nowrap}
+.btn-primary{background:var(--copper);color:#fff}
+.btn-primary:hover{background:var(--copper-dk)}
+.btn-ghost{border-color:#c9d3df;color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.12)}
+
+/* ---- intro ---- */
+section{padding:var(--section) 0}
+.lead{font-family:var(--serif);font-size:clamp(19px,2.1vw,23px);line-height:1.55;color:var(--slate-dk);
+  max-width:60ch;margin:0}
+.lead + p{margin:20px 0 0;color:var(--muted);max-width:64ch}
+.band{background:var(--band)}
+.white{background:var(--white)}
+.sechead{max-width:62ch}
+.sechead h2{font-size:clamp(26px,3.2vw,36px)}
+.sechead p{color:var(--muted);margin:14px 0 0}
+.rule{width:54px;height:3px;background:var(--copper);margin:0 0 22px}
+
+/* ---- teaser cards: the conventional four-up, each with a local photograph ---- */
+.cards{display:grid;gap:24px;margin-top:44px}
+@media(min-width:700px){.cards{grid-template-columns:1fr 1fr}}
+@media(min-width:1080px){.cards{grid-template-columns:repeat(4,1fr);gap:20px}}
+/* The whole card is the link — a card with one destination should not make you
+   hunt for the small text at the bottom of it. */
+.card{background:var(--white);border:1px solid var(--line);display:flex;flex-direction:column;min-width:0;
+  text-decoration:none;color:inherit;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
+.card:hover{border-color:var(--copper);box-shadow:0 14px 30px rgba(31,39,51,.13);transform:translateY(-3px)}
+.card:focus-visible{outline:3px solid var(--copper);outline-offset:3px}
+/* Pushed further than a tint: desaturated and contrast-raised into a slate
+   duotone, so the local landscape reads as a house treatment rather than as
+   stock photography. It warms and opens on hover. */
+.card .pic{position:relative;isolation:isolate;overflow:hidden;aspect-ratio:4/3;background:var(--slate-dk)}
+.card .pic img{width:100%;height:100%;object-fit:cover;display:block;
+  filter:grayscale(1) contrast(1.22) brightness(.92);transition:filter .35s ease,transform .5s ease}
+.card .pic::before{content:"";position:absolute;inset:0;z-index:1;background:var(--slate);
+  mix-blend-mode:multiply;opacity:.78;transition:opacity .35s ease}
+.card .pic::after{content:"";position:absolute;inset:0;z-index:1;background:#d08a4e;
+  mix-blend-mode:screen;opacity:.24;transition:opacity .35s ease}
+.card:hover .pic img{filter:grayscale(.35) contrast(1.1) brightness(1);transform:scale(1.04)}
+.card:hover .pic::before{opacity:.5}
+.card:hover .pic::after{opacity:.34}
+@media(prefers-reduced-motion:reduce){
+  .card,.card .pic img,.card .pic::before,.card .pic::after{transition:none}
+  .card:hover{transform:none}.card:hover .pic img{transform:none}
+}
+.card .body{padding:24px 24px 26px;display:flex;flex-direction:column;flex:1}
+.card h3{font-size:21px;margin-bottom:6px}
+.card .who{display:block;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--copper-dk);
+  font-weight:700;margin-bottom:10px}
+.card p{margin:0;color:var(--muted);font-size:16.5px}
+.card .more{align-self:start;margin-top:auto;padding-top:18px;font-weight:700;color:var(--copper-dk);text-wrap:pretty}
+.card:hover .more{text-decoration:underline;text-underline-offset:4px}
+
+/* ---- deeper content: the long read the other directions summarise ---- */
+.prose{max-width:68ch}
+.prose h3{font-size:22px;margin:34px 0 10px}
+.prose h3:first-child{margin-top:0}
+.prose p{margin:0 0 16px;color:var(--muted)}
+.prose ul{margin:0 0 16px;padding-left:22px;color:var(--muted)}
+.prose li{margin:6px 0}
+.twoCol{display:grid;gap:44px}
+@media(min-width:940px){.twoCol{grid-template-columns:1.45fr .55fr;gap:64px}}
+.sidebar{align-self:start;position:sticky;top:132px;background:var(--white);border:1px solid var(--line);padding:26px}
+.sidebar h3{font-size:19px;margin-bottom:12px}
+.sidebar dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:9px 16px;font-size:16px}
+.sidebar dt{color:var(--muted)}
+.sidebar dd{margin:0;font-family:var(--serif);font-weight:700;white-space:nowrap;color:var(--slate-dk)}
+.sidebar .note{margin:18px 0 0;font-size:15.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+
+/* ---- about: the portrait is a small credential, not the subject ---- */
+.about{display:grid;gap:28px;align-items:start}
+@media(min-width:760px){.about{grid-template-columns:132px 1fr;gap:36px}}
+.about img{width:132px;height:132px;object-fit:cover;border-radius:50%;display:block;
+  box-shadow:0 0 0 1px var(--line)}
+.about .prose{max-width:64ch}
+
+/* ---- credentials strip ---- */
+.creds{display:grid;gap:26px;margin-top:40px}
+@media(min-width:860px){.creds{grid-template-columns:1.5fr 1fr}}
+.creds ul{list-style:none;margin:0;padding:0}
+.creds li{padding:11px 0;border-bottom:1px solid var(--line);display:flex;gap:16px;
+  justify-content:space-between;align-items:baseline;font-size:16.5px}
+.creds li span:last-child{color:var(--copper-dk);font-size:14px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.bodies h3{font-size:19px;margin-bottom:12px}
+.bodies p{margin:0 0 10px;color:var(--muted);font-size:16px}
+.logos{display:flex;gap:22px;align-items:center;margin-top:20px;flex-wrap:wrap}
+.logos img{height:44px;width:auto;filter:grayscale(1) contrast(.85) opacity(.7);transition:filter .18s ease}
+.logos img:hover{filter:none}
+
+/* ---- faq ---- */
+.faqlist{margin-top:34px;border-top:1px solid var(--line);max-width:72ch}
+details.q{border-bottom:1px solid var(--line)}
+details.q summary{cursor:pointer;list-style:none;padding:20px 40px 20px 0;position:relative;
+  font-family:var(--serif);font-weight:600;font-size:19px;color:var(--slate-dk)}
+details.q summary::-webkit-details-marker{display:none}
+details.q summary::after{content:"+";position:absolute;right:6px;top:18px;font-family:var(--sans);
+  font-size:24px;font-weight:400;color:var(--copper)}
+details.q[open] summary::after{content:"–"}
+details.q .body{padding:0 0 22px;color:var(--muted);max-width:66ch}
+details.q .body p{margin:0 0 13px}
+details.q .body ul{margin:0 0 13px;padding-left:20px}
+
+/* ---- contact ---- */
+#contact{background:var(--slate-dk);color:#dce4ee}
+#contact h2{color:#fff}
+#contact .sechead p{color:#b9c6d6}
+#contact .rule{background:#e3b79c}
+.contactGrid{display:grid;gap:18px;margin-top:36px}
+@media(min-width:760px){.contactGrid{grid-template-columns:repeat(3,1fr)}}
+.ccard{display:block;text-decoration:none;color:inherit;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.16);padding:24px}
+.ccard:hover{background:rgba(255,255,255,.11)}
+.ccard .k{font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;color:#e3b79c;font-weight:700}
+.ccard .v{font-family:var(--serif);font-size:20px;margin-top:9px;display:block;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ccard .h{font-size:14.5px;color:#b9c6d6;margin-top:7px;display:block}
+
+/* ---- footer: a conventional sitemap, which is also how the detail pages get
+   discovered once they exist ---- */
+footer{background:var(--slate-dk);color:#a9b8c9;font-size:15px;padding:0 0 48px}
+footer .wrap{border-top:1px solid rgba(255,255,255,.15);padding-top:34px;
+  display:grid;gap:28px}
+@media(min-width:760px){footer .wrap{grid-template-columns:repeat(4,1fr)}}
+footer h4{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#fff;margin:0 0 12px;font-family:var(--sans);font-weight:700}
+footer ul{list-style:none;margin:0;padding:0}
+footer li{margin:0 0 8px}
+footer a{color:#d7e1ec;text-decoration:none}
+footer a:hover{text-decoration:underline}
+footer .fine{grid-column:1/-1;border-top:1px solid rgba(255,255,255,.15);padding-top:20px;font-size:13.5px;color:#96a6b8}
+footer .fine a{color:#b9c6d6}
+
+/* ---- navigation: a burger to a full-page menu below 1000px, a heavy bar above ----
+   The full-page menu carries the contact details as well as the links, because on
+   a phone "how do I reach him" and "where do I go" are the same question. It is a
+   native <details>, so it works with the keyboard and without script. */
+.sitenav{margin-left:auto}
+
+.sitenav summary::-webkit-details-marker{display:none}
+/* When the panel is up it covers the header, so the control comes with it —
+   otherwise the X is behind the menu and there is no way out. */
+.sitenav[open] summary{position:fixed;top:14px;right:14px;z-index:70;background:transparent;border:0}
+@media(min-width:600px){.sitenav[open] summary{top:24px;right:28px}}
+.sitenav .burger{display:inline-block;width:22px;height:2px;background:currentColor;position:relative;
+  transition:background-color .18s ease .16s}
+.sitenav .burger::before,.sitenav .burger::after{content:"";position:absolute;left:0;width:22px;height:2px;
+  background:currentColor;transition:top .18s ease .16s,transform .2s ease}
+.sitenav .burger::before{top:-7px}
+.sitenav .burger::after{top:7px}
+.sitenav[open] .burger{background:transparent;transition:background-color .12s ease}
+.sitenav[open] .burger::before{top:0;transform:rotate(45deg);transition:top .18s ease,transform .22s ease .16s}
+.sitenav[open] .burger::after{top:0;transform:rotate(-45deg);transition:top .18s ease,transform .22s ease .16s}
+@media(prefers-reduced-motion:reduce){.sitenav .burger,.sitenav .burger::before,.sitenav .burger::after{transition:none}}
+.navPanel{position:fixed;inset:0;z-index:60;background:var(--stone);overflow-y:auto;
+  padding:96px 0 56px;-webkit-overflow-scrolling:touch}
+.navPanel ul{list-style:none;margin:0;padding:0}
+.navPanel li+li{border-top:1px solid var(--line)}
+.navPanel a{display:block;padding:18px 0;text-decoration:none;color:var(--slate-dk);font-family:var(--serif);
+  font-size:clamp(24px,6vw,34px);font-weight:600;line-height:1.15}
+.navPanel a:hover{color:var(--copper-dk)}
+.navContact{margin-top:40px;padding-top:28px;border-top:2px solid var(--line);display:grid;gap:14px}
+.navContact .k{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--copper-dk);font-weight:700}
+.navContact a{font-size:clamp(19px,4.4vw,24px);padding:0;font-weight:700}
+.navContact .place{color:var(--muted);font-size:16px}
+@media(min-width:1180px){
+  .sitenav{display:none}
+  nav.heavy{margin-left:auto;display:block}
+  nav.heavy ul{display:flex;gap:24px;list-style:none;margin:0;padding:0;align-items:center}
+  nav.heavy a{font-size:16px;font-weight:700;letter-spacing:.02em;text-decoration:none;color:var(--slate);
+    white-space:nowrap;padding:10px 0;border-bottom:3px solid transparent}
+  nav.heavy a:hover{border-bottom-color:var(--copper)}
+  nav.heavy .navcta a{border:0;background:var(--copper);color:#fff;padding:12px 20px}
+  nav.heavy .navcta a:hover{filter:brightness(1.08)}
+}
+@media(max-width:1179px){nav.heavy{display:none}}
+
+/* ---- staggered header: the call button is the last thing to go ----
+   >= 1180px  brand + full nav + call
+   860-1179px  brand + burger + "Call 07776 153 426"
+   520-859px    brand + burger + "Call"
+   < 520px      brand + burger only, because at that width the number costs the
+                brand its second line and the burger its breathing room */
+.barcta{margin-left:auto;display:none;align-items:center;background:var(--copper);color:#fff;text-decoration:none;
+  font-weight:700;font-size:15.5px;padding:11px 18px;border-radius:0;white-space:nowrap;flex:none}
+.barcta:hover{background:var(--copper-dk)}
+.barcta .short{display:none}
+@media(min-width:520px){.barcta{display:inline-flex}.barcta .short{display:inline}.barcta .long{display:none}}
+@media(min-width:860px){.barcta .short{display:none}.barcta .long{display:inline}}
+@media(min-width:1180px){.barcta{display:none}}
+.sitenav{margin-left:0}
+@media(max-width:519px){.sitenav{margin-left:auto}}
+</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"ProfessionalService","@id":"https://gosscounselling.co.uk/#practice",
+  "name":"John Goss — Counselling & Clinical Supervision",
+  "description":"Counselling, psychosexual therapy and clinical supervision in Bletchley, Milton Keynes, and online.",
+  "url":"https://gosscounselling.co.uk/","telephone":"+44 7776 153426","email":"info@gosscounselling.co.uk",
+  "priceRange":"£45–£110",
+  "address":{"@type":"PostalAddress","addressLocality":"Bletchley","addressRegion":"Milton Keynes","postalCode":"MK3","addressCountry":"GB"},
+  "areaServed":[{"@type":"City","name":"Milton Keynes"},{"@type":"Country","name":"United Kingdom"}],
+  "availableLanguage":"en-GB","provider":{"@id":"https://gosscounselling.co.uk/#john"}},
+ {"@type":"Person","@id":"https://gosscounselling.co.uk/#john","name":"John Goss",
+  "jobTitle":"Counsellor and Clinical Supervisor","worksFor":{"@id":"https://gosscounselling.co.uk/#practice"},
+  "memberOf":[{"@type":"Organization","name":"National Counselling & Psychotherapy Society"},
+              {"@type":"Organization","name":"College of Sex & Relationship Therapists"}]},
+ {"@type":"FAQPage","@id":"https://gosscounselling.co.uk/#faq","mainEntity":[
+  {"@type":"Question","name":"How many sessions will I need?","acceptedAnswer":{"@type":"Answer","text":"There isn't necessarily a set amount of therapy you need; it depends on what you're coming for and what you'd like from the sessions. We discuss it when we start and keep it under review."}},
+  {"@type":"Question","name":"What is psychosexual therapy?","acceptedAnswer":{"@type":"Answer","text":"Psychosexual therapy generally focuses on a sexual issue: unreliable erections, delayed ejaculation, loss of sexual desire, vaginismus, painful sex, orgasm problems or vulvodynia. People also come to talk about porn use, intimacy with a partner or partners, fetishes or exploring kinks."}},
+  {"@type":"Question","name":"Do you offer appointments at a lower fee?","acceptedAnswer":{"@type":"Answer","text":"Sometimes. To keep counselling accessible, lower-fee appointments are occasionally available for people on a low income; get in touch to ask."}}]}]}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<div class="util">
+  <div class="wrap">
+    <span class="loc">Bletchley, Milton Keynes MK3 &middot; and online across the UK</span>
+    <a href="tel:+447776153426">07776 153 426</a>
+    <a href="mailto:info@gosscounselling.co.uk">info@gosscounselling.co.uk</a>
+  </div>
+</div>
+
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="#top"><b>John Goss</b><span>Counselling &amp; Supervision</span></a>
+    <nav class="heavy" aria-label="Main">
+      <ul>
+        <li><a href="#counselling">Counselling</a></li>
+        <li><a href="#psychosexual">Psychosexual therapy</a></li>
+        <li><a href="#supervision">Supervision</a></li>
+        <li><a href="#fees">Fees</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li class="navcta"><a href="tel:+447776153426">07776 153 426</a></li>
+      </ul>
+    </nav>
+    <a class="barcta" href="tel:+447776153426"><span class="short">Call</span><span class="long">Call 07776 153 426</span></a>
+    <details class="sitenav">
+      <summary aria-label="Open menu"><span class="burger" aria-hidden="true"></span></summary>
+      <div class="navPanel">
+        <div class="wrap">
+          <ul>
+            <li><a href="#counselling">Counselling</a></li>
+            <li><a href="#psychosexual">Psychosexual therapy</a></li>
+            <li><a href="#supervision">Supervision</a></li>
+            <li><a href="#fees">Fees</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#faq">FAQ</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+          <div class="navContact">
+            <span class="k">Contact John</span>
+            <a href="tel:+447776153426">07776 153 426</a>
+            <a href="mailto:info@gosscounselling.co.uk">info@gosscounselling.co.uk</a>
+            <a href="https://wa.me/447776153426">WhatsApp</a>
+            <span class="place">Bletchley, Milton Keynes MK3 &middot; and online</span>
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+</header>
+
+<main id="main">
+<div id="top"></div>
+
+<section class="hero panel">
+  <span class="bg" aria-hidden="true"><img src="assets/local/hero.webp?v2" alt="" width="1600" height="900" fetchpriority="high"></span>
+  <span class="tone" aria-hidden="true"></span><span class="warm" aria-hidden="true"></span>
+  <div class="wrap">
+    <div class="heroInner">
+      <p class="kicker">Established practice &middot; NCPS Accredited</p>
+      <h1>Counselling and clinical supervision in Milton Keynes</h1>
+      <p>Individual, relationship and psychosexual therapy in Bletchley, and online across the UK.
+        In practice since 2015, working with adults and young people from the age of eleven.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="tel:+447776153426">Call 07776 153 426</a>
+        <a class="btn btn-ghost" href="mailto:info@gosscounselling.co.uk">Email the practice</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="white">
+  <div class="wrap">
+    <p class="lead">Therapy, and your reasons for thinking about coming, will be unique to you.
+      Some people arrive with something specific and urgent; others have been turning something
+      over for years. Both are ordinary ways to start.</p>
+    <p>This practice covers individual counselling from the age of eleven, relationship counselling
+      for couples, throuples and poly dynamics, psychosexual therapy, and clinical supervision for
+      other therapists. Appointments are available in person in MK3 and online.</p>
+
+    <div class="cards">
+      <a class="card" href="#counselling">
+        <span class="pic"><img src="assets/local/lane.webp?v2" alt="" width="800" height="600" loading="lazy"></span>
+        <span class="body">
+          <span class="who">From age 11</span>
+          <h3>Individual counselling</h3>
+          <p>One to one, for anxiety, depression, bereavement — or anything else that has become
+            difficult to carry on your own.</p>
+          <span class="more">Read about individual counselling</span>
+        </span>
+      </a>
+      <a class="card" href="#counselling">
+        <span class="pic"><img src="assets/local/canal.webp?v2" alt="" width="800" height="600" loading="lazy"></span>
+        <span class="body">
+          <span class="who">Couples, throuples, poly</span>
+          <h3>Relationship counselling</h3>
+          <p>Work focused on the relationship itself, whatever shape it takes, and whoever is in it.</p>
+          <span class="more">Read about relationship counselling</span>
+        </span>
+      </a>
+      <a class="card" href="#psychosexual">
+        <span class="pic"><img src="assets/local/meadow.webp?v2" alt="" width="800" height="600" loading="lazy"></span>
+        <span class="body">
+          <span class="who">Also called sex therapy</span>
+          <h3>Psychosexual therapy</h3>
+          <p>Sexual difficulties of every ordinary kind, discussed in plain words and without
+            embarrassment.</p>
+          <span class="more">Read about psychosexual therapy</span>
+        </span>
+      </a>
+      <a class="card" href="#supervision">
+        <span class="pic"><img src="assets/local/path.webp?v2" alt="" width="800" height="600" loading="lazy"></span>
+        <span class="body">
+          <span class="who">For therapists</span>
+          <h3>Clinical supervision</h3>
+          <p>Supervision for qualified and trainee therapists, and for colleagues in the helping
+            professions.</p>
+          <span class="more">Read about supervision</span>
+        </span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section id="counselling" class="band">
+  <div class="wrap twoCol">
+    <div>
+      <div class="rule" aria-hidden="true"></div>
+      <div class="sechead"><h2>Counselling</h2></div>
+      <div class="prose" style="margin-top:26px">
+        <h3>Individual counselling, from the age of eleven</h3>
+        <p>We meet one to one to explore what's challenging you. For some people that's anxiety,
+          depression or bereavement. You might be looking to explore your relationship with
+          pornography or sex. Whatever brings you to counselling, you are assured of a space to
+          talk openly about it.</p>
+        <p>I see myself very much as an <em>integrative</em> therapist. That means I use all of my
+          training to support you rather than sticking to a single theory. Some people come for
+          something specific, but the rest of my skills and training are in the room too.</p>
+        <p>Young people from eleven are seen individually. Parents are welcome to make the first
+          call, and we can talk through how that works.</p>
+
+        <h3>Relationship counselling</h3>
+        <p>Relationship counselling puts the focus on the relationship itself, whether you're part
+          of a couple, a throuple or a poly dynamic. You won't need to explain or justify the shape
+          of your relationship before we can begin.</p>
+        <p>People come because something specific has happened, because the same argument keeps
+          returning, or because sex or intimacy has become difficult. All of it is workable.</p>
+      </div>
+    </div>
+    <aside class="sidebar">
+      <h3>Counselling at a glance</h3>
+      <dl>
+        <dt>In person, 50 min</dt><dd>£70–90</dd>
+        <dt>In person, 90 min</dt><dd>£90–110</dd>
+        <dt>Online, 50 min</dt><dd>£60–80</dd>
+        <dt>Relationship, 50 min</dt><dd>£80–100</dd>
+      </dl>
+      <p class="note">Lower-fee appointments are sometimes available for people on a low income.
+        <a href="#fees">More about fees</a>.</p>
+    </aside>
+  </div>
+</section>
+
+<section id="psychosexual" class="white">
+  <div class="wrap twoCol">
+    <div>
+      <div class="rule" aria-hidden="true"></div>
+      <div class="sechead"><h2>Psychosexual therapy</h2></div>
+      <div class="prose" style="margin-top:26px">
+        <p>If you're experiencing sexual difficulties, psychosexual therapy — often called sex
+          therapy — could be for you. Difficulties with sex come in many forms, and none of them
+          are unusual to hear about.</p>
+        <h3>What people bring</h3>
+        <ul>
+          <li>Unreliable erections</li>
+          <li>Delayed ejaculation</li>
+          <li>Loss of, or lack of, sexual desire</li>
+          <li>Vaginismus</li>
+          <li>Painful sex</li>
+          <li>Orgasm problems</li>
+          <li>Vulvodynia</li>
+        </ul>
+        <p>People also come to talk about porn use, intimacy with a partner or partners, fetishes,
+          or exploring kink. You will not be asked to justify any of it, and nothing here is
+          treated as a symptom of something else unless you want to look at it that way.</p>
+        <h3>Training in this area</h3>
+        <p>Alongside the counselling qualifications, this work is supported by a CICS Diploma in
+          Psychosexual &amp; Relationship Therapy (2026), a CICS Diploma in Compulsive Sexual
+          Behaviour (2024), and continuing study towards an Advanced Diploma and an International
+          Diploma in Clinical Sexology. Membership of COSRT, the College of Sex &amp; Relationship
+          Therapists, sits alongside NCPS accreditation.</p>
+      </div>
+    </div>
+    <aside class="sidebar">
+      <h3>Getting started</h3>
+      <p class="note" style="border-top:0;padding-top:0;margin-top:0">Most people ring or email
+        first and we arrange a time to talk. You can say as little as you like at that stage — it
+        is enough to say that it is about sex.</p>
+      <p class="note"><a href="tel:+447776153426">07776 153 426</a><br>
+        <a href="mailto:info@gosscounselling.co.uk">info@gosscounselling.co.uk</a></p>
+    </aside>
+  </div>
+</section>
+
+<section id="supervision" class="band">
+  <div class="wrap twoCol">
+    <div>
+      <div class="rule" aria-hidden="true"></div>
+      <div class="sechead"><h2>Clinical supervision</h2></div>
+      <div class="prose" style="margin-top:26px">
+        <p>I offer clinical supervision to other therapists and to colleagues who work in the
+          helping professions.</p>
+        <p>For me, supervision is not only about bringing your client work — it's about bringing
+          yourself too, so we can explore that work more collaboratively.</p>
+        <h3>Practical details</h3>
+        <p>Supervision is held in person in MK3 or online, in 45-minute, one-hour or 90-minute
+          sessions. I hold a Level 6 Diploma in Clinical Supervision (2022) and am an NCPS
+          Accredited Member, so hours count towards professional requirements.</p>
+        <p>If your caseload includes sexual behaviour, harmful sexual behaviour or risk, that is
+          territory with specific training behind it here: work with people convicted or accused of
+          sexual offending (2019), the COFRA 121 compassion-focused risk-aware programme (2021),
+          and AIM3 assessment of adolescents and harmful sexual behaviour (2024).</p>
+      </div>
+    </div>
+    <aside class="sidebar">
+      <h3>Supervision fees</h3>
+      <dl>
+        <dt>45 minutes</dt><dd>£45</dd>
+        <dt>1 hour</dt><dd>£60</dd>
+        <dt>1.5 hours</dt><dd>£80</dd>
+      </dl>
+      <p class="note">In person in MK3 or online.</p>
+    </aside>
+  </div>
+</section>
+
+<section id="fees" class="white">
+  <div class="wrap">
+    <div class="rule" aria-hidden="true"></div>
+    <div class="sechead">
+      <h2>Fees and availability</h2>
+      <p>Fees are given as a range and agreed before the first session, so there are no surprises.</p>
+    </div>
+    <div class="creds" style="margin-top:36px">
+      <ul>
+        <li><span>Individual counselling — in person, 50 minutes</span><span>£70–90</span></li>
+        <li><span>Individual counselling — in person, 90 minutes</span><span>£90–110</span></li>
+        <li><span>Individual counselling — online, 50 minutes</span><span>£60–80</span></li>
+        <li><span>Relationship counselling — 50 minutes</span><span>£80–100</span></li>
+        <li><span>Clinical supervision — 45 minutes</span><span>£45</span></li>
+        <li><span>Clinical supervision — 1 hour</span><span>£60</span></li>
+        <li><span>Clinical supervision — 1.5 hours</span><span>£80</span></li>
+      </ul>
+      <aside class="bodies">
+        <h3>On a low income</h3>
+        <p>To keep counselling accessible, lower-fee appointments are sometimes available. Please
+          <a href="mailto:info@gosscounselling.co.uk">get in touch</a> to ask — it is an ordinary
+          thing to ask about.</p>
+        <h3 style="margin-top:22px">Where</h3>
+        <p>In person in Bletchley, Milton Keynes MK3, and online anywhere in the UK.</p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section id="about" class="band">
+  <div class="wrap">
+    <div class="rule" aria-hidden="true"></div>
+    <div class="sechead"><h2>About John Goss</h2></div>
+    <div class="about" style="margin-top:30px">
+      <img src="assets/john-portrait-round.webp?v18" alt="John Goss" width="620" height="620" loading="lazy">
+      <div class="prose">
+        <p>I qualified as a counsellor in 2015, after a range of experience in support work: youth
+          mentoring, Samaritans, and supporting people in prison.</p>
+        <p>My counselling work is varied, often with anxiety, depression and bereavement, and I am
+          continuing to train as a psychosexual therapist, working with painful sex, unreliable
+          erections and other sex-related concerns.</p>
+        <p>When you contact the practice you are contacting me. There is no receptionist and no
+          booking system — a first conversation is a chance to say a little about what is going on
+          and to see whether you would want to carry on.</p>
+      </div>
+    </div>
+    <div class="creds">
+      <ul>
+        <li><span>Level 4 Diploma in Therapeutic Counselling</span><span>2015</span></li>
+        <li><span>Working therapeutically with individuals convicted or accused of sexual offending</span><span>2019</span></li>
+        <li><span>COFRA 121 Compassion Focused Risk Aware: one-to-one programme for managing sexual risk</span><span>2021</span></li>
+        <li><span>UK Mediation Accredited Mediator</span><span>2021</span></li>
+        <li><span>Level 6 Diploma in Clinical Supervision</span><span>2022</span></li>
+        <li><span>AIM3 Assessment of Adolescents and Harmful Sexual Behaviour</span><span>2024</span></li>
+        <li><span>CICS Diploma in Compulsive Sexual Behaviour</span><span>2024</span></li>
+        <li><span>CICS Diploma in Psychosexual &amp; Relationship Therapy</span><span>2026</span></li>
+        <li><span>CICS Advanced Diploma in Psychosexual &amp; Relationship Therapy</span><span>studying</span></li>
+        <li><span>International Diploma in Clinical Sexology</span><span>studying</span></li>
+      </ul>
+      <aside class="bodies">
+        <h3>Membership bodies</h3>
+        <p>National Counselling &amp; Psychotherapy Society (NCPS) — Accredited Member</p>
+        <p>Children &amp; Young People's Register (NCPS)</p>
+        <p>College of Sex &amp; Relationship Therapists (COSRT)</p>
+        <div class="logos">
+          <img src="assets/NCPS_RGB.png" alt="National Counselling &amp; Psychotherapy Society">
+          <img src="assets/cosrt.png" alt="College of Sex &amp; Relationship Therapists">
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section id="faq" class="white">
+  <div class="wrap">
+    <div class="rule" aria-hidden="true"></div>
+    <div class="sechead"><h2>Frequently asked questions</h2></div>
+    <div class="faqlist">
+      <details class="q">
+        <summary>How many sessions will I need?</summary>
+        <div class="body"><p>There isn't necessarily a set amount of therapy you 'need' — it depends
+          on what you're coming for and what you'd like from the sessions. We can discuss it when we
+          start, and keep it under review.</p></div>
+      </details>
+      <details class="q">
+        <summary>What sort of therapy do you offer?</summary>
+        <div class="body"><p>I see myself very much as an integrative therapist: I use all my
+          training to support you, without sticking to one type of theory. Some people come for
+          something specific, like a sexual issue, which would fit under psychosexual therapy — but
+          I'd still be using all my other skills and training too.</p></div>
+      </details>
+      <details class="q">
+        <summary>What is psychosexual therapy?</summary>
+        <div class="body">
+          <p>Psychosexual therapy generally focuses on a sexual issue. That could include:</p>
+          <ul><li>Unreliable erections</li><li>Delayed ejaculation</li>
+            <li>Loss of, or lack of, sexual desire</li><li>Vaginismus</li>
+            <li>Painful sex</li><li>Orgasm problems</li><li>Vulvodynia</li></ul>
+          <p>People also see a psychosexual therapist for other reasons — porn use, intimacy with a
+            partner or partners, fetishes, or exploring kinks.</p>
+        </div>
+      </details>
+      <details class="q">
+        <summary>Is there a difference between counselling, therapy and psychotherapy?</summary>
+        <div class="body"><p>The simple answer is no. In the UK, terms such as counsellor, therapist
+          and psychotherapist aren't protected by law, so people use them interchangeably. I usually
+          use 'counsellor' or 'therapist'. Some membership bodies and some therapists do
+          differentiate, but in UK law there's no distinction.</p></div>
+      </details>
+      <details class="q">
+        <summary>Why is therapy so expensive?</summary>
+        <div class="body">
+          <p>As a therapist I'm self-employed, so there's no sick pay or employee benefits. There's
+            also the training and qualifications to pay for, and continuing professional development
+            that never stops.</p>
+          <p>The session fee has to take account of my qualifications and what they cost, along with
+            practical things like room hire and Zoom licences.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="wrap">
+    <div class="rule" aria-hidden="true"></div>
+    <div class="sechead">
+      <h2>Contact the practice</h2>
+      <p>Phone, email or WhatsApp. There is no booking form — the first step is a conversation.</p>
+    </div>
+    <div class="contactGrid">
+      <a class="ccard" href="tel:+447776153426">
+        <span class="k">Telephone</span><span class="v">07776 153 426</span>
+        <span class="h">If I can't answer, leave a message and I'll ring back.</span>
+      </a>
+      <a class="ccard" href="mailto:info@gosscounselling.co.uk">
+        <span class="k">Email</span><span class="v">info@gosscounselling.co.uk</span>
+        <span class="h">Tell me as much or as little as you like.</span>
+      </a>
+      <a class="ccard" href="https://wa.me/447776153426">
+        <span class="k">WhatsApp</span><span class="v">Message the practice</span>
+        <span class="h">Often the easiest way to make contact.</span>
+      </a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <h4>Services</h4>
+      <ul>
+        <li><a href="#counselling">Individual counselling</a></li>
+        <li><a href="#counselling">Relationship counselling</a></li>
+        <li><a href="#psychosexual">Psychosexual therapy</a></li>
+        <li><a href="#supervision">Clinical supervision</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Practice</h4>
+      <ul>
+        <li><a href="#about">About John Goss</a></li>
+        <li><a href="#about">Qualifications</a></li>
+        <li><a href="#fees">Fees &amp; availability</a></li>
+        <li><a href="#faq">Frequently asked questions</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Contact</h4>
+      <ul>
+        <li><a href="tel:+447776153426">07776 153 426</a></li>
+        <li><a href="mailto:info@gosscounselling.co.uk">info@gosscounselling.co.uk</a></li>
+        <li><a href="https://wa.me/447776153426">WhatsApp</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Where</h4>
+      <ul>
+        <li>Bletchley</li>
+        <li>Milton Keynes MK3</li>
+        <li>and online, UK-wide</li>
+      </ul>
+    </div>
+    <p class="fine">&copy; John Goss, Counselling &amp; Supervision. Photographs of the surrounding
+      area by David Martin, Philip Jeffrey and Steve Daniels, from
+      <a href="https://www.geograph.org.uk/">Geograph</a>, used under
+      <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC BY-SA 2.0</a>.</p>
+  </div>
+</footer>
+
+</body>
+</html>
