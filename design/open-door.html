@@ -23,6 +23,7 @@ html{scroll-behavior:smooth;background:var(--cream);-webkit-text-size-adjust:100
 body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--cream);
   font-size:17.5px;line-height:1.72;-webkit-font-smoothing:antialiased}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+[id]{scroll-margin-top:96px}
 h1,h2,h3{font-family:var(--display);font-weight:700;line-height:1.18;margin:0;text-wrap:balance}
 a{color:var(--clay)}
 :focus-visible{outline:3px solid var(--clay);outline-offset:3px;border-radius:6px}
@@ -198,19 +199,19 @@ footer a{color:#fff}
       <a href="https://wa.me/447776153426">WhatsApp</a>, and we'll take it from there.</p>
 
     <div class="doors">
-      <a class="door" href="#help">
+      <a class="door" href="#individual">
         <span class="dot" aria-hidden="true">☕</span>
         <h2>I'm looking for counselling</h2>
         <p>One to one, for anxiety, depression, bereavement — or anything else that's on your mind.</p>
         <span class="go">What that's like →</span>
       </a>
-      <a class="door" href="#help">
+      <a class="door" href="#relationship">
         <span class="dot" aria-hidden="true">◈</span>
         <h2>We want help as a couple</h2>
         <p>Relationship counselling, whether you're a couple, a throuple or a poly dynamic.</p>
         <span class="go">How it works →</span>
       </a>
-      <a class="door" href="#help">
+      <a class="door" href="#supervision">
         <span class="dot" aria-hidden="true">✦</span>
         <h2>I need a supervisor</h2>
         <p>Clinical supervision for therapists and colleagues in the helping professions.</p>
@@ -230,7 +231,7 @@ footer a{color:#fff}
     <div class="grid">
       <article class="card">
         <span class="who">From age 11 upwards</span>
-        <h3>Individual counselling</h3>
+        <h3 id="individual">Individual counselling</h3>
         <p>We meet one to one to explore what's challenging you. For some people that's anxiety,
           depression or bereavement. You might be looking to explore your relationship with
           pornography or sex.</p>
@@ -238,7 +239,7 @@ footer a{color:#fff}
       </article>
       <article class="card">
         <span class="who">Couples, throuples, poly dynamics</span>
-        <h3>Relationship counselling</h3>
+        <h3 id="relationship">Relationship counselling</h3>
         <p>Relationship counselling puts the focus on the relationship itself — whatever shape it
           takes. You won't need to explain or justify that shape to me before we start.</p>
       </article>
@@ -253,7 +254,7 @@ footer a{color:#fff}
       </article>
       <article class="card">
         <span class="who">For therapists &amp; helping professionals</span>
-        <h3>Clinical supervision</h3>
+        <h3 id="supervision">Clinical supervision</h3>
         <p>I offer clinical supervision to other therapists and colleagues working in the helping
           professions.</p>
         <p>Supervision isn't only about bringing your client work — it's about bringing yourself
