@@ -199,7 +199,11 @@ details.q .body ul{margin:0 0 13px;padding-left:20px}
 #contact .rule{background:#e3b79c}
 .contactGrid{display:grid;gap:18px;margin-top:36px}
 @media(min-width:760px){.contactGrid{grid-template-columns:repeat(3,1fr)}}
-.ccard{display:block;text-decoration:none;color:inherit;background:rgba(255,255,255,.06);
+/* min-width:0 or the card cannot be narrower than its own longest line. A grid
+   item's automatic minimum size is min-content, and `.v` is nowrap, so at 320px
+   the email pushed the track 1.7px past the viewport and the ellipsis below
+   never got the chance to do its job. */
+.ccard{display:block;min-width:0;text-decoration:none;color:inherit;background:rgba(255,255,255,.06);
   border:1px solid rgba(255,255,255,.16);padding:24px}
 .ccard:hover{background:rgba(255,255,255,.11)}
 .ccard .k{font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;color:#e3b79c;font-weight:700}
@@ -321,6 +325,27 @@ footer .fine a{color:#b9c6d6}
 @media(max-width:479px){.protochip{left:12px;bottom:12px;padding:8px 13px;gap:7px}
   .protochip .k{font-size:10px}.protochip .n{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.protochip,.protochip .ar{transition:none}.protochip:hover .ar{transform:none}}
+
+/* ---- narrow screens: don't pay the gutter twice ----------------------
+   A boxed container carries its own padding on top of the 24px page gutter, so
+   at 360px the teaser card body ran 262px and the sidebar 260px, against 312px
+   for the prose they sit under. The box keeps an inset from its own edge; it is
+   the doubling that has to go, so the padding relaxes as the viewport does and
+   returns to its desktop value above 600px.
+
+   This block sits at the end of the stylesheet on purpose. Placed next to the
+   rules it amends it would lose to them on equal specificity, and the page
+   would measure unchanged while the CSS read as correct. */
+@media(max-width:600px){
+  .card .body{padding:22px 18px 24px}
+  .sidebar{padding:24px 18px}
+  .ccard{padding:20px 18px}
+}
+@media(max-width:380px){
+  .card .body{padding:20px 15px 22px}
+  .sidebar{padding:22px 15px}
+  .ccard{padding:18px 15px}
+}
 </style>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
