@@ -38,7 +38,7 @@ a{color:var(--accent-dk)}
 
 /* header — never wraps: brand, nav links and the CTA are all nowrap, the nav
    appears one breakpoint at a time, and the CTA label shortens on small screens. */
-header{position:sticky;top:0;z-index:20;background:var(--paper);border-bottom:1px solid var(--line)}
+header{position:sticky;top:0;z-index:60;background:var(--paper);border-bottom:1px solid var(--line)}
 .bar{display:flex;align-items:center;gap:20px;min-height:70px;flex-wrap:nowrap}
 .brand{font-family:var(--serif);font-size:19px;font-weight:600;text-decoration:none;color:var(--ink);letter-spacing:-.01em;white-space:nowrap}
 .brand span{display:block;font-family:var(--sans);font-size:11.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
@@ -243,10 +243,17 @@ footer a{color:#d7e2dc}
 .sitenav summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
   width:46px;height:46px;background:transparent;border:0;color:inherit}
 .sitenav summary::-webkit-details-marker{display:none}
-/* When the panel is up it covers the header, so the control comes with it —
-   otherwise the X is behind the menu and there is no way out. */
-.sitenav[open] summary{position:fixed;top:14px;right:14px;z-index:70;background:transparent;border:0}
-@media(min-width:600px){.sitenav[open] summary{top:24px;right:28px}}
+/* The control never moves. Rather than re-anchoring it when the menu opens —
+   which made it jump — the panel is given a lower layer than the summary inside
+   the header's own stacking context, so the X appears exactly where the burger
+   was. */
+/* The panel is a SIBLING of the disclosure, not its content: a <details>
+   paints its own content above its summary whatever the z-index, so from inside
+   there was no way to keep the X on top. Out here the burger simply stays where
+   it is and the panel opens underneath it. */
+.sitenav{position:relative;z-index:3}
+.navPanel{display:none;z-index:2}
+.sitenav[open] ~ .navPanel{display:block}
 .sitenav .burger{display:inline-block;width:22px;height:2px;background:currentColor;position:relative;
   transition:background-color .18s ease .16s}
 .sitenav .burger::before,.sitenav .burger::after{content:"";position:absolute;left:0;width:22px;height:2px;
@@ -257,7 +264,7 @@ footer a{color:#d7e2dc}
 .sitenav[open] .burger::before{top:0;transform:rotate(45deg);transition:top .18s ease,transform .22s ease .16s}
 .sitenav[open] .burger::after{top:0;transform:rotate(-45deg);transition:top .18s ease,transform .22s ease .16s}
 @media(prefers-reduced-motion:reduce){.sitenav .burger,.sitenav .burger::before,.sitenav .burger::after{transition:none}}
-.navPanel{position:fixed;inset:0;z-index:60;background:var(--paper);overflow-y:auto;
+.navPanel{position:fixed;inset:0;z-index:2;background:var(--paper);overflow-y:auto;
   padding:96px 0 56px;-webkit-overflow-scrolling:touch}
 .navPanel ul{list-style:none;margin:0;padding:0}
 .navPanel li+li{border-top:1px solid var(--line)}
@@ -344,8 +351,9 @@ footer a{color:#d7e2dc}
     </nav>
     <a class="barcta" href="tel:+447776153426"><span class="short">Call</span><span class="long">Call 07776 153 426</span></a>
     <details class="sitenav">
-      <summary aria-label="Open menu"><span class="burger" aria-hidden="true"></span></summary>
-      <div class="navPanel">
+      <summary aria-label="Open menu" aria-controls="sitemenu"><span class="burger" aria-hidden="true"></span></summary>
+      </details>
+    <div class="navPanel" id="sitemenu">
         <div class="wrap">
           <ul>
             <li><a href="#help">How I can help</a></li>
@@ -363,7 +371,7 @@ footer a{color:#d7e2dc}
           </div>
         </div>
       </div>
-    </details>
+    
   </div>
 </header>
 
