@@ -48,23 +48,31 @@ nav a:hover{color:var(--teal)}
 @media(min-width:1060px){nav a[data-nav="faq"]{display:inline}.headcta{margin-left:0}}
 
 /* hero */
-/* The hero is a composition of very soft gradients rather than one flat band:
-   the ground lifts toward the bottom, which is what his near-black t-shirt sits
-   against — at the old #0b2a34 the shirt and the band were 1.19:1 apart and the
-   edge just bled; against the lifted #17495a it is 1.82:1, enough to read the
-   shoulder line without outlining it. The white copy is unaffected: it still
-   measures 8.72:1 at the lightest point of the ramp. */
+/* Above 880px he stands on the circular plate, which does the separating, so
+   the band stays flat. Below it he goes full-viewport and his near-black
+   t-shirt meets the band directly — at a flat #0b2a34 the two are 1.19:1 apart
+   and the edge simply bleeds. There the ground lifts: mostly vertical but
+   raked a little toward the lower left, which is where the near shoulder sits
+   and where the problem is worst. Against the lifted #17495a the shirt reads at
+   1.82:1, and the copy is unaffected — 9.83:1 for the headline, 5.05:1 for the
+   eyebrow, measured at the lightest stop. */
 .hero{color:#eaf3f5;padding:calc(var(--section)*.85) 0 0;position:relative;isolation:isolate;overflow:clip;
-  background:linear-gradient(178deg,#0a2530 0%,#0b2a34 44%,#123f4d 78%,#17495a 100%)}
+  background:var(--deep)}
+@media(max-width:879px){
+  .hero{background:linear-gradient(199deg,#0a2530 0%,#0b2a34 38%,#10394a 72%,#17495a 100%)}
+}
 /* A very large, very quiet dark round behind the top left, so the corner has
    some weight and the eye starts there. */
 .hero .wash{position:absolute;inset:-45% 20% -25% -35%;z-index:-1;pointer-events:none;
   background:radial-gradient(closest-side,rgba(2,14,19,.9) 0%,rgba(2,14,19,.55) 45%,
     rgba(2,14,19,.18) 70%,transparent 88%)}
-/* and a soft counter-pool low and right, under him, to keep the lift from
-   reading as a hard horizon */
-.hero .wash2{position:absolute;inset:35% -25% -40% 30%;z-index:-1;pointer-events:none;
-  background:radial-gradient(closest-side,rgba(29,92,112,.55) 0%,rgba(29,92,112,.22) 52%,transparent 80%)}
+/* a soft counter-pool low and right, so the lift never reads as a horizon —
+   only needed while the lift itself is in play */
+.hero .wash2{display:none}
+@media(max-width:879px){
+  .hero .wash2{display:block;position:absolute;inset:40% -25% -40% 25%;z-index:-1;pointer-events:none;
+    background:radial-gradient(closest-side,rgba(29,92,112,.5) 0%,rgba(29,92,112,.2) 52%,transparent 80%)}
+}
 .heroGrid{display:grid;gap:44px;align-items:center}
 @media(min-width:880px){.heroGrid{grid-template-columns:1.1fr .9fr;gap:64px}}
 .eyebrow{font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:#7fc4d8;font-weight:600;margin:0 0 20px}
@@ -254,7 +262,7 @@ footer a{color:#d3e6ea}
         directly — you'll be speaking to me, not to a receptionist.</p>
     </div>
     <figure class="heroFig">
-      <img src="assets/john-cutout-dark.webp?v14" alt="John Goss" width="1800" height="1452" fetchpriority="high">
+      <img src="assets/john-cutout-dark.webp?v15" alt="John Goss" width="1800" height="1452" fetchpriority="high">
     </figure>
   </div>
 </section>
@@ -343,7 +351,7 @@ footer a{color:#d3e6ea}
       </div>
     </div>
     <figure class="aboutPhoto">
-      <img src="assets/john-portrait-round.webp?v14" alt="John Goss" width="620" height="620" loading="lazy">
+      <img src="assets/john-portrait-round.webp?v15" alt="John Goss" width="620" height="620" loading="lazy">
     </figure>
   </div>
 </section>

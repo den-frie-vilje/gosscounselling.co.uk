@@ -60,7 +60,7 @@ def knockout():
     print(f"  knockout: {im.size[0]}x{im.size[1]}")
 
 
-def dark_variant(bg=(18, 63, 77)):
+def dark_variant(bg=(13, 48, 59)):
     """Prepare the figure for a dark ground.
 
     A matte lifted from a white backdrop is doubly wrong on a dark band: the
@@ -78,6 +78,9 @@ def dark_variant(bg=(18, 63, 77)):
       4. negative light wrap — a narrow inward darkening, the inverse of the
          light wrap you would add on a bright plate
     """
+    # Two contexts: the circular plate (7,32,40) above 880px and the lifted band
+    # (23,73,90) below it. The blend target sits between them, so neither shows
+    # more than about 10 points of luminance mismatch at the very edge.
     bgv = np.array(bg, float)
     m = np.array(Image.open(f"{OUT}/john-cutout.webp").convert("RGBA")).astype(np.float32)
     A = m[..., 3:4] / 255.0
