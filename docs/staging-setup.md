@@ -15,10 +15,9 @@ picker at `/`, the four directions one click away.
   in `nas-sites` on every push to `staging`, and signs the image with Sigstore
   keyless — the same trust path the other three sites use.
 - Image: `ghcr.io/den-frie-vilje/gosscounselling:staging-latest`.
-- `deploy/compose.staging.yml` and `deploy/Caddyfile.staging` follow the
-  chrishemmings.co.uk shape, minus the CMS and OAuth proxy — there is no app
-  yet, only static prototypes — and minus the published host port, since the
-  project reaches the front door over the shared network instead.
+- `deploy/compose.staging.yml`, `deploy/Caddyfile.staging` and
+  `deploy/staging.env.example` follow the chrishemmings.co.uk shape, minus the
+  CMS and OAuth proxy — there is no app yet, only static prototypes.
 - Built and run locally: every route 200s, `/robots.txt` is Disallow-all, and
   missing detail-page routes 302 back to the picker.
 
@@ -53,10 +52,24 @@ the right `root:docker 0640` permissions, and offers a one-off agent fire as a
 smoke test. Take the smoke test — it is the fastest way to find out whether the
 signature verifies.
 
-Two of its prompts open `$EDITOR` and both can be left as they are:
+Two of its prompts open `$EDITOR`:
 
-- **the per-stack `staging.env`** — for compose-time `${VAR}` substitutions.
-  This stack has none: no host port to set and no OAuth secrets. Save it empty.
+- **the per-stack `staging.env`** — this is where `CADDY_PORT` goes. Fill it
+  from `deploy/staging.env.example`. **This is the file the port lives in** —
+  not the agent's `sites.d/` config, which is why grepping `sites.d/` for
+  `CADDY_PORT` turns up nothing. Check what is actually taken before settling
+  on a number:
+
+  ```sh
+  grep -rh CADDY_PORT /volume1/docker/*/*/*.env
+  docker ps --format '{{.Names}}\t{{.Ports}}' | grep 127.0.0.1
+  ```
+
+  Allocation starts at **18080** — the 80xx range collides with Jitsi on this
+  NAS. The example proposes `18084`. Don't trust the `*.env.example` files in
+  the sibling repos as an allocation table: they contradict each other
+  (skovbyesexologi and chrishemmings both claim 18080 for staging), so the
+  running NAS is the only source of truth.
 - **`CF_API_TOKEN` / `CF_ZONE_IDS`** in the sites.d file — Cloudflare cache
   purge. Staging is not behind Cloudflare, so leave both empty and the agent
   skips purging entirely.
@@ -83,14 +96,16 @@ never comes up, read the agent log before suspecting the image —
 - **DNS**: `gosscounselling-co-uk.stage.denfrievilje.dk` → the NAS, same as the
   other three staging hosts. Note the **dashes**: the Let's Encrypt wildcard
   matches one label only, so dots in the site name would break the cert.
-- **Front door**: the stack publishes no host port. Its Caddy joins the shared
-  `nas-deploy` network under the alias **`gosscounselling-staging`**, so the
-  front door routes to `http://gosscounselling-staging:80` by name.
+- **DSM → Web Station**: new vhost for
+  `gosscounselling-co-uk.stage.denfrievilje.dk`, proxying to
+  `http://127.0.0.1:${CADDY_PORT}`, bound to the `*.stage.denfrievilje.dk`
+  wildcard cert. GUI only — Web Station's APIs are too unstable to script.
 
-  If this NAS still proxies through DSM Web Station rather than a containerised
-  front door, Web Station runs on the host and cannot resolve that alias — in
-  that case add `ports: - "127.0.0.1:8083:80"` back to the caddy service and
-  point the DSM rule at it. One line either way.
+  Web Station terminates TLS on the host, which is why the stack publishes a
+  loopback port rather than being reached by container name over `nas-deploy`.
+  The Caddy service does still carry the alias `gosscounselling-staging` on that
+  shared network, so if the front door ever becomes containerised, the port can
+  be dropped and the vhost pointed at the alias instead.
 - The wildcard certificate should cover it; if DSM has a per-host cert list,
   add this host to it.
 

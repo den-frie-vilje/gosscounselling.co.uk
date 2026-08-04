@@ -16,15 +16,19 @@ services:
   caddy:
     image: caddy:2-alpine@sha256:834468128c7696cec0ceea6172f7d692daf645ae51983ca76e39da54a97c570d
     restart: unless-stopped
-    # No published host port. The project has its own internal network, and the
-    # front door reaches this container over the shared `nas-deploy` network by
-    # the alias below — so there is no per-site loopback port to allocate or
-    # collide. The alias is explicit because the service is called `caddy` in
-    # every site's compose; only the alias is unique across the shared network.
+    # DSM Web Station terminates TLS on the host and proxies to a loopback
+    # port, so this stack has to publish one. The value comes from the per-stack
+    # staging.env (see deploy/staging.env.example) rather than being baked here,
+    # which is how the sibling sites do it.
+    #
+    # Ports live in /volume1/docker/<domain>/<env>/<env>.env — NOT in the
+    # agent's sites.d/ files, which is where you would first think to look.
     networks:
       nas-deploy:
         aliases: [gosscounselling-staging]
       internal:
+    ports:
+      - "127.0.0.1:${CADDY_PORT:-18084}:80"
     volumes:
       - ./Caddyfile.staging:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

@@ -19,15 +19,19 @@ Three assets come out in design/assets/:
                           narrower than the image: the crop is made by the frame or the viewport,
                           never by a line floating mid-section.
 
-  john-cutout-dark.webp   the same figure, same matte, with the white cyclorama taken back
-                          out of his COLOUR so `F*a + ground*(1-a)` is right on any ground.
-                          Two published steps, both in solid_matte() below: fast multi-level
-                          foreground estimation (Germer et al., ICPR 2020, via PyMatting) for
-                          the partially covered pixels, then an inverse light wrap — a fitted
-                          per-pixel gain 1/(1+psi) in linear light — for the real rim light the
-                          backdrop threw onto his shoulders. The matte is the client's,
-                          verbatim: no choke, no dilate, so the silhouette and the retouched
-                          crown cannot move. Needs `python3 -m pip install pymatting`.
+  john-cutout-dark.webp   the same figure, same silhouette, with the white cyclorama taken
+                          back out of BOTH his colour and his matte, so `F*a + ground*(1-a)`
+                          is right on any ground. Four published steps, all in solid_matte()
+                          below: a known-backing re-solve of alpha in the fringe (Wang &
+                          Cohen 2007 eq. 2 with B measured rather than sampled, under the
+                          sparsity prior of Rhemann et al. 2008); fast multi-level foreground
+                          estimation (Germer et al., ICPR 2020, via PyMatting); a one-sided
+                          foreground-gamut bound; and an inverse light wrap — a fitted
+                          per-pixel gain 1/(1+psi) in linear light — for the real rim light
+                          the backdrop threw onto his shoulders. No choke and no dilate: the
+                          matte's support, its per-column top edge and the retouched crown's
+                          shape are bit-identical to the master, and partial coverage stays
+                          at 1.872%. Needs `python3 -m pip install pymatting`.
 
   john-portrait-round.webp  the dark studio frame, which KEEPS its own background, graded and
                           cropped square on his face for circular use at small sizes.
@@ -78,7 +82,7 @@ def _geodesic_extend(vals, known, mask, scale=2, schedule=((3.0, 70), (2.0, 90),
     ear/skull crevice inherits from its own surface and not from the bright cheek on
     the far side of the gap. That crossing-the-gap mistake is what put white blips in
     the concavities in earlier attempts.
-    """
+
     Takes a scalar plane or an RGB stack. Rhemann, Rother & Gelautz ("Improving Color
     Modeling for Alpha Matting", BMVC 2008, §2.1) make the same argument for their
     foreground SAMPLES: spreading the sample set from the spatially nearest known pixel
@@ -277,15 +281,16 @@ def solid_matte():
     An = np.clip(np.where(hold, a_ls, An), 0, 1)
 
     # -- 3. foreground colour estimation (Germer et al. 2020), then the gamut bound ---
-    def delight(alpha):
+    def delight(alpha, gamut=True):
         F = estimate_foreground_ml(np.clip(I / 255.0, 0, 1), alpha,
                                    regularization=5e-3, gradient_weight=0.1) * 255.0
         lw = np.array([0.2126, 0.7152, 0.0722])
-        Yf = (_srgb_to_linear(F) * lw).sum(-1)
-        Yp = (Fplin * lw).sum(-1)
-        cap = np.where(band | hold,
-                       np.minimum(1.0, 1.15 * np.maximum(Yp, 1e-4) / np.maximum(Yf, 1e-6)), 1.0)
-        F = np.clip(_linear_to_srgb(_srgb_to_linear(F) * cap[..., None]), 0, 255)
+        if gamut:
+            Yf = (_srgb_to_linear(F) * lw).sum(-1)
+            Yp = (Fplin * lw).sum(-1)
+            cap = np.where(band | hold, np.minimum(
+                1.0, 1.15 * np.maximum(Yp, 1e-4) / np.maximum(Yf, 1e-6)), 1.0)
+            F = np.clip(_linear_to_srgb(_srgb_to_linear(F) * cap[..., None]), 0, 255)
         F[settled] = I[settled]                       # alpha == 1 => F == I, exactly
 
         # -- 4. inverse light wrap: fit psi = E_backdrop / E_key, divide it out -------
@@ -309,7 +314,7 @@ def solid_matte():
         psi = gaussian_filter(psi, 8.0, mode="nearest") * (t * t * (3 - 2 * t))
         return F, np.clip(_linear_to_srgb(Flin / (1.0 + psi)[..., None]), 0, 255), psi
 
-    F0, Fd0, _ = delight(A)                           # what the previous method produced
+    _, Fd0, _ = delight(A, gamut=False)               # exactly what the previous method gave
     F, Fd, psi = delight(An)
 
     Image.fromarray(np.dstack([Fd, An * 255.0]).round().astype(np.uint8), "RGBA") \
