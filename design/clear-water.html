@@ -355,6 +355,26 @@ footer a{color:#d3e6ea}
 @media(max-width:479px){.protochip{left:12px;bottom:12px;padding:8px 13px;gap:7px}
   .protochip .k{font-size:10px}.protochip .n{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.protochip,.protochip .ar{transition:none}.protochip:hover .ar{transform:none}}
+
+/* ---- narrow screens: don't pay the gutter twice ----------------------
+   A boxed container carries its own padding on top of the 24px page gutter, so
+   at 360px the text inside these boxes ran 256px against 312px for the prose
+   they sit under. The box keeps an inset from its own edge; it is the doubling
+   that has to go, so the padding relaxes as the viewport does and returns to
+   its desktop value above 600px. `.note` keeps its 4px left rule, which is the
+   border rather than padding, so the marker stays as wide as it was.
+
+   This block sits at the end of the stylesheet on purpose. Placed next to the
+   rules it amends it would lose to them on equal specificity, and the page
+   would measure unchanged while the CSS read as correct. */
+@media(max-width:600px){
+  .note{padding:22px 18px}
+  .bodies{padding:24px 18px}
+}
+@media(max-width:380px){
+  .note{padding:20px 15px}
+  .bodies{padding:22px 15px}
+}
 </style>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
