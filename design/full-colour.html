@@ -422,7 +422,9 @@ footer a:hover{color:#fff}
 .sitenav[open] .burger::before{top:0;transform:rotate(45deg);transition:top .18s ease,transform .22s ease .16s}
 .sitenav[open] .burger::after{top:0;transform:rotate(-45deg);transition:top .18s ease,transform .22s ease .16s}
 @media(prefers-reduced-motion:reduce){.sitenav .burger,.sitenav .burger::before,.sitenav .burger::after{transition:none}}
-.navPanel{position:fixed;inset:0;z-index:2;background:var(--cream);overflow-y:auto;
+/* A deeper shade of the cream, so the menu is a surface over the page rather
+   than the page with links on it. */
+.navPanel{position:fixed;inset:0;z-index:2;background:#f3e0d2;overflow-y:auto;
   padding:96px 0 56px;-webkit-overflow-scrolling:touch}
 .navPanel ul{list-style:none;margin:0;padding:0}
 .navPanel li+li{border-top:1px solid rgba(36,21,40,.18)}

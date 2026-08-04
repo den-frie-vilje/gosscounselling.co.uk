@@ -1,0 +1,24 @@
+# Push to `staging` builds, pushes and Sigstore-signs the prototype image.
+# CI never touches the NAS: the pull-only agent verifies the signature and
+# deploys on its own schedule.
+
+name: Deploy to staging
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: den-frie-vilje/nas-sites/.github/workflows/build-and-sign.yml@main
+    with:
+      environment: staging
+      dockerfile: deploy/Dockerfile
+      image-name: ghcr.io/den-frie-vilje/gosscounselling
+      platforms: linux/amd64
+      build-args: |
+        PUBLIC_GIT_SHA=${{ github.sha }}
+      # Polls until this commit's SHA appears in /_meta.json, which is only
+      # true once the agent has actually pulled and started the new image.
+      verify-url: https://gosscounselling-co-uk.stage.denfrievilje.dk/_meta.json
