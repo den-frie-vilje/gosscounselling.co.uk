@@ -15,9 +15,10 @@ picker at `/`, the four directions one click away.
   in `nas-sites` on every push to `staging`, and signs the image with Sigstore
   keyless — the same trust path the other three sites use.
 - Image: `ghcr.io/den-frie-vilje/gosscounselling:staging-latest`.
-- `deploy/compose.staging.yml`, `deploy/Caddyfile.staging`,
-  `deploy/staging.env.example` follow the chrishemmings.co.uk shape, minus the
-  CMS and OAuth proxy — there is no app yet, only static prototypes.
+- `deploy/compose.staging.yml` and `deploy/Caddyfile.staging` follow the
+  chrishemmings.co.uk shape, minus the CMS and OAuth proxy — there is no app
+  yet, only static prototypes — and minus the published host port, since the
+  project reaches the front door over the shared network instead.
 - Built and run locally: every route 200s, `/robots.txt` is Disallow-all, and
   missing detail-page routes 302 back to the picker.
 
@@ -28,35 +29,22 @@ the NAS is configured, re-run the job (or push again) and it will go green.
 
 ---
 
-## 1. Pick a port
+## 1. Create the site directory on the NAS
 
-The agent runs one Caddy per site and each needs its own loopback port. Check
-what is taken:
-
-```bash
-grep -rh CADDY_PORT /volume1/docker/nas-sites/sites.d/ 2>/dev/null | sort
-```
-
-`deploy/staging.env.example` proposes `8083`. If that collides, choose a free
-one — it only has to be consistent between `staging.env` and the DSM rule below.
-
-## 2. Create the site directory on the NAS
+Site directories on the NAS carry the apex domain, `.co.uk` included:
 
 ```bash
-mkdir -p /volume1/docker/gosscounselling/staging
-cd /volume1/docker/gosscounselling/staging
+mkdir -p /volume1/docker/gosscounselling.co.uk/staging
+cd /volume1/docker/gosscounselling.co.uk/staging
 ```
 
 Copy in the two files from the repo (`deploy/compose.staging.yml` and
 `deploy/Caddyfile.staging`), or let the deploy agent clone the repo the way it
 does for the other sites — whichever matches how chrishemmings is set up on
-this NAS. Then write the env file, which is **not** in git:
+this NAS. There is no env file: this stack publishes no host port and needs no
+secrets.
 
-```bash
-printf 'CADDY_PORT=8083\n' > staging.env
-```
-
-## 3. Register the site with the deploy agent
+## 2. Register the site with the deploy agent
 
 Create `/volume1/docker/nas-sites/sites.d/gosscounselling-staging.env` from
 `nas-sites/nas-agent/sites.env.example`. It needs the repo, the branch, the
@@ -72,18 +60,23 @@ Nothing deploys if the signature does not verify — that is the point of the
 model, so if it stays down, check the agent log before assuming the image is
 bad.
 
-## 4. DNS and the DSM front door
+## 3. DNS and the front door
 
 - **DNS**: `gosscounselling-co-uk.stage.denfrievilje.dk` → the NAS, same as the
   other three staging hosts. Note the **dashes**: the Let's Encrypt wildcard
   matches one label only, so dots in the site name would break the cert.
-- **DSM → Login Portal → Reverse Proxy**: new rule,
-  `https://gosscounselling-co-uk.stage.denfrievilje.dk` → `http://127.0.0.1:8083`,
-  with WebSocket off (not needed) and HSTS as per the other rules.
+- **Front door**: the stack publishes no host port. Its Caddy joins the shared
+  `nas-deploy` network under the alias **`gosscounselling-staging`**, so the
+  front door routes to `http://gosscounselling-staging:80` by name.
+
+  If this NAS still proxies through DSM Web Station rather than a containerised
+  front door, Web Station runs on the host and cannot resolve that alias — in
+  that case add `ports: - "127.0.0.1:8083:80"` back to the caddy service and
+  point the DSM rule at it. One line either way.
 - The wildcard certificate should cover it; if DSM has a per-host cert list,
   add this host to it.
 
-## 5. Check it
+## 4. Check it
 
 ```bash
 curl -sI https://gosscounselling-co-uk.stage.denfrievilje.dk/ | grep -i x-robots-tag

@@ -79,17 +79,32 @@ def _geodesic_extend(vals, known, mask, scale=2, schedule=((3.0, 70), (2.0, 90),
     the far side of the gap. That crossing-the-gap mistake is what put white blips in
     the concavities in earlier attempts.
     """
+    Takes a scalar plane or an RGB stack. Rhemann, Rother & Gelautz ("Improving Color
+    Modeling for Alpha Matting", BMVC 2008, §2.1) make the same argument for their
+    foreground SAMPLES: spreading the sample set from the spatially nearest known pixel
+    "includes only bright colors, which do not match the true foreground color", so they
+    spread it in geodesic distance instead, "which respects the shape of the foreground
+    object". Here the same field doubles as the foreground colour prior F_prior.
+    """
     H, W = mask.shape
     k = known[::scale, ::scale].astype(np.float64)
     mk = mask[::scale, ::scale].astype(np.float64)
     src = vals[::scale, ::scale]
-    cur = src * k
+    rgb = vals.ndim == 3
+    cur = src * (k[..., None] if rgb else k)
     for sigma, iters in schedule:
         for _ in range(iters):
-            u = gaussian_filter(cur * mk, sigma, mode="nearest")
             w = gaussian_filter(mk, sigma, mode="nearest")
-            cur = np.where(k > 0.5, src, u / np.maximum(w, 1e-12))
-    out = zoom(cur, (H / cur.shape[0], W / cur.shape[1]), order=1)
+            if rgb:
+                u = np.dstack([gaussian_filter(cur[..., c] * mk, sigma, mode="nearest")
+                               for c in range(3)])
+                cur = np.where(k[..., None] > 0.5, src, u / np.maximum(w, 1e-12)[..., None])
+            else:
+                u = gaussian_filter(cur * mk, sigma, mode="nearest")
+                cur = np.where(k > 0.5, src, u / np.maximum(w, 1e-12))
+    sc = (H / cur.shape[0], W / cur.shape[1])
+    out = (np.dstack([zoom(cur[..., c], sc, order=1) for c in range(3)]) if rgb
+           else zoom(cur, sc, order=1))
     return out[:H, :W]
 
 
@@ -142,9 +157,63 @@ def solid_matte():
        term is taken and per-strand detail is not. psi is forced to zero by 55px in,
        so the interior of the shirt is bit-identical to the master.
 
-    The matte itself is NOT touched: alpha is the client's, verbatim. No choke — hair
-    lives at alpha 0.2-0.5 and a choke deletes it — and no dilate, so the silhouette
-    and the retouched crown are unchanged by construction.
+    3. ALPHA CONTAMINATION — the one that (1) and (2) cannot reach. Where the backdrop
+       shows BETWEEN hairs, the true answer is a low alpha over a dark F. If the matte
+       instead says high alpha, the backdrop's luminance has been baked into the MATTE,
+       and no foreground estimator can take it out again: alpha is an input to both of
+       the steps above. Measured here on the client's master, over the fringe pixels
+       where the plate is not clipped: at alpha 0.10-0.30 the photograph implies a
+       median alpha of 0.03, at 0.30-0.50 it implies 0.15. The matte is a soft ramp
+       where the picture is nearly binary — the "blurry artifacts" that Rhemann, Rother
+       & Gelautz (BMVC 2008, §2.3) counter with a SPARSITY PRIOR, "a sparsity prior
+       that pushes alpha towards 0 or 1", on the grounds that "mixed pixels are very
+       likely to occur only at the boundary of an object and most parts of the image
+       belong to either exclusively fore- or background".
+
+       Here that prior does not have to be guessed at, because the backing is KNOWN.
+       Smith & Blinn show the single-backing matting problem is underdetermined by
+       exactly one equation; supply one and it closes. The one supplied is the local
+       foreground colour F_prior, taken by geodesic extension of the pixels the client
+       already calls opaque (Rhemann et al. §2.1). Alpha then follows from Wang &
+       Cohen's projection ("Optimized Color Sampling for Robust Matting", CVPR 2007,
+       eq. 2), alpha = (C - B).(F - B) / ||F - B||^2 — except that B is not sampled and
+       guessed, it is the measured cyclorama, a flat 255. Run in LINEAR light, because
+       the mixture is linear in radiance and not in sRGB.
+
+       Applied as: a monotone transfer curve fitted from that solve (the systematic
+       softness, one curve for the whole fringe), times a spatially smoothed local
+       residual (the departure from it, e.g. a crevice). Never raised, only lowered;
+       floored so that every pixel with alpha > 0.02 keeps alpha > 0.02. So this is
+       NOT a choke: no pixel is removed from the matte, the support and the silhouette
+       are bit-identical, and partial coverage stays at 1.872% of the image. It is a
+       re-shaping of the ramp, at a fixed composite against the cyclorama the picture
+       was actually shot on.
+
+       Two things are deliberately NOT done. The fitted curve also wants to RAISE alpha
+       between 0.6 and 0.98; that is suppressed, because hardening the edge would move
+       the opaque set. And where the plate is clipped at 255 the equation carries no
+       information at all, so alpha is left alone there and only F is corrected.
+
+    4. FOREGROUND GAMUT — spill only ever ADDS light. So in the fringe the figure
+       cannot be brighter than the same surface reads where it is opaque. F is capped
+       at 1.15x F_prior in luminance (a gain, so hue and saturation are untouched).
+       This is the achromatic-backing analogue of the Vlahos/Ultimatte despill rule,
+       which is a one-sided clamp for the same physical reason.
+
+    5. HOLDOUT / CORE MATTE — the ear/skull corner. Compositors trim a core matte where
+       it demonstrably covers backdrop; that is what a holdout is for. Pixels the master
+       calls opaque (alpha >= 250/255) whose plate colour the known-backing solve reads
+       as mostly backdrop (alpha_ls < 0.5), at high conditioning, within 4px of the
+       fringe: in the whole 2.6-megapixel image that test selects EIGHT pixels, all of
+       them in one blob at x 594-597, y 439-441 — the left ear/skull corner the client
+       flagged. They are re-solved. Everything else the client calls opaque stays
+       opaque. This is the only place the matte's opaque set is touched, and the script
+       prints the blob list so it can be checked or vetoed.
+
+    The silhouette is NOT touched: no choke, no dilate; the outer support of the matte
+    and its per-column top edge are bit-identical to the client's master, including the
+    hand-painted crown, whose shape is unchanged (its alpha VALUES take the same global
+    curve as the rest of the fringe — see the verification block).
     """
     try:
         from pymatting import estimate_foreground_ml

@@ -1,4 +1,5 @@
 # Staging stack — gosscounselling-co-uk.stage.denfrievilje.dk
+# Lives at /volume1/docker/gosscounselling.co.uk/staging on the NAS.
 #
 # Reconciled by the nas-sites pull-only agent within ~5 minutes of a push to
 # `staging`. Two containers only: the front door and the static prototypes.
@@ -15,9 +16,15 @@ services:
   caddy:
     image: caddy:2-alpine@sha256:834468128c7696cec0ceea6172f7d692daf645ae51983ca76e39da54a97c570d
     restart: unless-stopped
-    networks: [nas-deploy, internal]
-    ports:
-      - "127.0.0.1:${CADDY_PORT:-8083}:80"
+    # No published host port. The project has its own internal network, and the
+    # front door reaches this container over the shared `nas-deploy` network by
+    # the alias below — so there is no per-site loopback port to allocate or
+    # collide. The alias is explicit because the service is called `caddy` in
+    # every site's compose; only the alias is unique across the shared network.
+    networks:
+      nas-deploy:
+        aliases: [gosscounselling-staging]
+      internal:
     volumes:
       - ./Caddyfile.staging:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
