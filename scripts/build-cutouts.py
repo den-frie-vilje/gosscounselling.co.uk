@@ -64,49 +64,76 @@ def knockout():
 
 
 def solid_matte():
-    """One asset that composites correctly against ANY ground.
+    """One asset that composites correctly against ANY ground, without losing him.
 
-    The earlier variants blended their edge toward a specific destination
-    colour, which meant one asset per background — and Clear Water has two. The
-    fix is to make the matte honest instead of tuned:
+    The point is to make the matte honest rather than tuned to one background:
+    if every pixel carries the SUBJECT's colour, then
+    `out = subject x alpha + ground x (1 - alpha)` is correct wherever it lands.
 
-      1. colour edge-extend  every partially covered pixel takes the colour of
-         the nearest fully opaque pixel, so no backdrop colour survives anywhere
-         in the fringe — the RGB is the subject's own, everywhere
-      2. choke               pull the matte in past the contaminated coverage
-      3. harden the alpha    compress the remaining ramp to about a pixel, so
-         there is almost no partial coverage left to carry a wrong colour
+    Two things must not be done in the name of that, both learned the hard way:
 
-    Then `out = subject x alpha + ground x (1 - alpha)` is simply correct for
-    whatever ground it lands on. At display size the browser resamples the hard
-    edge back to a smooth one, using the subject's colour rather than a guess at
-    the background's.
+      * do not choke hard. Hair and stubble live at alpha 0.2-0.5; a 0.30 choke
+        deletes them and he loses his edge entirely.
+      * do not fill the fringe from the nearest opaque pixel by straight
+        distance. Where the earlobe meets the skull the nearest opaque pixel is
+        across the crevice — bright cheek — so the gap fills with white blips.
+        Colour is grown outward one ring at a time instead, so it travels along
+        the surface and each fringe pixel inherits from its own neighbourhood.
     """
     m = np.array(Image.open(f"{OUT}/john-cutout.webp").convert("RGBA")).astype(np.float32)
     A = m[..., 3:4] / 255.0
-    RGB = m[..., :3]
-    core = A[..., 0] >= 0.97
-    _, ind = distance_transform_edt(~core, return_indices=True)
-    RGB2 = RGB[ind[0], ind[1]]                           # 1. subject colour everywhere
-    A2 = np.clip((A - 0.30) / 0.55, 0, 1)                # 2. choke
-    A3 = np.clip((A2 - 0.5) * 6.0 + 0.5, 0, 1)           # 3. harden to ~1px of ramp
-    Image.fromarray(np.dstack([np.clip(RGB2, 0, 255), np.clip(A3 * 255, 0, 255)]).astype(np.uint8),
+    RGB = m[..., :3].copy()
+    known = A[..., 0] >= 0.92
+    filled = RGB.copy()
+    have = known.copy()
+    # grow colour outward one ring at a time — along the surface, not across gaps
+    for _ in range(14):
+        h = have.astype(np.float32)
+        num = np.zeros_like(filled)
+        den = np.zeros_like(h)
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)):
+            wgt = 1.0 if abs(dy) + abs(dx) == 1 else 0.5
+            num += np.roll(np.roll(filled * h[..., None], dy, 0), dx, 1) * wgt
+            den += np.roll(np.roll(h, dy, 0), dx, 1) * wgt
+        grow = (den > 0) & (~have)
+        filled[grow] = (num[grow] / den[grow][..., None])
+        have |= grow
+        if have.all():
+            break
+    # keep his own colour where the pixel is essentially opaque; take the grown
+    # colour where it is not, since that is where the backdrop contaminated it
+    w = np.clip((A - 0.10) / 0.82, 0, 1)
+    RGB2 = RGB * w + filled * (1 - w)
+    A2 = np.clip((A - 0.05) / 0.95, 0, 1)          # a whisker of choke, no more
+    Image.fromarray(np.dstack([np.clip(RGB2, 0, 255), np.clip(A2 * 255, 0, 255)]).astype(np.uint8),
                     "RGBA").save(f"{OUT}/john-cutout-dark.webp", "WEBP",
                                  quality=92, alpha_quality=100, exact=True, method=6)
+
     d = np.array(Image.open(f"{OUT}/john-cutout-dark.webp").convert("RGBA")).astype(np.float32)
     aa = d[..., 3:4] / 255.0
     partial = ((aa > 0.02) & (aa < 0.98)).mean() * 100
-    print("  solid matte: %.2f%% of pixels carry partial coverage (was ~2.8%%)" % partial)
-    for bg in [(7, 32, 40), (30, 98, 120), (247, 244, 238)]:
+    orig_partial = ((A > 0.02) & (A < 0.98)).mean() * 100
+    print("  partial coverage kept: %.2f%% of pixels (original matte %.2f%%) — that is the hair"
+          % (partial, orig_partial))
+    # blips: fringe pixels far brighter than their own neighbourhood
+    fringe = (aa[..., 0] > 0.05) & (aa[..., 0] < 0.95)
+    lumd = 0.2126 * d[..., 0] + 0.7152 * d[..., 1] + 0.0722 * d[..., 2]
+    loc = np.zeros_like(lumd)
+    for dy in (-2, -1, 0, 1, 2):
+        for dx in (-2, -1, 0, 1, 2):
+            loc += np.roll(np.roll(lumd, dy, 0), dx, 1)
+    loc /= 25.0
+    blips = int((fringe & (lumd - loc > 45)).sum())
+    print("  bright specks in the fringe: %d px" % blips)
+    for bg in [(7, 32, 40), (30, 98, 120)]:
         bgv = np.array(bg, float)
         comp = d[..., :3] * aa + bgv * (1 - aa)
         cl = 0.2126 * comp[..., 0] + 0.7152 * comp[..., 1] + 0.0722 * comp[..., 2]
         dd = distance_transform_edt(aa[..., 0] > 0.5)
         prof = [float(cl[(dd >= lo) & (dd < hi) & (aa[..., 0] > 0.5)].mean())
                 for lo, hi in [(1, 2), (2, 4), (4, 8), (8, 20)]]
-        bgl = 0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2]
-        print("    on rgb%-16s (lum %3.0f): edge %s  -> rim vs interior %+.1f"
-              % (str(tuple(bg)), bgl, " ".join(f"{v:.0f}" for v in prof), prof[0] - prof[-1]))
+        print("    on rgb%-15s edge %s -> rim vs interior %+.1f"
+              % (str(tuple(bg)), " ".join(f"{v:.0f}" for v in prof), prof[0] - prof[-1]))
 
 
 def round_portrait():
