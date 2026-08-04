@@ -140,11 +140,18 @@ nav a:hover{color:var(--clay-dk)}
 /* Cutout: his shoulders are cut by the edges of the source photograph, so the
    image is always wider than its frame — the crop you see is made by the frame
    on desktop and by the viewport on mobile, and he stands on the band's floor. */
-.heroFig{margin:0;overflow:hidden;display:block;align-self:end}
+.heroFig{margin:0;overflow:hidden;display:block;align-self:end;position:relative}
 .heroFig img{width:122%;max-width:none;margin-left:-11%;height:auto;display:block}
 @media(max-width:899px){
   .heroFig{width:100vw;margin-left:calc(50% - 50vw);margin-top:12px}
   .heroFig img{width:120vw;margin-left:-10vw}
+}
+/* Above 900px he is no longer leaning on the viewport, so the shoulder crop has
+   nothing to belong to. A circular plate a shade deeper than the cream makes
+   the crop instead, and the shoulders leave through its lower curve. */
+@media(min-width:900px){
+  .heroFig{aspect-ratio:1;border-radius:50%;background:#f2e5d6;align-self:center}
+  .heroFig img{position:absolute;left:50%;bottom:0;width:114%;margin-left:0;transform:translateX(-50%)}
 }
 
 /* colour-block sections */
@@ -250,12 +257,21 @@ details .body p{margin:0 0 14px}
 details .body ul{margin:0 0 14px;padding-left:20px}
 
 /* contact */
-#contact{background:var(--ink);color:#f6ece1;position:relative;isolation:isolate;overflow:clip}
+/* Inverted: the page finishes on warm paper, and the dark copyright strip below
+   closes it. The spectrum rule carries the colour across the join. */
+#contact{background:var(--cream);color:var(--ink);position:relative;isolation:isolate;overflow:clip}
 #contact::before{content:"";position:absolute;left:0;right:0;top:0;height:8px;
   background:var(--spectrum)}
-#contact h2{color:var(--hd)}
-#contact .kicker{color:#f0a7b8}
-#contact .lead{color:#d8c7ce}
+#contact h2{color:var(--ink)}
+#contact .kicker{color:var(--magenta)}
+#contact .lead{color:var(--muted)}
+#contact .big>a{border-top-color:rgba(36,21,40,.18);color:var(--ink)}
+#contact .big .k{color:var(--magenta)}
+#contact .big .v{color:var(--ink)}
+#contact .big .h{color:var(--muted)}
+#contact .big .h a{color:var(--magenta)}
+#contact .big .ico{color:var(--magenta)}
+#contact .big>a:hover .ico{color:var(--ink)}
 .big{margin-top:44px;display:grid;gap:26px}
 @media(min-width:700px){.big{grid-template-columns:1fr 1fr}}
 @media(min-width:1000px){.big{grid-template-columns:repeat(3,1fr)}}
@@ -274,13 +290,12 @@ details .body ul{margin:0 0 14px;padding-left:20px}
 @media(max-width:400px){.big .v{font-size:19px}}
 .big .h{display:block;margin-top:10px;color:#d8c7ce;font-size:16px}
 .big .h a{color:#ffd9c9}
-/* Inverted: the contact block above is aubergine, so the page finishes on light
-   rather than stacking two dark bands. */
-footer{background:var(--cream);color:var(--muted);font-size:15px;padding:36px 0 56px}
-footer .wrap{display:flex;flex-wrap:wrap;gap:12px 32px;border-top:3px solid transparent;
-  border-image:var(--spectrum) 1;padding-top:28px}
-footer a{color:var(--magenta)}
-footer a:hover{color:var(--ink)}
+/* The contact block is the light one now, so the copyright line closes the page
+   on dark — no rule between them; the colour change is the division. */
+footer{background:var(--ink);color:#b6a4ad;font-size:15px;padding:34px 0 52px}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 32px}
+footer a{color:#efe2ea}
+footer a:hover{color:#fff}
 @media(max-width:419px){.brand span{display:none}.bar{gap:12px}}
 /* ---- full-width colour surfaces: one hue per block, type in a lighter tint of
    the same hue. Every surface/tint pair measures AA (6.2 to 8.7:1). ---- */
@@ -317,7 +332,7 @@ footer a:hover{color:var(--ink)}
 
 
 /* the old light-ground rules must not out-specify the surfaces */
-#contact.surface{background:var(--sf);color:var(--tx)}
+
 .surface .prose p,.surface .aboutGrid .prose p,.surface .svcItem p,.surface .lowincome p,
 .surface .feeRow span,.surface details .body p,.surface details .body li,.surface .reassure{color:var(--tx)}
 .surface .aboutGrid .prose p:first-child{color:#fff}
@@ -359,7 +374,7 @@ footer a:hover{color:var(--ink)}
         whichever feels easiest today.</p>
     </div>
     <figure class="heroFig">
-      <img src="assets/john-cutout.webp?v10" alt="John Goss" width="1800" height="1452" fetchpriority="high">
+      <img src="assets/john-cutout.webp?v12" alt="John Goss" width="1800" height="1452" fetchpriority="high">
     </figure>
   </div>
 </section>
@@ -465,7 +480,7 @@ footer a:hover{color:var(--ink)}
         <a class="more" href="/about">More about me and how I work</a>
       </div>
       <figure class="aboutPhoto">
-        <img src="assets/john-portrait-round.webp?v11" alt="John Goss" width="620" height="620" loading="lazy">
+        <img src="assets/john-portrait-round.webp?v12" alt="John Goss" width="620" height="620" loading="lazy">
       </figure>
     </div>
   </div>
@@ -585,7 +600,7 @@ footer a:hover{color:var(--ink)}
   </div>
 </section>
 
-<section id="contact" class="surface s-ink">
+<section id="contact">
   <div class="wrap">
     <p class="kicker">Next step</p>
     <h2>Get in touch</h2>
