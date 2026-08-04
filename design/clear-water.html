@@ -72,11 +72,17 @@ nav a:hover{color:var(--teal)}
    image is always wider than its frame — the visible cut is made by the frame
    on desktop and by the viewport on mobile. Bottom-anchored: he stands on the
    band rather than floating in it. */
-.heroFig{margin:0;align-self:end;overflow:hidden;display:block}
+.heroFig{margin:0;align-self:end;overflow:hidden;display:block;position:relative}
 .heroFig img{width:118%;max-width:none;margin-left:-9%;height:auto;display:block}
 @media(max-width:879px){
   .heroFig{width:100vw;margin-left:calc(50% - 50vw);margin-top:20px}
   .heroFig img{width:116vw;margin-left:-8vw}
+}
+/* Above 880px he is no longer leaning on the viewport, so a circular plate a
+   shade deeper than the band makes the crop instead. */
+@media(min-width:880px){
+  .heroFig{aspect-ratio:1;border-radius:50%;background:#072028;align-self:center}
+  .heroFig img{position:absolute;left:50%;bottom:0;width:114%;margin-left:0;transform:translateX(-50%)}
 }
 
 /* strip */
@@ -242,7 +248,7 @@ footer a{color:#d3e6ea}
         directly — you'll be speaking to me, not to a receptionist.</p>
     </div>
     <figure class="heroFig">
-      <img src="assets/john-cutout-dark.webp?v10" alt="John Goss" width="1800" height="1452" fetchpriority="high">
+      <img src="assets/john-cutout-dark.webp?v12" alt="John Goss" width="1800" height="1452" fetchpriority="high">
     </figure>
   </div>
 </section>
@@ -331,7 +337,7 @@ footer a{color:#d3e6ea}
       </div>
     </div>
     <figure class="aboutPhoto">
-      <img src="assets/john-portrait-round.webp?v11" alt="John Goss" width="620" height="620" loading="lazy">
+      <img src="assets/john-portrait-round.webp?v12" alt="John Goss" width="620" height="620" loading="lazy">
     </figure>
   </div>
 </section>

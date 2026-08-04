@@ -59,18 +59,26 @@ nav a:hover{color:var(--accent-dk);text-decoration:underline;text-underline-offs
 .hero .lede{font-size:clamp(18px,2vw,21px);color:var(--muted);max-width:42ch;margin:24px 0 0;line-height:1.65}
 .heroGrid{display:grid;gap:44px;align-items:center}
 @media(min-width:860px){.heroGrid{grid-template-columns:1.15fr .85fr;gap:64px}}
-/* Cutout — background removed, no frame, no rounded box. His shoulders are cut
-   by the edges of the source photograph, so the image is always WIDER than the
-   box it sits in: the visible cut is made by the frame (desktop) or by the
-   viewport (mobile), never by a scissor line floating mid-section. */
+/* Cutout — background removed. His shoulders are cut by the edges of the source
+   photograph, so the image is always WIDER than whatever it sits in and the cut
+   is made by an edge rather than left hanging mid-air.
+
+   Below 860px that edge is the viewport: he goes full-bleed and crops at the
+   screen. At larger sizes he is no longer leaning on anything, so he sits on a
+   circular plate a shade deeper than the paper — the plate makes the crop, and
+   the shoulders leave through its lower curve instead of stopping in space. */
 .portrait{margin:0}
-.portrait .cutframe{overflow:hidden;display:block}
+.portrait .cutframe{display:block;position:relative;overflow:hidden}
 .portrait img{width:120%;max-width:none;margin-left:-10%;height:auto;display:block}
-.portrait figcaption{font-size:13.5px;color:var(--muted);margin-top:14px;font-style:italic;max-width:34ch}
 @media(max-width:859px){
   .portrait .cutframe{width:100vw;margin-left:calc(50% - 50vw)}
   .portrait img{width:118vw;margin-left:-9vw}
-  .portrait figcaption{margin-top:16px;padding:0 0 0 2px}
+}
+@media(min-width:860px){
+  .portrait .cutframe{aspect-ratio:1;border-radius:50%;background:#eae2d3;
+    box-shadow:inset 0 0 0 1px rgba(34,48,43,.06)}
+  .portrait img{position:absolute;left:50%;bottom:0;width:114%;margin-left:0;
+    transform:translateX(-50%)}
 }
 .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
 .btn{display:inline-flex;align-items:center;gap:9px;text-decoration:none;font-weight:500;font-size:16px;
@@ -231,8 +239,7 @@ footer a{color:#d7e2dc}
         we'll find a time to talk. You'll be speaking to me, not to a receptionist.</p>
     </div>
     <figure class="portrait">
-      <span class="cutframe"><img src="assets/john-cutout.webp?v10" alt="John Goss" width="1800" height="1452" fetchpriority="high"></span>
-      <figcaption>John Goss — NCPS Accredited Member, COSRT member.</figcaption>
+      <span class="cutframe"><img src="assets/john-cutout.webp?v12" alt="John Goss" width="1800" height="1452" fetchpriority="high"></span>
     </figure>
   </div>
 </section>
@@ -300,7 +307,7 @@ footer a{color:#d7e2dc}
     </div>
     </div>
     <figure class="aboutPhoto">
-      <img src="assets/john-portrait-round.webp?v11" alt="John Goss" width="620" height="620" loading="lazy">
+      <img src="assets/john-portrait-round.webp?v12" alt="John Goss" width="620" height="620" loading="lazy">
     </figure>
   </div>
 </section>
