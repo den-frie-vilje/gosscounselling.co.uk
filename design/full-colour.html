@@ -110,20 +110,8 @@ h2{font-size:clamp(30px,4.6vw,52px)}
 .strip .em{color:#fff;font-size:17px;display:block;margin-top:6px;word-break:break-word}
 
 /* services — plain blocks, hanging labels, no boxes */
-.svc{margin-top:56px;display:grid;gap:0}
-.svcItem{min-width:0;display:grid;gap:10px 44px;padding:38px 0;border-top:1px solid rgba(36,21,40,.14)}
-.svcItem:last-child{border-bottom:1px solid rgba(36,21,40,.14)}
 @media(min-width:860px){.svcItem{min-width:0;grid-template-columns:minmax(0,15rem) minmax(0,1fr)}}
 .svcItem h3{font-size:clamp(24px,2.8vw,32px)}
-.svcItem .mark{display:block;width:52px;height:6px;border-radius:99px;margin-bottom:16px}
-.svcItem:nth-child(1) .mark{background:linear-gradient(90deg,#e04a2f,#d98314)}
-.svcItem:nth-child(2) .mark{background:linear-gradient(90deg,#d98314,#0f7d78)}
-.svcItem:nth-child(3) .mark{background:linear-gradient(90deg,#c02a72,#6d3ba8)}
-.svcItem:nth-child(4) .mark{background:linear-gradient(90deg,#0f7d78,#3b6fc9)}
-.svcItem:nth-child(1) h3{color:var(--coral)}
-.svcItem:nth-child(2) h3{color:var(--amber)}
-.svcItem:nth-child(3) h3{color:var(--magenta)}
-.svcItem:nth-child(4) h3{color:var(--teal)}
 .svcItem .who{display:block;font-size:14px;color:var(--muted);margin-top:10px}
 .svcItem p{margin:0;color:var(--muted);max-width:60ch}
 .svcItem p+p{margin-top:14px}
@@ -205,6 +193,42 @@ footer{background:var(--ink);color:#b6a4ad;font-size:15px;padding:0 0 60px}
 footer .wrap{border-top:1px solid rgba(255,255,255,.16);padding-top:28px;display:flex;flex-wrap:wrap;gap:12px 32px}
 footer a{color:#efe2ea}
 @media(max-width:419px){.brand span{display:none}.bar{gap:12px}}
+/* ---- full-width colour surfaces: one hue per block, type in a lighter tint of
+   the same hue. Every surface/tint pair measures AA (6.2 to 8.7:1). ---- */
+.surface{background:var(--sf);color:var(--tx)}
+.surface h2,.surface h3,.surface .num,.surface .v,.surface b,.surface summary{color:#fff}
+.surface .kicker,.surface .who,.surface .k{color:var(--tx-strong)}
+.surface p,.surface .lead,.surface li,.surface .h,.surface .em{color:var(--tx)}
+.surface a{color:#fff}
+.surface .more{color:#fff;border-bottom-color:currentColor}
+.surface .btn-ghost{border-color:currentColor;color:#fff}
+.s-coral  {--sf:#8e2f1c;--tx:#ffd9cd;--tx-strong:#ffb9a4}
+.s-amber  {--sf:#6f4207;--tx:#fbe6c4;--tx-strong:#f0c98c}
+.s-teal   {--sf:#0d5a56;--tx:#cfeae6;--tx-strong:#8fd3cc}
+.s-magenta{--sf:#7d1747;--tx:#fbd7e6;--tx-strong:#f2a9c6}
+.s-violet {--sf:#452473;--tx:#e2d7f7;--tx-strong:#bda9ee}
+.s-plum   {--sf:#5b2078;--tx:#eed9f7;--tx-strong:#d3a9ee}
+.s-ink    {--sf:#241528;--tx:#e8dbe4;--tx-strong:#f0a7b8}
+.surface .feeRow{border-bottom-color:rgba(255,255,255,.24)}
+.surface .lowincome{background:transparent;border:2px solid rgba(255,255,255,.42);background-image:none}
+.surface .faqlist,.surface details{border-color:rgba(255,255,255,.28)}
+.surface details summary::after{color:var(--tx-strong)}
+.surface .big>a{border-top-color:rgba(255,255,255,.3);color:var(--tx)}
+/* each service is now its own block, so the old per-item rules go */
+.svcItem{padding:calc(var(--section)*.62) 0;border:0}
+.svcItem .wrap{display:grid;gap:14px 44px;min-width:0}
+@media(min-width:860px){.svcItem .wrap{grid-template-columns:minmax(0,16rem) minmax(0,1fr)}}
+.svcItem h3{font-size:clamp(26px,3vw,36px)}
+.svcItem:last-child{border:0}
+
+
+/* the old light-ground rules must not out-specify the surfaces */
+#contact.surface{background:var(--sf);color:var(--tx)}
+.surface .prose p,.surface .aboutGrid .prose p,.surface .svcItem p,.surface .lowincome p,
+.surface .feeRow span,.surface details .body p,.surface details .body li,.surface .reassure{color:var(--tx)}
+.surface .aboutGrid .prose p:first-child{color:#fff}
+.surface .quals li span:last-child,.surface .bodies p{color:var(--tx-strong)}
+.surface .lead{color:var(--tx)}
 </style>
 </head>
 <body>
@@ -242,12 +266,12 @@ footer a{color:#efe2ea}
         whichever feels easiest today.</p>
     </div>
     <figure class="heroFig">
-      <img src="assets/john-cutout.webp?v5" alt="John Goss" width="1800" height="1449" fetchpriority="high">
+      <img src="assets/john-cutout.webp?v6" alt="John Goss" width="1800" height="1440" fetchpriority="high">
     </figure>
   </div>
 </section>
 
-<div class="strip">
+<section class="strip surface s-coral">
   <div class="wrap">
     <div>
       <h2>The first step is a conversation.</h2>
@@ -259,19 +283,20 @@ footer a{color:#efe2ea}
       <a class="em" href="mailto:info@gosscounselling.co.uk">info@gosscounselling.co.uk</a>
     </div>
   </div>
-</div>
+</section>
 
-<section id="help" class="cream">
+<section id="help" class="surface s-magenta" style="padding-bottom:calc(var(--section)*.45)">
   <div class="wrap">
     <p class="kicker">What I offer</p>
     <h2>How I can help</h2>
     <p class="lead">Therapy, and your reasons for thinking about coming to see me, will be unique
       to you. These are the four ways I usually work.</p>
+  </div>
+</section>
 
-    <div class="svc">
-      <article class="svcItem">
-        <div>
-          <span class="mark" aria-hidden="true"></span>
+<section class="svcItem surface s-magenta" style="padding-top:calc(var(--section)*.45)">
+  <div class="wrap">
+    <div>
           <h3>Individual counselling</h3>
           <span class="who">One to one, from age 11 upwards</span>
         </div>
@@ -281,12 +306,12 @@ footer a{color:#efe2ea}
             pornography or sex.</p>
           <p>Whatever brings you to counselling, you are assured of a space to talk openly about it.</p>
           <a class="more" href="/counselling/individual">More about individual counselling</a>
-        </div>
-      </article>
+  </div>
+</section>
 
-      <article class="svcItem">
-        <div>
-          <span class="mark" aria-hidden="true"></span>
+<section class="svcItem surface s-violet">
+  <div class="wrap">
+    <div>
           <h3>Relationship counselling</h3>
           <span class="who">Couples, throuples and poly dynamics</span>
         </div>
@@ -294,12 +319,12 @@ footer a{color:#efe2ea}
           <p>Relationship counselling puts the focus on the relationship itself, whatever shape it
             takes. You won't need to explain or justify that shape to me before we start.</p>
           <a class="more" href="/counselling/relationship">More about relationship counselling</a>
-        </div>
-      </article>
+  </div>
+</section>
 
-      <article class="svcItem">
-        <div>
-          <span class="mark" aria-hidden="true"></span>
+<section class="svcItem surface s-plum">
+  <div class="wrap">
+    <div>
           <h3>Psychosexual therapy</h3>
           <span class="who">Also called sex therapy</span>
         </div>
@@ -310,12 +335,12 @@ footer a{color:#efe2ea}
           <p>People also come to talk about porn use, intimacy with a partner or partners,
             fetishes, or exploring kink.</p>
           <a class="more" href="/counselling/psychosexual-therapy">More about psychosexual therapy</a>
-        </div>
-      </article>
+  </div>
+</section>
 
-      <article class="svcItem">
-        <div>
-          <span class="mark" aria-hidden="true"></span>
+<section class="svcItem surface s-teal">
+  <div class="wrap">
+    <div>
           <h3>Clinical supervision</h3>
           <span class="who">For therapists and helping professionals</span>
         </div>
@@ -325,13 +350,10 @@ footer a{color:#efe2ea}
           <p>Supervision isn't only about bringing your client work — it's about bringing yourself
             too, so we can explore that work more collaboratively.</p>
           <a class="more" href="/supervision">More about supervision</a>
-        </div>
-      </article>
-    </div>
   </div>
 </section>
 
-<section id="about" class="oat">
+<section id="about" class="surface s-violet">
   <div class="wrap">
     <p class="kicker">Who you'd be talking to</p>
     <h2>About me</h2>
@@ -349,13 +371,13 @@ footer a{color:#efe2ea}
         <a class="more" href="/about">More about me and how I work</a>
       </div>
       <figure class="aboutPhoto">
-        <img src="assets/john-portrait-round.webp?v5" alt="John Goss" width="620" height="620" loading="lazy">
+        <img src="assets/john-portrait-round.webp?v6" alt="John Goss" width="620" height="620" loading="lazy">
       </figure>
     </div>
   </div>
 </section>
 
-<section id="fees" class="cream">
+<section id="fees" class="surface s-amber">
   <div class="wrap">
     <p class="kicker">Availability &amp; fees</p>
     <h2>What sessions cost</h2>
@@ -388,7 +410,7 @@ footer a{color:#efe2ea}
   </div>
 </section>
 
-<section class="tint">
+<section>
   <div class="wrap">
     <p class="kicker">Training &amp; accountability</p>
     <h2>Qualifications and membership</h2>
@@ -419,7 +441,7 @@ footer a{color:#efe2ea}
   </div>
 </section>
 
-<section id="faq" class="cream">
+<section id="faq" class="surface s-teal">
   <div class="wrap">
     <p class="kicker">Before you call</p>
     <h2>Questions people ask</h2>
@@ -469,7 +491,7 @@ footer a{color:#efe2ea}
   </div>
 </section>
 
-<section id="contact">
+<section id="contact" class="surface s-ink">
   <div class="wrap">
     <p class="kicker">Next step</p>
     <h2>Get in touch</h2>
