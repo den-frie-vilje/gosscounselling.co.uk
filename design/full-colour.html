@@ -23,6 +23,12 @@
   --coral:#b3341f; --amber:#9a5a09; --teal:#0f6d68; --magenta:#a01e5c; --violet:#5b2f8f;
   --clay:#a01e5c; --clay-dk:#5b2f8f;
   --grad:linear-gradient(103deg,#b3341f 0%,#a8235f 46%,#5b2f8f 100%);
+  /* The phone strip sits directly above the deep magenta "before you get here"
+     block and was only 1.47:1 away from it. Deepening the ramp made it worse
+     (the block sits mid-range), and lightening it while keeping white text broke
+     AA at 4.40:1. So the strip goes light and warm and carries INK text: 3.05 to
+     5.51:1 against the block, with the type at 5.24 to 9.47:1 on the ramp. */
+  --grad-strip:linear-gradient(103deg,#f3b45a 0%,#eb8347 48%,#d96a86 100%);
   --spectrum:linear-gradient(90deg,#e04a2f,#d98314,#0f7d78,#c02a72,#6d3ba8);
   --grad-soft:linear-gradient(103deg,#e04a2f 0%,#c02a72 46%,#6d3ba8 100%);
   /* CTA ink: two neighbouring hues only, near-vertical. A soft highlight rides
@@ -55,7 +61,7 @@ a{color:var(--clay-dk)}
 
 /* header — nothing in it is allowed to wrap: brand, links and CTA are nowrap,
    nav links appear one breakpoint at a time, CTA label shortens when narrow. */
-header{position:sticky;top:0;z-index:20;background:rgba(253,247,240,.94);backdrop-filter:blur(8px)}
+header{position:sticky;top:0;z-index:20;background:var(--cream)}
 header::after{content:"";display:block;height:3px;background:var(--grad-soft)}
 .bar{display:flex;align-items:center;gap:20px;min-height:74px;flex-wrap:nowrap}
 .brand{font-family:var(--display);font-weight:800;font-size:20px;text-decoration:none;color:var(--ink);
@@ -90,20 +96,20 @@ nav a:hover{color:var(--clay-dk)}
 .field{position:relative;isolation:isolate;overflow:hidden}
 .field>.pool{position:absolute;display:block;z-index:-1;pointer-events:none;will-change:transform}
 .field .g1{inset:-80% -40% -50% -35%;
-  background:radial-gradient(closest-side,rgba(140,26,64,.85),rgba(140,26,64,.3) 55%,transparent 78%);
+  background:radial-gradient(closest-side,rgba(233,120,60,.75),rgba(233,120,60,.28) 55%,transparent 78%);
   animation:drift1 54s ease-in-out infinite alternate}
 .field .g2{inset:-85% -60% -105% -28%;
-  background:radial-gradient(closest-side,rgba(69,36,115,.82),rgba(69,36,115,.32) 56%,transparent 80%);
+  background:radial-gradient(closest-side,rgba(214,96,126,.7),rgba(214,96,126,.26) 56%,transparent 80%);
   animation:drift2 82s ease-in-out infinite alternate}
 .field .g3{inset:-40% -50% -40% 20%;
-  background:radial-gradient(closest-side,rgba(122,60,10,.5),transparent 70%);
+  background:radial-gradient(closest-side,rgba(247,196,90,.55),transparent 70%);
   animation:drift3 68s ease-in-out infinite alternate}
 /* A very soft sheen crossing the block horizontally, on its own long cycle.
    Capped at 10% white: over the ramp's lightest point that still leaves the
    white type at 5.13:1, where 18% would have dropped it to 4.41. */
 .field .sheen{inset:-30% -70%;
-  background:linear-gradient(100deg,transparent 0%,rgba(255,255,255,.05) 32%,rgba(255,255,255,.10) 50%,
-    rgba(255,255,255,.05) 68%,transparent 100%);
+  background:linear-gradient(100deg,transparent 0%,rgba(255,255,255,.10) 32%,rgba(255,255,255,.20) 50%,
+    rgba(255,255,255,.10) 68%,transparent 100%);
   animation:sweep 46s ease-in-out infinite alternate}
 @keyframes sweep{from{transform:translate3d(-32%,0,0)}to{transform:translate3d(32%,0,0)}}
 @keyframes drift1{from{transform:translate3d(-14%,7%,0) scale(1)}to{transform:translate3d(18%,-6%,0) scale(1.32)}}
@@ -185,15 +191,17 @@ h2{font-size:clamp(30px,4.6vw,52px)}
 .lead{font-size:clamp(18px,2vw,21px);color:var(--muted);max-width:58ch;margin:20px 0 0}
 
 /* contact strip, early — the number is the interface */
-.strip{padding:64px 0;background-image:var(--grad)}
+/* The phone strip is the one light band in the run, so it carries ink rather
+   than white — see --grad-strip for why. */
+.strip{padding:64px 0;background-image:var(--grad-strip);color:var(--ink)}
+.strip h2{font-size:clamp(24px,3vw,34px);color:var(--ink)}
+.strip p{margin:10px 0 0;color:#341c11;max-width:52ch}
+.strip .em{color:var(--ink);font-size:17px;display:block;margin-top:6px;word-break:break-word}
 .strip .wrap{padding-top:46px;padding-bottom:46px;display:grid;gap:22px;align-items:center}
 @media(min-width:900px){.strip .wrap{grid-template-columns:1fr auto;gap:48px}}
-.strip h2{font-size:clamp(24px,3vw,34px);color:#fff}
-.strip p{margin:10px 0 0;color:#fbe7e0;max-width:52ch}
-.strip .num{font-family:var(--display);font-weight:800;font-size:clamp(28px,4.4vw,44px);
-  color:#fff;text-decoration:none;white-space:nowrap;letter-spacing:-.02em;display:block}
+.strip .num{font-family:var(--display);font-weight:800;font-size:clamp(28px,4.4vw,46px);
+  color:var(--ink);text-decoration:none;white-space:nowrap;letter-spacing:-.03em;display:block}
 .strip .num:hover{text-decoration:underline;text-underline-offset:6px}
-.strip .em{color:#fff;font-size:17px;display:block;margin-top:6px;word-break:break-word}
 
 /* services — plain blocks, hanging labels, no boxes */
 @media(min-width:860px){.svcItem{min-width:0;grid-template-columns:minmax(0,15rem) minmax(0,1fr)}}
@@ -267,15 +275,15 @@ h2{font-size:clamp(30px,4.6vw,52px)}
 
 /* faq */
 .faqlist{margin-top:44px;border-top:1px solid rgba(36,21,40,.16)}
-details{border-bottom:1px solid rgba(36,21,40,.16)}
-details summary{cursor:pointer;list-style:none;padding:24px 46px 24px 0;position:relative;
+.faqlist details{border-bottom:1px solid rgba(36,21,40,.16)}
+.faqlist details summary{cursor:pointer;list-style:none;padding:24px 46px 24px 0;position:relative;
   font-family:var(--display);font-weight:600;font-size:clamp(19px,2.1vw,23px);letter-spacing:-.02em}
-details summary::-webkit-details-marker{display:none}
-details summary::after{content:"+";position:absolute;right:4px;top:22px;font-family:var(--sans);
+.faqlist details summary::-webkit-details-marker{display:none}
+.faqlist details summary::after{content:"+";position:absolute;right:4px;top:22px;font-family:var(--sans);
   font-size:26px;font-weight:400;color:var(--magenta)}
-details[open] summary::after{content:"–"}
-details[open] summary{color:var(--magenta)}
-details .body{padding:0 0 26px;color:var(--muted);max-width:64ch}
+.faqlist details[open] summary::after{content:"–"}
+.faqlist details[open] summary{color:var(--magenta)}
+.faqlist details .body{padding:0 0 26px;color:var(--muted);max-width:64ch}
 details .body p{margin:0 0 14px}
 details .body ul{margin:0 0 14px;padding-left:20px}
 
@@ -371,6 +379,69 @@ footer a:hover{color:#fff}
 .surface .aboutGrid .prose p:first-child{color:#fff}
 .surface .quals li span:last-child,.surface .bodies p{color:var(--tx-strong)}
 .surface .lead{color:var(--tx)}
+
+/* ---- navigation: a burger to a full-page menu below 1000px, a heavy bar above ----
+   The full-page menu carries the contact details as well as the links, because on
+   a phone "how do I reach him" and "where do I go" are the same question. It is a
+   native <details>, so it works with the keyboard and without script. */
+.sitenav{margin-left:auto}
+/* No frame, no border, no circle — the mark alone. The 46px box is only the
+   touch target, which stays at the WCAG minimum without being drawn. */
+.sitenav summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  width:46px;height:46px;background:transparent;border:0;color:inherit}
+.sitenav summary::-webkit-details-marker{display:none}
+/* When the panel is up it covers the header, so the control comes with it —
+   otherwise the X is behind the menu and there is no way out. */
+.sitenav[open] summary{position:fixed;top:14px;right:14px;z-index:70;background:transparent;border:0}
+@media(min-width:600px){.sitenav[open] summary{top:24px;right:28px}}
+.sitenav .burger{display:inline-block;width:22px;height:2px;background:currentColor;position:relative;
+  transition:background-color .18s ease .16s}
+.sitenav .burger::before,.sitenav .burger::after{content:"";position:absolute;left:0;width:22px;height:2px;
+  background:currentColor;transition:top .18s ease .16s,transform .2s ease}
+.sitenav .burger::before{top:-7px}
+.sitenav .burger::after{top:7px}
+.sitenav[open] .burger{background:transparent;transition:background-color .12s ease}
+.sitenav[open] .burger::before{top:0;transform:rotate(45deg);transition:top .18s ease,transform .22s ease .16s}
+.sitenav[open] .burger::after{top:0;transform:rotate(-45deg);transition:top .18s ease,transform .22s ease .16s}
+@media(prefers-reduced-motion:reduce){.sitenav .burger,.sitenav .burger::before,.sitenav .burger::after{transition:none}}
+.navPanel{position:fixed;inset:0;z-index:60;background:var(--cream);overflow-y:auto;
+  padding:96px 0 56px;-webkit-overflow-scrolling:touch}
+.navPanel ul{list-style:none;margin:0;padding:0}
+.navPanel li+li{border-top:1px solid rgba(36,21,40,.18)}
+.navPanel a{display:block;padding:18px 0;text-decoration:none;color:var(--ink);font-family:var(--display);
+  font-size:clamp(24px,6vw,34px);font-weight:600;line-height:1.15}
+.navPanel a:hover{color:var(--magenta)}
+.navContact{margin-top:40px;padding-top:28px;border-top:2px solid rgba(36,21,40,.18);display:grid;gap:14px}
+.navContact .k{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--magenta);font-weight:700}
+.navContact a{font-size:clamp(19px,4.4vw,24px);padding:0;font-weight:700}
+.navContact .place{color:var(--muted);font-size:16px}
+@media(min-width:1000px){
+  .sitenav{display:none}
+  nav.heavy{margin-left:auto;display:block}
+  nav.heavy ul{display:flex;gap:28px;list-style:none;margin:0;padding:0;align-items:center}
+  nav.heavy a{font-size:16px;font-weight:700;letter-spacing:.02em;text-decoration:none;color:var(--ink);
+    white-space:nowrap;padding:10px 0;border-bottom:3px solid transparent}
+  nav.heavy a:hover{border-bottom-color:var(--magenta)}
+  nav.heavy .navcta a{border:0;background:var(--magenta);color:#fff;padding:12px 20px}
+  nav.heavy .navcta a:hover{filter:brightness(1.08)}
+}
+@media(max-width:999px){nav.heavy{display:none}}
+
+/* ---- staggered header: the call button is the last thing to go ----
+   >= 1180px  brand + full nav + call
+   860-1179px  brand + burger + "Call 07776 153 426"
+   520-859px    brand + burger + "Call"
+   < 520px      brand + burger only, because at that width the number costs the
+                brand its second line and the burger its breathing room */
+.barcta{margin-left:auto;display:none;align-items:center;background:var(--magenta);color:#fff;text-decoration:none;
+  font-weight:700;font-size:15.5px;padding:11px 18px;border-radius:999px;white-space:nowrap;flex:none}
+.barcta:hover{background:var(--ink)}
+.barcta .short{display:none}
+@media(min-width:520px){.barcta{display:inline-flex}.barcta .short{display:inline}.barcta .long{display:none}}
+@media(min-width:860px){.barcta .short{display:none}.barcta .long{display:inline}}
+@media(min-width:1000px){.barcta{display:none}}
+.sitenav{margin-left:0}
+@media(max-width:519px){.sitenav{margin-left:auto}}
 </style>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
@@ -409,13 +480,37 @@ footer a:hover{color:#fff}
 <header>
   <div class="wrap bar">
     <a class="brand" href="#top">John Goss<span>Counsellor &amp; Clinical Supervisor</span></a>
-    <nav aria-label="Sections">
-      <a data-nav="help" href="#help">How I can help</a>
-      <a data-nav="fees" href="#fees">Fees</a>
-      <a data-nav="about" href="#about">About me</a>
-      <a data-nav="faq" href="#faq">Questions</a>
+    <nav class="heavy" aria-label="Main">
+      <ul>
+        <li><a href="#help">How I can help</a></li>
+        <li><a href="#fees">Fees</a></li>
+        <li><a href="#about">About me</a></li>
+        <li><a href="#faq">Questions</a></li>
+        <li class="navcta"><a href="tel:+447776153426">Call 07776 153 426</a></li>
+      </ul>
     </nav>
-    <a class="headcta" href="tel:+447776153426"><span class="cta-short">Call</span><span class="cta-long">Call 07776 153 426</span></a>
+    <a class="barcta" href="tel:+447776153426"><span class="short">Call</span><span class="long">Call 07776 153 426</span></a>
+    <details class="sitenav">
+      <summary aria-label="Open menu"><span class="burger" aria-hidden="true"></span></summary>
+      <div class="navPanel">
+        <div class="wrap">
+          <ul>
+            <li><a href="#help">How I can help</a></li>
+            <li><a href="#fees">Fees</a></li>
+            <li><a href="#about">About me</a></li>
+            <li><a href="#faq">Questions</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+          <div class="navContact">
+            <span class="k">Contact John</span>
+            <a href="tel:+447776153426">07776 153 426</a>
+            <a href="mailto:info@gosscounselling.co.uk">info@gosscounselling.co.uk</a>
+            <a href="https://wa.me/447776153426">WhatsApp</a>
+            <span class="place">Bletchley, Milton Keynes MK3 &middot; and online</span>
+          </div>
+        </div>
+      </div>
+    </details>
   </div>
 </header>
 
@@ -438,12 +533,12 @@ footer a:hover{color:#fff}
         whichever feels easiest today.</p>
     </div>
     <figure class="heroFig">
-      <img src="assets/john-cutout.webp?v17" alt="John Goss" width="1800" height="1452" fetchpriority="high">
+      <img src="assets/john-cutout.webp?v18" alt="John Goss" width="1800" height="1452" fetchpriority="high">
     </figure>
   </div>
 </section>
 
-<section class="strip surface s-coral field">
+<section class="strip field">
   <span class="pool g1" aria-hidden="true"></span><span class="pool g2" aria-hidden="true"></span><span class="pool g3" aria-hidden="true"></span><span class="pool sheen" aria-hidden="true"></span>
   <div class="wrap">
     <div>
@@ -564,7 +659,7 @@ footer a:hover{color:#fff}
         <a class="more" href="/about">More about me and how I work</a>
       </div>
       <figure class="aboutPhoto">
-        <img src="assets/john-portrait-round.webp?v17" alt="John Goss" width="620" height="620" loading="lazy">
+        <img src="assets/john-portrait-round.webp?v18" alt="John Goss" width="620" height="620" loading="lazy">
       </figure>
     </div>
   </div>
