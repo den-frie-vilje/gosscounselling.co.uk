@@ -38,7 +38,12 @@ body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--cream);
 h1,h2,h3{font-family:var(--display);font-weight:600;line-height:1.04;letter-spacing:-.025em;margin:0;text-wrap:balance}
 a{color:var(--clay-dk)}
 :focus-visible{outline:3px solid var(--clay);outline-offset:3px;border-radius:2px}
+/* Wider gutters as the viewport grows — at 24px the colour blocks ran almost to
+   the screen edge once they were full-bleed. */
 .wrap{max-width:var(--container);margin:0 auto;padding:0 24px}
+@media(min-width:700px){.wrap{padding:0 40px}}
+@media(min-width:1100px){.wrap{padding:0 64px}}
+@media(min-width:1500px){.wrap{padding:0 80px}}
 .skip{position:absolute;left:-9999px}
 .skip:focus{left:12px;top:12px;z-index:99;background:var(--deep);color:#fff;padding:10px 16px}
 
@@ -102,7 +107,14 @@ nav a:hover{color:var(--clay-dk)}
 .heroGrid{display:grid;gap:32px;align-items:end}
 @media(min-width:900px){.heroGrid{grid-template-columns:1.08fr .92fr;gap:48px}}
 .hero h1{font-size:clamp(42px,7.6vw,82px);max-width:12ch;font-weight:800}
-.hero h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+/* The accent words carry the ramp itself, drifting slowly across them. Every
+   stop of it clears AA on the cream (5.76 to 8.78:1), so the words stay legible
+   wherever the gradient happens to be. */
+.hero h1 em{font-style:normal;background-image:var(--grad);background-size:300% 100%;
+  background-position:0% 50%;-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:emdrift 28s ease-in-out infinite alternate}
+@keyframes emdrift{from{background-position:0% 50%}to{background-position:100% 50%}}
+@media(prefers-reduced-motion:reduce){.hero h1 em{animation:none}}
 .hero .lede{font-size:clamp(18px,2.1vw,22px);color:var(--muted);max-width:46ch;margin:26px 0 0}
 .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
 .btn{display:inline-flex;align-items:center;text-decoration:none;font-weight:600;font-size:17px;
@@ -200,9 +212,10 @@ h2{font-size:clamp(30px,4.6vw,52px)}
      multiply  scales each channel, so it tints toward the block's own teal
                proportionally and BLACK STAYS BLACK (anything x 0 is 0) — the
                shadows never lift the way a lighten layer made them
-     darken    lowers pixels brighter than the overlay, and the warm tone sits
-               below his highlight channels, so it takes the blue out of the
-               lights without changing much else
+     darken    with R and G both at 255, so the layer can only ever pull the
+               BLUE channel — the lights warm and nothing gets darker. Measured:
+               highlights +20 red-minus-blue at -1.5 luminance, midtones and
+               shadows unchanged to two decimal places.
 
    Measured against the actual photograph: blacks -0.5, shadows -1.9, midtones
    -5.0, highlights -7.1 blue. */
@@ -212,7 +225,7 @@ h2{font-size:clamp(30px,4.6vw,52px)}
   .aboutPhoto::before,.aboutPhoto::after{content:"";position:absolute;inset:0;border-radius:50%;
     pointer-events:none}
   .aboutPhoto::before{background:#c4ece8;mix-blend-mode:multiply;opacity:.50}
-  .aboutPhoto::after{background:#fce496;mix-blend-mode:darken;opacity:.22}
+  .aboutPhoto::after{background:#ffff73;mix-blend-mode:darken;opacity:.70}
 }
 
 /* fees — rows, not cards */
@@ -257,21 +270,23 @@ details .body p{margin:0 0 14px}
 details .body ul{margin:0 0 14px;padding-left:20px}
 
 /* contact */
-/* Inverted: the page finishes on warm paper, and the dark copyright strip below
-   closes it. The spectrum rule carries the colour across the join. */
-#contact{background:var(--cream);color:var(--ink);position:relative;isolation:isolate;overflow:clip}
+/* Inverted literally: the block's own text tint becomes the ground and its
+   ground becomes the text — the same two tones swapped, rather than a third
+   colour brought in from elsewhere, with the ground carrying a little more
+   chroma so it reads as a colour and not as off-white (text still 11.87:1). */
+#contact{background:#f2cbe0;color:#241528;position:relative;isolation:isolate;overflow:clip}
 #contact::before{content:"";position:absolute;left:0;right:0;top:0;height:8px;
   background:var(--spectrum)}
-#contact h2{color:var(--ink)}
-#contact .kicker{color:var(--magenta)}
-#contact .lead{color:var(--muted)}
-#contact .big>a{border-top-color:rgba(36,21,40,.18);color:var(--ink)}
-#contact .big .k{color:var(--magenta)}
-#contact .big .v{color:var(--ink)}
-#contact .big .h{color:var(--muted)}
-#contact .big .h a{color:var(--magenta)}
-#contact .big .ico{color:var(--magenta)}
-#contact .big>a:hover .ico{color:var(--ink)}
+#contact h2{color:#241528}
+#contact .kicker{color:#7d1747}
+#contact .lead{color:#4a3145}
+#contact .big>a{border-top-color:rgba(36,21,40,.28);color:#241528}
+#contact .big .k{color:#7d1747}
+#contact .big .v{color:#241528}
+#contact .big .h{color:#4a3145}
+#contact .big .h a{color:#7d1747}
+#contact .big .ico{color:#7d1747}
+#contact .big>a:hover .ico{color:#241528}
 .big{margin-top:44px;display:grid;gap:26px}
 @media(min-width:700px){.big{grid-template-columns:1fr 1fr}}
 @media(min-width:1000px){.big{grid-template-columns:repeat(3,1fr)}}
@@ -374,7 +389,7 @@ footer a:hover{color:#fff}
         whichever feels easiest today.</p>
     </div>
     <figure class="heroFig">
-      <img src="assets/john-cutout.webp?v12" alt="John Goss" width="1800" height="1452" fetchpriority="high">
+      <img src="assets/john-cutout.webp?v13" alt="John Goss" width="1800" height="1452" fetchpriority="high">
     </figure>
   </div>
 </section>
@@ -480,7 +495,7 @@ footer a:hover{color:#fff}
         <a class="more" href="/about">More about me and how I work</a>
       </div>
       <figure class="aboutPhoto">
-        <img src="assets/john-portrait-round.webp?v12" alt="John Goss" width="620" height="620" loading="lazy">
+        <img src="assets/john-portrait-round.webp?v13" alt="John Goss" width="620" height="620" loading="lazy">
       </figure>
     </div>
   </div>

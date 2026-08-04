@@ -116,9 +116,10 @@ section{padding:var(--section) 0}
      multiply  scales each channel, so it tints toward the page's dark green
                proportionally and BLACK STAYS BLACK (anything x 0 is 0) — the
                shadows never lift the way a lighten layer made them
-     darken    lowers pixels brighter than the overlay, and the warm tone sits
-               below his highlight channels, so it takes the blue out of the
-               lights without changing much else
+     darken    with R and G both at 255, so the layer can only ever pull the
+               BLUE channel — the lights warm and nothing gets darker. Measured:
+               highlights +20 red-minus-blue at -1.5 luminance, midtones and
+               shadows unchanged to two decimal places.
 
    Measured against the actual photograph: blacks -0.5, shadows -1.9, midtones
    -5.0, highlights -7.1 blue. */
@@ -129,7 +130,7 @@ section{padding:var(--section) 0}
   .aboutPhoto::before,.aboutPhoto::after{content:"";position:absolute;inset:0;border-radius:50%;
     pointer-events:none}
   .aboutPhoto::before{background:#c8ece0;mix-blend-mode:multiply;opacity:.50}
-  .aboutPhoto::after{background:#fae49e;mix-blend-mode:darken;opacity:.22}
+  .aboutPhoto::after{background:#ffff73;mix-blend-mode:darken;opacity:.70}
 }
 .prose{max-width:64ch}
 .prose p{color:var(--muted);font-size:18px}
@@ -239,7 +240,7 @@ footer a{color:#d7e2dc}
         we'll find a time to talk. You'll be speaking to me, not to a receptionist.</p>
     </div>
     <figure class="portrait">
-      <span class="cutframe"><img src="assets/john-cutout.webp?v12" alt="John Goss" width="1800" height="1452" fetchpriority="high"></span>
+      <span class="cutframe"><img src="assets/john-cutout.webp?v13" alt="John Goss" width="1800" height="1452" fetchpriority="high"></span>
     </figure>
   </div>
 </section>
@@ -307,7 +308,7 @@ footer a{color:#d7e2dc}
     </div>
     </div>
     <figure class="aboutPhoto">
-      <img src="assets/john-portrait-round.webp?v12" alt="John Goss" width="620" height="620" loading="lazy">
+      <img src="assets/john-portrait-round.webp?v13" alt="John Goss" width="620" height="620" loading="lazy">
     </figure>
   </div>
 </section>
