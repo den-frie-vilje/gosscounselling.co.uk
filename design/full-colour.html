@@ -114,18 +114,19 @@ nav a:hover{color:var(--clay-dk)}
 .btn-primary{color:#fff;position:relative;overflow:hidden;background-image:var(--cta-ink)}
 
 /* The sheen is a warm, wide, soft pass in the page's own cream tone — not a cold
-   white glint. It always travels left to right: on hover it crosses in 1.25s, on
-   leave it fades out where it stands and resets off-screen once it is invisible,
-   so it never runs backwards. Peak 20% over the ink leaves the white label at
+   white glint. It always travels left to right, crossing in 2.7s — slow enough
+   to read as a pass of light rather than a whip — and on leave it fades out
+   where it stands, resetting off-screen only once it is invisible, so it never
+   runs backwards. Peak 20% over the ink leaves the white label at
    5.23:1 (28% would have dropped it to 4.48). */
 .headcta::before,.btn-primary::before{content:"";position:absolute;z-index:0;pointer-events:none;
   top:-90%;bottom:-90%;left:0;width:160%;opacity:0;transform:translate3d(-120%,0,0);
   background:var(--cta-sheen);
-  transition:transform 0s linear 1.3s,opacity .32s ease}
+  transition:transform 0s linear 2.8s,opacity .42s ease}
 .headcta:hover::before,.headcta:focus-visible::before,
 .btn-primary:hover::before,.btn-primary:focus-visible::before{
   opacity:1;transform:translate3d(120%,0,0);
-  transition:transform 1.25s cubic-bezier(.33,0,.2,1),opacity .22s ease}
+  transition:transform 2.7s cubic-bezier(.32,0,.3,1),opacity .38s ease}
 .headcta>span,.btn-primary>span,.headcta{isolation:auto}
 .headcta span,.btn-primary{position:relative}
 .headcta span{z-index:1}
