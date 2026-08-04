@@ -10,9 +10,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --oat:#f4efe6; --cream:#fbf8f3; --tint:#ead9c9;
-  --ink:#241c18; --muted:#6a5a50; --deep:#241c18;
-  --clay:#a2482b; --clay-dk:#8a3b21;
+  --cream:#fdf7f0; --oat:#f6ece1; --tint:#f7e3d3;
+  --ink:#241528; --muted:#6a5361; --deep:#241528;
+  /* Six hues. Each gets a full-width monochrome surface further down, with the
+     type on it in a lighter tint of the same hue. */
+  --coral:#b3341f; --amber:#9a5a09; --teal:#0f6d68; --magenta:#a01e5c; --violet:#5b2f8f;
+  --clay:#a01e5c; --clay-dk:#5b2f8f;
+  --grad:linear-gradient(103deg,#b3341f 0%,#a8235f 46%,#5b2f8f 100%);
+  --spectrum:linear-gradient(90deg,#e04a2f,#d98314,#0f7d78,#c02a72,#6d3ba8);
+  --grad-soft:linear-gradient(103deg,#e04a2f 0%,#c02a72 46%,#6d3ba8 100%);
   --container:1140px; --section:100px;
   --display:'Bricolage Grotesque',ui-sans-serif,system-ui,sans-serif;
   --sans:'Instrument Sans',ui-sans-serif,system-ui,sans-serif;
@@ -61,7 +67,7 @@ nav a:hover{color:var(--clay-dk)}
 .hero .floor{position:absolute;left:0;right:0;bottom:0;height:34%;z-index:-1;pointer-events:none;
   background:var(--grad)}
 .hero .floor::after{content:"";position:absolute;left:0;right:0;top:0;height:6px;
-  background:linear-gradient(90deg,#e04a2f,#d98314,#0f7d78,#c02a72,#6d3ba8)}
+  background:var(--spectrum)}
 @media(max-width:899px){.hero .floor{height:26%}}
 .heroGrid{display:grid;gap:32px;align-items:end}
 @media(min-width:900px){.heroGrid{grid-template-columns:1.08fr .92fr;gap:48px}}
@@ -91,7 +97,7 @@ section{padding:var(--section) 0}
 .cream{background:var(--cream)}
 .oat{background:var(--oat);position:relative}
 .oat::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;
-  background:linear-gradient(90deg,#e04a2f,#d98314,#0f7d78,#c02a72,#6d3ba8);opacity:.55}
+  background:var(--spectrum);opacity:.55}
 .tint{background:var(--tint)}
 .kicker{font-family:var(--sans);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--magenta);font-weight:600;margin:0 0 18px}
@@ -99,7 +105,7 @@ h2{font-size:clamp(30px,4.6vw,52px)}
 .lead{font-size:clamp(18px,2vw,21px);color:var(--muted);max-width:58ch;margin:20px 0 0}
 
 /* contact strip, early — the number is the interface */
-.strip{background:var(--grad);color:#fff}
+.strip{padding:56px 0}
 .strip .wrap{padding-top:46px;padding-bottom:46px;display:grid;gap:22px;align-items:center}
 @media(min-width:900px){.strip .wrap{grid-template-columns:1fr auto;gap:48px}}
 .strip h2{font-size:clamp(24px,3vw,34px);color:#fff}
@@ -175,8 +181,8 @@ details .body ul{margin:0 0 14px;padding-left:20px}
 /* contact */
 #contact{background:var(--ink);color:#f6ece1;position:relative;isolation:isolate;overflow:clip}
 #contact::before{content:"";position:absolute;left:0;right:0;top:0;height:8px;
-  background:linear-gradient(90deg,#e04a2f,#d98314,#0f7d78,#c02a72,#6d3ba8)}
-#contact h2{color:#fff}
+  background:var(--spectrum)}
+#contact h2{color:var(--hd)}
 #contact .kicker{color:#f0a7b8}
 #contact .lead{color:#d8c7ce}
 .big{margin-top:44px;display:grid;gap:26px}
@@ -196,19 +202,20 @@ footer a{color:#efe2ea}
 /* ---- full-width colour surfaces: one hue per block, type in a lighter tint of
    the same hue. Every surface/tint pair measures AA (6.2 to 8.7:1). ---- */
 .surface{background:var(--sf);color:var(--tx)}
-.surface h2,.surface h3,.surface .num,.surface .v,.surface b,.surface summary{color:#fff}
+.surface h2,.surface h3,.surface .num,.surface .v,.surface b,.surface summary{color:var(--hd)}
+.surface .aboutGrid .prose p:first-child{color:var(--hd)}
 .surface .kicker,.surface .who,.surface .k{color:var(--tx-strong)}
 .surface p,.surface .lead,.surface li,.surface .h,.surface .em{color:var(--tx)}
 .surface a{color:#fff}
 .surface .more{color:#fff;border-bottom-color:currentColor}
 .surface .btn-ghost{border-color:currentColor;color:#fff}
-.s-coral  {--sf:#8e2f1c;--tx:#ffd9cd;--tx-strong:#ffb9a4}
-.s-amber  {--sf:#6f4207;--tx:#fbe6c4;--tx-strong:#f0c98c}
-.s-teal   {--sf:#0d5a56;--tx:#cfeae6;--tx-strong:#8fd3cc}
-.s-magenta{--sf:#7d1747;--tx:#fbd7e6;--tx-strong:#f2a9c6}
-.s-violet {--sf:#452473;--tx:#e2d7f7;--tx-strong:#bda9ee}
-.s-plum   {--sf:#5b2078;--tx:#eed9f7;--tx-strong:#d3a9ee}
-.s-ink    {--sf:#241528;--tx:#e8dbe4;--tx-strong:#f0a7b8}
+.s-coral  {--sf:#8e2f1c;--tx:#ffd9cd;--tx-strong:#ffb9a4;--hd:#ffae83}
+.s-amber  {--sf:#6f4207;--tx:#fbe6c4;--tx-strong:#f0c98c;--hd:#ffc663}
+.s-teal   {--sf:#0d5a56;--tx:#cfeae6;--tx-strong:#8fd3cc;--hd:#5fe6d6}
+.s-magenta{--sf:#7d1747;--tx:#fbd7e6;--tx-strong:#f2a9c6;--hd:#ff9ec4}
+.s-violet {--sf:#452473;--tx:#e2d7f7;--tx-strong:#bda9ee;--hd:#b596ff}
+.s-plum   {--sf:#5b2078;--tx:#eed9f7;--tx-strong:#d3a9ee;--hd:#dc9dff}
+.s-ink    {--sf:#241528;--tx:#e8dbe4;--tx-strong:#f0a7b8;--hd:#ff9ec4}
 .surface .feeRow{border-bottom-color:rgba(255,255,255,.24)}
 .surface .lowincome{background:transparent;border:2px solid rgba(255,255,255,.42);background-image:none}
 .surface .faqlist,.surface details{border-color:rgba(255,255,255,.28)}
@@ -266,7 +273,7 @@ footer a{color:#efe2ea}
         whichever feels easiest today.</p>
     </div>
     <figure class="heroFig">
-      <img src="assets/john-cutout.webp?v6" alt="John Goss" width="1800" height="1440" fetchpriority="high">
+      <img src="assets/john-cutout.webp?v7" alt="John Goss" width="1800" height="1452" fetchpriority="high">
     </figure>
   </div>
 </section>
@@ -371,7 +378,7 @@ footer a{color:#efe2ea}
         <a class="more" href="/about">More about me and how I work</a>
       </div>
       <figure class="aboutPhoto">
-        <img src="assets/john-portrait-round.webp?v6" alt="John Goss" width="620" height="620" loading="lazy">
+        <img src="assets/john-portrait-round.webp?v7" alt="John Goss" width="620" height="620" loading="lazy">
       </figure>
     </div>
   </div>
