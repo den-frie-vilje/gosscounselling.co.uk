@@ -5,12 +5,12 @@
                                                   # as it is (e.g. after a hand retouch of the
                                                   # crown) and only re-derive what depends on it
 
-TO RETOUCH THE CROWN: edit `docs/source-assets/john-light-decontaminated.png` — 1800x1440 RGBA,
-lossless, background already removed and decontaminated against the white backdrop. The top of
-his head is clipped flat at y=0 across x 869..1005, so the canvas needs extending upward before
-the crown can be painted. Then run this script with no arguments and everything downstream is
-rebuilt from your version. (If you would rather work on the WebP directly, edit
-`design/assets/john-cutout.webp` and run with --from-master.)
+TO RETOUCH THE CROWN: edit `docs/source-assets/john-light-decontaminated.png` — RGBA, lossless,
+background already removed and decontaminated against the white backdrop. The source frame clips
+the top of his head, so the canvas has to grow upward; the version in the repo has been retouched
+by hand and now stands 1800x1460. Run this script with no arguments and everything downstream is
+rebuilt from it. (To work on the WebP directly instead, edit `design/assets/john-cutout.webp` and
+run with --from-master.)
 
 Three assets come out in design/assets/:
 
@@ -28,12 +28,15 @@ Three assets come out in design/assets/:
                           wrap. Verified by compositing on the real band colour and profiling
                           luminance inward: it rises monotonically, so no halo, no dark outline.
 
-  john-portrait-round.webp  the dark studio frame, which KEEPS its own background, tone-curved
-                          and cropped square on his face for circular use at small sizes. The
-                          curve is applied to luminance only and RGB is scaled by the ratio, so
-                          hue and saturation are unchanged (measured 0.0000%); it lifts the mids
-                          (median 38 -> 55) and tracks the identity line above L~150, so the
-                          specular highlights stay where the photographer put them.
+  john-portrait-round.webp  the dark studio frame, which KEEPS its own background, graded and
+                          cropped square on his face for circular use at small sizes.
+
+                          TO GRADE IT BY HAND: put a full-size version at
+                          `docs/source-assets/john-dark-levelled.png` (same pixel dimensions as
+                          John-Goss-038.jpg, 1800x1440) and it is used verbatim. Without it, a
+                          fallback tone curve is applied to luminance only — RGB scaled by the
+                          ratio, so hue and saturation are untouched — lifting the mids
+                          (median 38 -> 55) and leaving the highlights where they were.
 """
 from PIL import Image
 import numpy as np, os, sys
@@ -86,12 +89,22 @@ def dark_variant():
 
 
 def round_portrait():
+    """If a hand-graded file is present it is used verbatim; otherwise a tone curve
+    is applied to luminance only (RGB scaled by the ratio, so hue and saturation
+    are untouched), lifting the mids and leaving the highlights alone."""
+    graded = f"{SRC}/john-dark-levelled.png"
     o = np.array(Image.open(f"{SRC}/John-Goss-038.jpg").convert("RGB")).astype(np.float32)
     L = 0.2126 * o[..., 0] + 0.7152 * o[..., 1] + 0.0722 * o[..., 2]
-    X = np.array([0, 12, 30, 55, 95, 130, 165, 200, 255], float)
-    Y = np.array([0, 13, 42, 80, 125, 152, 172, 200, 255], float)
-    Lp = np.clip(PchipInterpolator(X, Y)(np.clip(L, 0, 255)), 0, 255)
-    g = np.clip(o * np.where(L > 1.0, Lp / np.maximum(L, 1e-3), 1.0)[..., None], 0, 255)
+    if os.path.exists(graded):
+        g = np.array(Image.open(graded).convert("RGB")).astype(np.float32)
+        if g.shape[:2] != o.shape[:2]:
+            sys.exit(f"{graded} is {g.shape[1]}x{g.shape[0]}, expected {o.shape[1]}x{o.shape[0]}")
+        print("  round portrait: using the hand-graded john-dark-levelled.png")
+    else:
+        X = np.array([0, 12, 30, 55, 95, 130, 165, 200, 255], float)
+        Y = np.array([0, 13, 42, 80, 125, 152, 172, 200, 255], float)
+        Lp = np.clip(PchipInterpolator(X, Y)(np.clip(L, 0, 255)), 0, 255)
+        g = np.clip(o * np.where(L > 1.0, Lp / np.maximum(L, 1e-3), 1.0)[..., None], 0, 255)
     lev = Image.fromarray(g.astype(np.uint8), "RGB")
     side = int(o.shape[0] * 0.93)
     cxh, cyh = 908, int(46 + side * 0.44)               # measured from the subject mask
