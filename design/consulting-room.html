@@ -59,18 +59,7 @@ nav.main a{font-size:16px;font-weight:600;text-decoration:none;color:var(--slate
   padding:6px 0;border-bottom:2px solid transparent}
 nav.main a:hover,nav.main a[aria-current]{border-bottom-color:var(--copper);color:var(--slate-dk)}
 @media(min-width:1000px){nav.main{display:block}.menu{display:none}}
-/* small screens: a native disclosure menu, no script */
-.menu{margin-left:auto}
-.menu summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:9px;
   font-weight:700;color:var(--slate-dk);border:1px solid var(--line);padding:9px 14px;background:var(--white)}
-.menu summary::-webkit-details-marker{display:none}
-.menu[open] summary{background:var(--band)}
-.menu ul{list-style:none;margin:0;padding:10px 0;position:absolute;left:0;right:0;background:var(--white);
-  border-bottom:1px solid var(--line);box-shadow:0 12px 24px rgba(31,39,51,.09)}
-.menu li{border-top:1px solid var(--line)}
-.menu li:first-child{border-top:0}
-.menu a{display:block;padding:13px 24px;text-decoration:none;color:var(--slate-dk);font-weight:600}
-.menu a:hover{background:var(--band)}
 
 /* ---- photographic panels ----------------------------------------------
    The photograph is position:fixed and the section clips it (clip-path on an
@@ -79,8 +68,9 @@ nav.main a:hover,nav.main a[aria-current]{border-bottom-color:var(--copper);colo
    local landscape reads as one continuous place behind the page.
 
    The toning is all CSS, so the files stay untouched and reusable: a slate
-   multiply to cool and unify the frames, a copper screen to put warmth back
-   into the lights, and a vertical scrim to seat the type. */
+   multiply to cool and unify the frames, a pale blue-grey screen to open the
+   lights without tipping the picture into sepia, and a vertical scrim to seat
+   the type. */
 .panel{position:relative;isolation:isolate;clip-path:inset(0);background:var(--slate-dk);color:#eef2f6}
 .panel .bg,.panel .tone{position:fixed;inset:0;pointer-events:none}
 .panel .bg{z-index:-3}
@@ -88,8 +78,8 @@ nav.main a:hover,nav.main a[aria-current]{border-bottom-color:var(--copper);colo
 .panel .tone{z-index:-2;background:var(--slate-dk);mix-blend-mode:multiply;opacity:.78}
 .panel::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
   background:linear-gradient(178deg,rgba(18,26,38,.62) 0%,rgba(18,26,38,.34) 45%,rgba(18,26,38,.70) 100%)}
-.panel .warm{position:fixed;inset:0;z-index:-2;pointer-events:none;background:#c9814e;
-  mix-blend-mode:screen;opacity:.13}
+.panel .warm{position:fixed;inset:0;z-index:-2;pointer-events:none;background:#9db8d2;
+  mix-blend-mode:screen;opacity:.14}
 /* A fixed backdrop can be uncomfortable for anyone sensitive to motion, so it
    stops travelling and simply sits in place. */
 @media(prefers-reduced-motion:reduce){
@@ -130,19 +120,20 @@ section{padding:var(--section) 0}
   text-decoration:none;color:inherit;transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
 .card:hover{border-color:var(--copper);box-shadow:0 14px 30px rgba(31,39,51,.13);transform:translateY(-3px)}
 .card:focus-visible{outline:3px solid var(--copper);outline-offset:3px}
-/* Pushed further than a tint: desaturated and contrast-raised into a slate
-   duotone, so the local landscape reads as a house treatment rather than as
-   stock photography. It warms and opens on hover. */
+/* Desaturated and contrast-raised into a SLATE duotone. The screen layer used
+   to be copper, which measured out at hue 18 — sepia, and it read as a museum
+   photograph. A pale blue-grey highlight puts it at hue 211 instead: still a
+   treatment, but a contemporary one. Colour comes back on hover. */
 .card .pic{position:relative;isolation:isolate;overflow:hidden;aspect-ratio:4/3;background:var(--slate-dk)}
 .card .pic img{width:100%;height:100%;object-fit:cover;display:block;
   filter:grayscale(1) contrast(1.22) brightness(.92);transition:filter .35s ease,transform .5s ease}
 .card .pic::before{content:"";position:absolute;inset:0;z-index:1;background:var(--slate);
-  mix-blend-mode:multiply;opacity:.78;transition:opacity .35s ease}
-.card .pic::after{content:"";position:absolute;inset:0;z-index:1;background:#d08a4e;
-  mix-blend-mode:screen;opacity:.24;transition:opacity .35s ease}
+  mix-blend-mode:multiply;opacity:.70;transition:opacity .35s ease}
+.card .pic::after{content:"";position:absolute;inset:0;z-index:1;background:#96b2cc;
+  mix-blend-mode:screen;opacity:.18;transition:opacity .35s ease}
 .card:hover .pic img{filter:grayscale(.35) contrast(1.1) brightness(1);transform:scale(1.04)}
-.card:hover .pic::before{opacity:.5}
-.card:hover .pic::after{opacity:.34}
+.card:hover .pic::before{opacity:.42}
+.card:hover .pic::after{opacity:.12}
 @media(prefers-reduced-motion:reduce){
   .card,.card .pic img,.card .pic::before,.card .pic::after{transition:none}
   .card:hover{transform:none}.card:hover .pic img{transform:none}
@@ -240,6 +231,7 @@ footer .fine a{color:#b9c6d6}
 .sitenav{margin-left:auto}
 
 .sitenav summary::-webkit-details-marker{display:none}
+.sitenav summary::marker{content:""}
 /* The control never moves. Rather than re-anchoring it when the menu opens —
    which made it jump — the panel is given a lower layer than the summary inside
    the header's own stacking context, so the X appears exactly where the burger
