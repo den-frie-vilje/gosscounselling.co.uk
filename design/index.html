@@ -52,11 +52,10 @@ a{color:inherit}
 /* masthead */
 .masthead{padding:clamp(1.75rem,4vw,2.5rem) 0 0}
 .masthead .wrap{display:flex;align-items:center;gap:.9rem}
-.mark{width:34px;height:34px;flex:none;display:block}
-.wordmark{font-family:var(--font-heading);font-size:.95rem;font-weight:500;letter-spacing:-.01em;
-  color:var(--ink);text-decoration:none}
-.wordmark span{display:block;font-family:var(--font-body);font-weight:300;font-size:.75rem;
-  letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+/* The mark carries the name itself — no wordmark typed beside it. Sized so the
+   lettering inside it is actually legible. */
+.mark{display:block;width:clamp(56px,7vw,72px);flex:none}
+.mark img{width:100%;height:auto;display:block}
 
 header{padding:clamp(2.25rem,6vw,4rem) 0 0}
 .eyebrow{font-family:var(--font-heading);font-size:.78rem;letter-spacing:.18em;text-transform:uppercase;
@@ -107,8 +106,9 @@ footer a{color:var(--ink)}
 
 <div class="masthead">
   <div class="wrap">
-    <img class="mark" src="assets/dfv-logo.svg" alt="" width="34" height="34">
-    <a class="wordmark" href="https://denfrievilje.dk">Den Frie Vilje<span>Design &amp; development</span></a>
+    <a class="mark" href="https://denfrievilje.dk" aria-label="Den Frie Vilje">
+      <img src="assets/dfv-logo.svg" alt="Den Frie Vilje" width="1200" height="1200">
+    </a>
   </div>
 </div>
 
