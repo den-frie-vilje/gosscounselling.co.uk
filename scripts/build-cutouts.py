@@ -60,7 +60,25 @@ def knockout():
     print(f"  knockout: {im.size[0]}x{im.size[1]}")
 
 
-def dark_variant():
+def dark_variant(bg=(11, 42, 52)):
+    """Prepare the figure for a dark ground.
+
+    A matte lifted from a white backdrop is doubly wrong on a dark band: the
+    partially covered pixels carry backdrop-contaminated colour, and even after
+    decontamination the real rim light in the photograph reads as a glow. The
+    fix is the one a compositor uses on a dark plate:
+
+      1. colour edge-extend  — partial pixels take the nearest fully opaque
+         colour, so no backdrop colour survives in the fringe at all
+      2. choke               — pull the matte in, dropping the outermost and
+         most contaminated coverage
+      3. edge blend          — mix the remaining partial pixels toward the
+         DESTINATION colour in proportion to how uncovered they are, so the
+         fringe sits in the band instead of floating in front of it
+      4. negative light wrap — a narrow inward darkening, the inverse of the
+         light wrap you would add on a bright plate
+    """
+    bgv = np.array(bg, float)
     m = np.array(Image.open(f"{OUT}/john-cutout.webp").convert("RGBA")).astype(np.float32)
     A = m[..., 3:4] / 255.0
     RGB = m[..., :3]
@@ -68,24 +86,30 @@ def dark_variant():
     _, ind = distance_transform_edt(~core, return_indices=True)
     ext = RGB[ind[0], ind[1]]
     w = np.clip((A[..., 0] - 0.05) / 0.92, 0, 1)[..., None]
-    RGB2 = RGB * w + ext * (1 - w)                      # colour edge-extend
-    A2 = np.clip((A - 0.16) / 0.84, 0, 1)               # matte choke, ~0.6px
+    RGB2 = RGB * w + ext * (1 - w)                       # 1. edge-extend
+    A2 = np.clip((A - 0.22) / 0.78, 0, 1)                # 2. choke, ~0.9px
+    blend = np.clip((1.0 - A2) * 0.9, 0, 1)              # 3. blend toward the ground
+    RGB3 = RGB2 * (1 - blend) + bgv * blend
     dist = distance_transform_edt(A2[..., 0] > 0.5)
-    wrap = np.clip((2.2 - dist) / 2.2, 0, 1) * (A2[..., 0] > 0.02)
-    RGB3 = RGB2 * (1 - 0.18 * wrap)[..., None]          # negative light wrap
-    Image.fromarray(np.dstack([np.clip(RGB3, 0, 255), np.clip(A2 * 255, 0, 255)]).astype(np.uint8),
+    wrap = np.clip((2.6 - dist) / 2.6, 0, 1) * (A2[..., 0] > 0.02)
+    RGB4 = RGB3 * (1 - 0.14 * wrap)[..., None]           # 4. negative wrap
+    Image.fromarray(np.dstack([np.clip(RGB4, 0, 255), np.clip(A2 * 255, 0, 255)]).astype(np.uint8),
                     "RGBA").save(f"{OUT}/john-cutout-dark.webp", "WEBP",
                                  quality=92, alpha_quality=100, exact=True, method=6)
-    bg = np.array([11, 42, 52], float)                  # the darkest ground it is used on
     d = np.array(Image.open(f"{OUT}/john-cutout-dark.webp").convert("RGBA")).astype(np.float32)
     aa = d[..., 3:4] / 255.0
-    comp = d[..., :3] * aa + bg * (1 - aa)
+    comp = d[..., :3] * aa + bgv * (1 - aa)
     cl = 0.2126 * comp[..., 0] + 0.7152 * comp[..., 1] + 0.0722 * comp[..., 2]
-    dd = distance_transform_edt(aa[..., 0] > 0.5)
-    prof = [(lo, float(cl[(dd >= lo) & (dd < hi) & (aa[..., 0] > 0.5)].mean()))
-            for lo, hi in [(1, 2), (2, 3), (3, 5), (5, 8), (8, 14), (14, 25)]]
-    print("  dark variant on #0b2a34, luminance by depth:",
-          ", ".join(f"{lo}px {v:.0f}" for lo, v in prof), "(monotonic rise = no halo)")
+    dd = distance_transform_edt(aa[..., 0] > 0.02)
+    bgl = 0.2126 * bgv[0] + 0.7152 * bgv[1] + 0.0722 * bgv[2]
+    prof = [(lo, float(cl[sel].mean()))
+            for lo, hi in [(0, 1), (1, 2), (2, 3), (3, 5), (5, 8), (8, 14), (14, 25)]
+            for sel in [(dd >= lo) & (dd < hi) & (aa[..., 0] > 0.02)] if sel.any()]
+    print("  dark variant on rgb%s (luminance %.0f) by depth: %s"
+          % (tuple(int(v) for v in bg), bgl, ", ".join(f"{lo}px {v:.0f}" for lo, v in prof)))
+    interior = prof[-1][1]
+    overshoot = max(v for _, v in prof[:3]) - interior
+    print("  outermost 3px vs interior: %+.1f  (positive = a bright rim; want <= 0)" % overshoot)
 
 
 def round_portrait():
