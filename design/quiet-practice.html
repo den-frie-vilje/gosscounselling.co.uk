@@ -61,7 +61,21 @@ header{position:sticky;top:0;z-index:60;background:var(--paper);border-bottom:1p
 .hero .aside{font-family:var(--serif);font-size:16.5px;font-style:italic;line-height:1.6;
   color:var(--muted);max-width:40ch;margin:26px 0 0;padding-left:16px;
   border-left:2px solid var(--line)}
-.heroGrid{display:grid;gap:44px;align-items:center}
+.heroGrid{display:grid;gap:44px;align-items:center;grid-template-columns:minmax(0,1fr)}
+/* A grid item's automatic minimum size is min-content, and the full-bleed
+   figure inside is `width:100vw`, so the hero track could not be narrower than
+   the whole viewport: the grid came out 48px wider than the .wrap content box
+   it sits in. Blink keeps the children at the container width and only the grid
+   box overflows, which is why this looked clean on the desktop preview. WebKit
+   propagates the track width to every child, so on iOS the eyebrow, h1, lede,
+   buttons and aside were all viewport-wide but still inset by the 24px gutter,
+   and `.hero{overflow:clip}` quietly cut the last 24px off every line instead of
+   producing a scrollbar. min-width:0 lets an item shrink, but where the full-bleed
+   figure IS the grid item its declared 100vw still sets the track, and the
+   text column shares that track. minmax(0,1fr) pins the track to the
+   container instead, so the figure overflows the track on its own negative
+   margin and nothing else is dragged wide with it. */
+.heroGrid > *{min-width:0}
 @media(min-width:860px){.heroGrid{grid-template-columns:1.15fr .85fr;gap:64px}}
 /* Cutout — background removed. His shoulders are cut by the edges of the source
    photograph, so the image is always WIDER than whatever it sits in and the cut
