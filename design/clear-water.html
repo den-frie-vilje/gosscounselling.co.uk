@@ -115,9 +115,15 @@ section{padding:var(--section) 0}
 .about .prose p:first-child{color:var(--ink)}
 /* The dark studio frame keeps its own background — auto-levelled, and only ever
    used small, where the heavy contrast reads as a portrait rather than a slab. */
-.aboutPhoto{margin:0;width:min(300px,62vw);justify-self:start}
+/* Toned toward the page's teal — `color` blending takes the hue only, so his
+   face keeps its modelling. */
+.aboutPhoto{margin:0;width:min(300px,62vw);justify-self:start;position:relative;isolation:isolate}
 .aboutPhoto img{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:50%;display:block;
   box-shadow:0 0 0 1px var(--line)}
+@supports (mix-blend-mode:color){
+  .aboutPhoto::after{content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+    background:var(--teal);mix-blend-mode:color;opacity:.32}
+}
 
 /* fees */
 .fees{display:grid;gap:0;margin-top:48px;border-top:2px solid var(--ink)}
