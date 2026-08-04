@@ -60,7 +60,7 @@ def knockout():
     print(f"  knockout: {im.size[0]}x{im.size[1]}")
 
 
-def dark_variant(bg=(11, 42, 52)):
+def dark_variant(bg=(18, 63, 77)):
     """Prepare the figure for a dark ground.
 
     A matte lifted from a white backdrop is doubly wrong on a dark band: the
