@@ -30,29 +30,48 @@ a{color:var(--accent-dk)}
 .skip{position:absolute;left:-9999px}
 .skip:focus{left:12px;top:12px;z-index:99;background:var(--deep);color:#fff;padding:10px 16px;border-radius:4px}
 
-/* header */
+/* header — never wraps: brand, nav links and the CTA are all nowrap, the nav
+   appears one breakpoint at a time, and the CTA label shortens on small screens. */
 header{position:sticky;top:0;z-index:20;background:rgba(247,244,238,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-.bar{display:flex;align-items:center;gap:24px;min-height:70px}
-.brand{font-family:var(--serif);font-size:19px;font-weight:600;text-decoration:none;color:var(--ink);letter-spacing:-.01em}
-.brand span{display:block;font-family:var(--sans);font-size:11.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-nav{margin-left:auto;display:none;gap:26px}
-nav a{font-size:15px;text-decoration:none;color:var(--muted)}
+.bar{display:flex;align-items:center;gap:20px;min-height:70px;flex-wrap:nowrap}
+.brand{font-family:var(--serif);font-size:19px;font-weight:600;text-decoration:none;color:var(--ink);letter-spacing:-.01em;white-space:nowrap}
+.brand span{display:block;font-family:var(--sans);font-size:11.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+nav{margin-left:auto;display:flex;gap:22px;min-width:0}
+nav a{font-size:15px;text-decoration:none;color:var(--muted);white-space:nowrap;display:none}
 nav a:hover{color:var(--accent-dk);text-decoration:underline;text-underline-offset:4px}
 .callbtn{margin-left:auto;display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;
-  text-decoration:none;font-size:15px;font-weight:500;padding:10px 18px;border-radius:999px}
+  text-decoration:none;font-size:15px;font-weight:500;padding:10px 18px;border-radius:999px;white-space:nowrap;flex:none}
 .callbtn:hover{background:var(--accent-dk)}
-@media(min-width:900px){nav{display:flex}.callbtn{margin-left:0}}
+.cta-long{display:none}
+@media(min-width:430px){.cta-short{display:none}.cta-long{display:inline}}
+@media(min-width:700px){nav a[data-nav="help"]{display:inline}}
+@media(min-width:820px){nav a[data-nav="fees"]{display:inline}}
+@media(min-width:940px){nav a[data-nav="about"]{display:inline}}
+@media(min-width:1060px){nav a[data-nav="faq"]{display:inline}.callbtn{margin-left:0}}
 
 /* hero */
-.hero{padding:calc(var(--section)*.8) 0 var(--section)}
+.hero{padding:calc(var(--section)*.8) 0 var(--section);position:relative;isolation:isolate;overflow:clip}
+/* Warm wash behind the cutout so he lifts off the flat paper. */
+.hero .wash{position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(58% 66% at 78% 64%, #e8e0d0 0%, rgba(232,224,208,.45) 46%, transparent 72%)}
 .eyebrow{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 22px}
 .hero h1{font-size:clamp(36px,5.4vw,60px)}
 .hero .lede{font-size:clamp(18px,2vw,21px);color:var(--muted);max-width:42ch;margin:24px 0 0;line-height:1.65}
 .heroGrid{display:grid;gap:44px;align-items:center}
 @media(min-width:860px){.heroGrid{grid-template-columns:1.15fr .85fr;gap:64px}}
+/* Cutout — background removed, no frame, no rounded box. His shoulders are cut
+   by the edges of the source photograph, so the image is always WIDER than the
+   box it sits in: the visible cut is made by the frame (desktop) or by the
+   viewport (mobile), never by a scissor line floating mid-section. */
 .portrait{margin:0}
-.portrait img{width:100%;height:auto;display:block;border-radius:4px;filter:saturate(.92)}
-.portrait figcaption{font-size:13.5px;color:var(--muted);margin-top:12px;font-style:italic}
+.portrait .cutframe{overflow:hidden;display:block}
+.portrait img{width:120%;max-width:none;margin-left:-10%;height:auto;display:block}
+.portrait figcaption{font-size:13.5px;color:var(--muted);margin-top:14px;font-style:italic;max-width:34ch}
+@media(max-width:859px){
+  .portrait .cutframe{width:100vw;margin-left:calc(50% - 50vw)}
+  .portrait img{width:118vw;margin-left:-9vw}
+  .portrait figcaption{margin-top:16px;padding:0 0 0 2px}
+}
 .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
 .btn{display:inline-flex;align-items:center;gap:9px;text-decoration:none;font-weight:500;font-size:16px;
   padding:13px 22px;border-radius:999px;border:1px solid transparent}
@@ -69,14 +88,23 @@ section{padding:var(--section) 0}
 .sechead{max-width:56ch}
 .sechead h2{font-size:clamp(28px,3.6vw,40px)}
 .sechead p{color:var(--muted);margin:16px 0 0;font-size:18px}
-.grid{display:grid;gap:22px;margin-top:48px}
+.grid{display:grid;min-width:0;gap:22px;margin-top:48px}
 @media(min-width:700px){.grid{grid-template-columns:1fr 1fr}}
-.card{background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:32px 30px}
+.card{min-width:0;background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:32px 30px}
 .card h3{font-size:23px;margin-bottom:12px}
 .card p{margin:0;color:var(--muted)}
 .card p + p{margin-top:14px}
+.card .more{display:inline-block;margin-top:18px;font-weight:600;font-size:15.5px;color:var(--accent-dk);text-decoration:none;text-wrap:pretty}
+.card .more:hover{text-decoration:underline;text-underline-offset:4px}
 .card .who{display:block;font-family:var(--sans);font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--accent-dk);font-weight:600;margin-bottom:10px}
+/* The dark studio frame keeps its own background — auto-levelled, and only ever
+   used small, where its heavy contrast reads as a portrait rather than a slab. */
+.aboutGrid{display:grid;gap:40px;align-items:start}
+@media(min-width:860px){.aboutGrid{grid-template-columns:1fr auto;gap:56px}}
+.aboutPhoto{margin:0;width:min(300px,62vw);justify-self:start}
+.aboutPhoto img{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:50%;display:block;
+  box-shadow:0 0 0 1px var(--line)}
 .prose{max-width:64ch}
 .prose p{color:var(--muted);font-size:18px}
 .prose p:first-of-type{color:var(--ink)}
@@ -84,7 +112,7 @@ section{padding:var(--section) 0}
 /* fees */
 .fees{display:grid;gap:22px;margin-top:48px}
 @media(min-width:820px){.fees{grid-template-columns:repeat(3,1fr)}}
-.fee{background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:30px 28px}
+.fee{min-width:0;background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:30px 28px}
 .fee h3{font-size:21px;margin-bottom:18px}
 .fee dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:10px 16px;font-size:16px}
 .fee dt{color:var(--muted)}
@@ -99,11 +127,12 @@ section{padding:var(--section) 0}
 .quals ul{list-style:none;margin:0;padding:0}
 .quals li{padding:13px 0;border-bottom:1px solid var(--line);display:flex;gap:16px;justify-content:space-between;align-items:baseline}
 .quals li span:last-child{color:var(--muted);font-size:14.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.bodies{background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:28px}
+.bodies{min-width:0;background:var(--raised);border:1px solid var(--line);border-radius:6px;padding:28px}
 .bodies h3{font-size:19px;margin-bottom:16px}
 .bodies p{margin:0 0 12px;color:var(--muted);font-size:16px}
 .logos{display:flex;gap:20px;align-items:center;margin-top:22px;flex-wrap:wrap}
-.logos img{height:44px;width:auto}
+.logos img{height:46px;width:auto;filter:grayscale(1) contrast(.85) opacity(.72);transition:filter .18s ease}
+.logos img:hover{filter:none}
 
 /* faq */
 details{border-bottom:1px solid var(--line)}
@@ -122,16 +151,28 @@ details .body li{margin:5px 0}
 #contact{background:var(--deep);color:#f3f0e8}
 #contact h2{color:#fff}
 #contact .sechead p{color:#c9d3ce}
-.contactGrid{display:grid;gap:18px;margin-top:44px}
-@media(min-width:760px){.contactGrid{grid-template-columns:repeat(3,1fr)}}
-.ccard{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);border-radius:6px;padding:28px;text-decoration:none;color:inherit;display:block}
-.ccard:hover{background:rgba(255,255,255,.11)}
-.ccard .k{font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:#a8c0b6;font-weight:600}
-.ccard .v{font-family:var(--serif);font-size:22px;margin-top:10px;display:block;word-break:break-word}
-.ccard .h{font-size:14.5px;color:#c9d3ce;margin-top:8px;display:block}
+/* Contact rows, not cards: three narrow columns forced the email address to
+   wrap mid-word. Full-width rows give it room, and the icon carries the
+   distinction the card border used to. */
+.contacts{list-style:none;margin:44px 0 0;padding:0;border-top:1px solid rgba(255,255,255,.18)}
+.contacts li{border-bottom:1px solid rgba(255,255,255,.18)}
+.contacts a{display:flex;align-items:center;gap:20px;padding:22px 4px;text-decoration:none;color:inherit}
+.contacts a:hover{background:rgba(255,255,255,.06)}
+.contacts a:hover .v{text-decoration:underline;text-underline-offset:5px}
+.ico{flex:none;width:46px;height:46px;border-radius:999px;display:grid;place-items:center;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22)}
+.ico svg{width:22px;height:22px;display:block;fill:none;stroke:#eaf1ec;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round}
+.contacts .txt{min-width:0}
+.contacts .k{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#a8c0b6;font-weight:600;display:block}
+.contacts .v{font-family:var(--serif);font-size:clamp(18px,2.6vw,23px);margin-top:5px;display:block;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.contacts .h{font-size:14.5px;color:#c9d3ce;margin-top:4px;display:block}
+@media(max-width:479px){.contacts .v{font-size:17px}.ico{width:40px;height:40px}.contacts a{gap:14px}}
 footer{background:var(--deep);color:#a8c0b6;font-size:14.5px;padding:0 0 56px}
 footer .wrap{border-top:1px solid rgba(255,255,255,.14);padding-top:28px;display:flex;flex-wrap:wrap;gap:14px 32px}
 footer a{color:#d7e2dc}
+@media(max-width:419px){.brand span{display:none}.bar{gap:12px}}
 </style>
 </head>
 <body>
@@ -141,12 +182,12 @@ footer a{color:#d7e2dc}
   <div class="wrap bar">
     <a class="brand" href="#top">John Goss<span>Counsellor &amp; Supervisor</span></a>
     <nav aria-label="Sections">
-      <a href="#help">How I can help</a>
-      <a href="#about">About me</a>
-      <a href="#fees">Fees</a>
-      <a href="#faq">Questions</a>
+      <a data-nav="help" href="#help">How I can help</a>
+      <a data-nav="fees" href="#fees">Fees</a>
+      <a data-nav="about" href="#about">About me</a>
+      <a data-nav="faq" href="#faq">Questions</a>
     </nav>
-    <a class="callbtn" href="tel:+447776153426">Call 07776 153 426</a>
+    <a class="callbtn" href="tel:+447776153426"><span class="cta-short">Call me</span><span class="cta-long">Call 07776 153 426</span></a>
   </div>
 </header>
 
@@ -154,6 +195,7 @@ footer a{color:#d7e2dc}
 <div id="top"></div>
 
 <section class="hero">
+  <div class="wash" aria-hidden="true"></div>
   <div class="wrap heroGrid">
     <div>
       <p class="eyebrow">Bletchley, Milton Keynes &middot; and online</p>
@@ -164,12 +206,12 @@ footer a{color:#d7e2dc}
         <a class="btn btn-primary" href="tel:+447776153426">Call 07776 153 426</a>
         <a class="btn btn-ghost" href="mailto:info@gosscounselling.co.uk">Email me</a>
       </div>
-      <p class="reassure">No booking system, no forms. Phone, email or
-        <a href="https://wa.me/447776153426">WhatsApp</a> me and we'll find a time to talk.</p>
+      <p class="reassure">Phone, email or <a href="https://wa.me/447776153426">WhatsApp</a> me and
+        we'll find a time to talk. You'll be speaking to me, not to a receptionist.</p>
     </div>
     <figure class="portrait">
-      <img src="../docs/source-assets/John-Goss-038.jpg" alt="John Goss" width="1800" height="1440">
-      <figcaption>John Goss, NCPS Accredited Member and COSRT member.</figcaption>
+      <span class="cutframe"><img src="assets/john-cutout.webp?v5" alt="John Goss" width="1800" height="1449" fetchpriority="high"></span>
+      <figcaption>John Goss — NCPS Accredited Member, COSRT member.</figcaption>
     </figure>
   </div>
 </section>
@@ -190,12 +232,14 @@ footer a{color:#d7e2dc}
           depression or bereavement. You might be looking to explore your relationship with
           pornography or sex.</p>
         <p>Whatever brings you to counselling, you are assured of a space to talk openly about it.</p>
+        <a class="more" href="/counselling/individual">More about individual counselling →</a>
       </article>
       <article class="card">
         <h3><span class="who">Couples, throuples, poly dynamics</span>Relationship counselling</h3>
         <p>Relationship counselling puts the focus on the relationship itself, whether you're part
           of a couple, a throuple or a poly dynamic.</p>
         <p>You don't have to explain or justify the shape of your relationship to me first.</p>
+        <a class="more" href="/counselling/relationship">More about relationship counselling →</a>
       </article>
       <article class="card">
         <h3><span class="who">Sex therapy</span>Psychosexual therapy</h3>
@@ -204,6 +248,7 @@ footer a{color:#d7e2dc}
           or absent desire, vaginismus, orgasm difficulties and vulvodynia.</p>
         <p>People also come to talk about porn use, intimacy with a partner or partners, fetishes,
           or exploring kink.</p>
+        <a class="more" href="/counselling/psychosexual-therapy">More about psychosexual therapy →</a>
       </article>
       <article class="card">
         <h3><span class="who">For therapists and helping professionals</span>Clinical supervision</h3>
@@ -211,13 +256,15 @@ footer a{color:#d7e2dc}
           helping professions.</p>
         <p>For me, supervision isn't only about bringing your client work — it's about bringing
           yourself too, so we can explore that work more collaboratively.</p>
+        <a class="more" href="/supervision">More about clinical supervision →</a>
       </article>
     </div>
   </div>
 </section>
 
 <section id="about" class="band">
-  <div class="wrap">
+  <div class="wrap aboutGrid">
+    <div>
     <div class="sechead"><h2>About me</h2></div>
     <div class="prose" style="margin-top:32px">
       <p>Thanks for visiting. I qualified as a counsellor in 2015, after a range of experience in
@@ -230,6 +277,10 @@ footer a{color:#d7e2dc}
         training further as a psychosexual therapist, working with issues such as painful sex,
         unreliable erections and other sex-related concerns.</p>
     </div>
+    </div>
+    <figure class="aboutPhoto">
+      <img src="assets/john-portrait-round.webp?v5" alt="John Goss" width="620" height="620" loading="lazy">
+    </figure>
   </div>
 </section>
 
@@ -295,8 +346,8 @@ footer a{color:#d7e2dc}
         <p>Children &amp; Young People's Register (NCPS)</p>
         <p>College of Sex &amp; Relationship Therapists (COSRT)</p>
         <div class="logos">
-          <img src="../docs/source-assets/NCPS_RGB.png" alt="National Counselling &amp; Psychotherapy Society">
-          <img src="../docs/source-assets/cosrt.webp" alt="College of Sex &amp; Relationship Therapists">
+          <img src="assets/NCPS_RGB.png" alt="National Counselling &amp; Psychotherapy Society">
+          <img src="assets/cosrt.png" alt="College of Sex &amp; Relationship Therapists">
         </div>
       </aside>
     </div>
@@ -362,20 +413,38 @@ footer a{color:#d7e2dc}
       <p>The first step is a conversation. Call me, email me, or send a WhatsApp — whichever
         feels easiest.</p>
     </div>
-    <div class="contactGrid">
-      <a class="ccard" href="tel:+447776153426">
-        <span class="k">Phone</span><span class="v">07776 153 426</span>
-        <span class="h">If I can't answer, leave a message and I'll ring back.</span>
-      </a>
-      <a class="ccard" href="mailto:info@gosscounselling.co.uk">
-        <span class="k">Email</span><span class="v">info@gosscounselling.co.uk</span>
-        <span class="h">Tell me as much or as little as you like.</span>
-      </a>
-      <a class="ccard" href="https://wa.me/447776153426">
-        <span class="k">WhatsApp</span><span class="v">Message me</span>
-        <span class="h">Sometimes the easiest way to reach me.</span>
-      </a>
-    </div>
+    <ul class="contacts">
+      <li>
+        <a href="tel:+447776153426">
+          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 3h3l1.5 4-2 1.5a13 13 0 0 0 6.5 6.5L17 13l4 1.5v3a2.5 2.5 0 0 1-2.7 2.5A16.5 16.5 0 0 1 3.5 5.7 2.5 2.5 0 0 1 6 3Z"/></svg></span>
+          <span class="txt">
+            <span class="k">Phone</span>
+            <span class="v">07776 153 426</span>
+            <span class="h">If I can't answer, leave a message and I'll ring back.</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="mailto:info@gosscounselling.co.uk">
+          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
+          <span class="txt">
+            <span class="k">Email</span>
+            <span class="v">info@gosscounselling.co.uk</span>
+            <span class="h">Tell me as much or as little as you like.</span>
+          </span>
+        </a>
+      </li>
+      <li>
+        <a href="https://wa.me/447776153426">
+          <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 20.5 5 16.4A8.2 8.2 0 1 1 8.2 19.4Z"/><path d="M9 9c.3 1.4 1.2 2.9 2.4 4 .9.8 2 1.4 3.1 1.7l.9-1.4 2.1.9v1.4c-.1.7-.8 1.2-1.5 1.1a9.6 9.6 0 0 1-8-8c0-.7.4-1.4 1.1-1.5h1.4Z"/></svg></span>
+          <span class="txt">
+            <span class="k">WhatsApp</span>
+            <span class="v">Message me on WhatsApp</span>
+            <span class="h">Sometimes the easiest way to reach me.</span>
+          </span>
+        </a>
+      </li>
+    </ul>
   </div>
 </section>
 </main>
