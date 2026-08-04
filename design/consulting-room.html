@@ -49,11 +49,14 @@ header{position:sticky;top:0;z-index:60;background:var(--stone);border-bottom:1p
 .brand{display:flex;align-items:baseline;gap:10px;text-decoration:none;color:var(--slate-dk);white-space:nowrap}
 .brand b{font-family:var(--serif);font-weight:700;font-size:23px;letter-spacing:-.01em}
 .brand span{font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
-@media(max-width:560px){.brand span{display:none}/* No frame, no border, no circle — the mark alone. The 46px box is only the
-   touch target, which stays at the WCAG minimum without being drawn. */
+@media(max-width:560px){.brand span{display:none}}
+/* No frame, no border, no circle — the mark alone. The 46px box is only the
+   touch target, which stays at the WCAG minimum without being drawn.
+   This rule must stay at the top level: it had been sitting inside the
+   max-width:560px block above, so above 560px the summary kept display:list-item
+   and the native disclosure triangle came back next to the burger. */
 .sitenav summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
-  width:46px;height:46px;background:transparent;border:0;color:inherit}}
-@media(min-width:1180px){nav.main{display:block}}
+  width:46px;height:46px;background:transparent;border:0;color:inherit}
 
 /* ---- photographic panels ----------------------------------------------
    The photograph is position:fixed and the section clips it (clip-path on an
