@@ -72,7 +72,12 @@ nav a:hover{color:var(--accent-dk);text-decoration:underline;text-underline-offs
 .portrait img{width:120%;max-width:none;margin-left:-10%;height:auto;display:block}
 @media(max-width:859px){
   .portrait .cutframe{width:100vw;margin-left:calc(50% - 50vw)}
-  .portrait img{width:118vw;margin-left:-9vw}
+  .portrait img{width:118vw;margin-left:-9vw;display:block}
+  /* He is a cutout, so he can land straight on the rule — the section's own
+     bottom padding was leaving 96px of empty paper under him, and another 96
+     under the rule. */
+  .hero{padding-bottom:0}
+  #help{padding-top:52px}
 }
 @media(min-width:860px){
   .portrait .cutframe{aspect-ratio:1;border-radius:50%;background:#eae2d3;
@@ -240,7 +245,7 @@ footer a{color:#d7e2dc}
         we'll find a time to talk. You'll be speaking to me, not to a receptionist.</p>
     </div>
     <figure class="portrait">
-      <span class="cutframe"><img src="assets/john-cutout.webp?v13" alt="John Goss" width="1800" height="1452" fetchpriority="high"></span>
+      <span class="cutframe"><img src="assets/john-cutout.webp?v14" alt="John Goss" width="1800" height="1452" fetchpriority="high"></span>
     </figure>
   </div>
 </section>
@@ -308,7 +313,7 @@ footer a{color:#d7e2dc}
     </div>
     </div>
     <figure class="aboutPhoto">
-      <img src="assets/john-portrait-round.webp?v13" alt="John Goss" width="620" height="620" loading="lazy">
+      <img src="assets/john-portrait-round.webp?v14" alt="John Goss" width="620" height="620" loading="lazy">
     </figure>
   </div>
 </section>

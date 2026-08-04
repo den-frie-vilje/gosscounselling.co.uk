@@ -48,12 +48,23 @@ nav a:hover{color:var(--teal)}
 @media(min-width:1060px){nav a[data-nav="faq"]{display:inline}.headcta{margin-left:0}}
 
 /* hero */
-.hero{background:var(--deep);color:#eaf3f5;padding:calc(var(--section)*.85) 0 0;position:relative;isolation:isolate;overflow:clip}
-/* A deep pool behind him, darker than the band and much larger than the figure,
-   so he separates by sitting in front of shadow rather than in front of a glow. */
-.hero .wash{position:absolute;inset:-10% -5% -20%;z-index:-1;pointer-events:none;
-  background:radial-gradient(115% 125% at 70% 62%, #03141b 0%, rgba(3,20,27,.86) 38%,
-    rgba(3,20,27,.45) 62%, transparent 82%)}
+/* The hero is a composition of very soft gradients rather than one flat band:
+   the ground lifts toward the bottom, which is what his near-black t-shirt sits
+   against — at the old #0b2a34 the shirt and the band were 1.19:1 apart and the
+   edge just bled; against the lifted #17495a it is 1.82:1, enough to read the
+   shoulder line without outlining it. The white copy is unaffected: it still
+   measures 8.72:1 at the lightest point of the ramp. */
+.hero{color:#eaf3f5;padding:calc(var(--section)*.85) 0 0;position:relative;isolation:isolate;overflow:clip;
+  background:linear-gradient(178deg,#0a2530 0%,#0b2a34 44%,#123f4d 78%,#17495a 100%)}
+/* A very large, very quiet dark round behind the top left, so the corner has
+   some weight and the eye starts there. */
+.hero .wash{position:absolute;inset:-45% 20% -25% -35%;z-index:-1;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(2,14,19,.9) 0%,rgba(2,14,19,.55) 45%,
+    rgba(2,14,19,.18) 70%,transparent 88%)}
+/* and a soft counter-pool low and right, under him, to keep the lift from
+   reading as a hard horizon */
+.hero .wash2{position:absolute;inset:35% -25% -40% 30%;z-index:-1;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(29,92,112,.55) 0%,rgba(29,92,112,.22) 52%,transparent 80%)}
 .heroGrid{display:grid;gap:44px;align-items:center}
 @media(min-width:880px){.heroGrid{grid-template-columns:1.1fr .9fr;gap:64px}}
 .eyebrow{font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:#7fc4d8;font-weight:600;margin:0 0 20px}
@@ -228,6 +239,7 @@ footer a{color:#d3e6ea}
 
 <section class="hero">
   <div class="wash" aria-hidden="true"></div>
+  <div class="wash2" aria-hidden="true"></div>
   <div class="wrap heroGrid">
     <div>
       <p class="eyebrow">Bletchley, Milton Keynes &middot; and online</p>
@@ -242,7 +254,7 @@ footer a{color:#d3e6ea}
         directly — you'll be speaking to me, not to a receptionist.</p>
     </div>
     <figure class="heroFig">
-      <img src="assets/john-cutout-dark.webp?v13" alt="John Goss" width="1800" height="1452" fetchpriority="high">
+      <img src="assets/john-cutout-dark.webp?v14" alt="John Goss" width="1800" height="1452" fetchpriority="high">
     </figure>
   </div>
 </section>
@@ -331,7 +343,7 @@ footer a{color:#d3e6ea}
       </div>
     </div>
     <figure class="aboutPhoto">
-      <img src="assets/john-portrait-round.webp?v13" alt="John Goss" width="620" height="620" loading="lazy">
+      <img src="assets/john-portrait-round.webp?v14" alt="John Goss" width="620" height="620" loading="lazy">
     </figure>
   </div>
 </section>
