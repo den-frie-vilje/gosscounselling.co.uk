@@ -400,14 +400,15 @@ footer a:hover{color:#fff}
    there was no way to keep the X on top. Out here the burger simply stays where
    it is and the panel opens underneath it. */
 .sitenav{position:relative;z-index:3}
-/* The menu wipes down from above and retracts the same way, rather than
-   appearing. It stays in the DOM so the retraction can animate, but is
-   visibility:hidden and pointer-events:none while closed, so it is out of the
+/* A wipe, not a slide: the panel does not move at all. Its clip travels down
+   from the top edge, so the menu is uncovered in place and re-covered the same
+   way. It stays in the DOM so the retraction can animate, and is
+   visibility:hidden with pointer-events:none while closed, so it is out of the
    accessibility tree and cannot be tabbed into. */
-.navPanel{z-index:2;visibility:hidden;pointer-events:none;transform:translateY(-100%);
-  transition:transform .42s cubic-bezier(.4,0,.2,1),visibility 0s linear .42s}
-.sitenav[open] ~ .navPanel{visibility:visible;pointer-events:auto;transform:translateY(0);
-  transition:transform .42s cubic-bezier(.4,0,.2,1),visibility 0s}
+.navPanel{z-index:2;visibility:hidden;pointer-events:none;clip-path:inset(0 0 100% 0);
+  transition:clip-path .44s cubic-bezier(.4,0,.2,1),visibility 0s linear .44s}
+.sitenav[open] ~ .navPanel{visibility:visible;pointer-events:auto;clip-path:inset(0 0 0 0);
+  transition:clip-path .44s cubic-bezier(.4,0,.2,1),visibility 0s}
 @media(prefers-reduced-motion:reduce){
   .navPanel,.sitenav[open] ~ .navPanel{transition:visibility 0s}
 }

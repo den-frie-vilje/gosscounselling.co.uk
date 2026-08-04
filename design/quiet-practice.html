@@ -253,14 +253,15 @@ footer a{color:#d7e2dc}
    there was no way to keep the X on top. Out here the burger simply stays where
    it is and the panel opens underneath it. */
 .sitenav{position:relative;z-index:3}
-/* The menu wipes down from above and retracts the same way, rather than
-   appearing. It stays in the DOM so the retraction can animate, but is
-   visibility:hidden and pointer-events:none while closed, so it is out of the
+/* A wipe, not a slide: the panel does not move at all. Its clip travels down
+   from the top edge, so the menu is uncovered in place and re-covered the same
+   way. It stays in the DOM so the retraction can animate, and is
+   visibility:hidden with pointer-events:none while closed, so it is out of the
    accessibility tree and cannot be tabbed into. */
-.navPanel{z-index:2;visibility:hidden;pointer-events:none;transform:translateY(-100%);
-  transition:transform .42s cubic-bezier(.4,0,.2,1),visibility 0s linear .42s}
-.sitenav[open] ~ .navPanel{visibility:visible;pointer-events:auto;transform:translateY(0);
-  transition:transform .42s cubic-bezier(.4,0,.2,1),visibility 0s}
+.navPanel{z-index:2;visibility:hidden;pointer-events:none;clip-path:inset(0 0 100% 0);
+  transition:clip-path .44s cubic-bezier(.4,0,.2,1),visibility 0s linear .44s}
+.sitenav[open] ~ .navPanel{visibility:visible;pointer-events:auto;clip-path:inset(0 0 0 0);
+  transition:clip-path .44s cubic-bezier(.4,0,.2,1),visibility 0s}
 @media(prefers-reduced-motion:reduce){
   .navPanel,.sitenav[open] ~ .navPanel{transition:visibility 0s}
 }
@@ -274,7 +275,10 @@ footer a{color:#d7e2dc}
 .sitenav[open] .burger::before{top:0;transform:rotate(45deg);transition:top .18s ease,transform .22s ease .16s}
 .sitenav[open] .burger::after{top:0;transform:rotate(-45deg);transition:top .18s ease,transform .22s ease .16s}
 @media(prefers-reduced-motion:reduce){.sitenav .burger,.sitenav .burger::before,.sitenav .burger::after{transition:none}}
-.navPanel{position:fixed;inset:0;z-index:2;background:var(--paper);overflow-y:auto;
+/* A deeper shade of the page's own ground, so the menu reads as a surface over
+   the site rather than as the site with links on it. (Full Colour keeps its
+   cream — against those saturated bands it is already distinct.) */
+.navPanel{position:fixed;inset:0;z-index:2;background:#e7e0d2;overflow-y:auto;
   padding:96px 0 56px;-webkit-overflow-scrolling:touch}
 .navPanel ul{list-style:none;margin:0;padding:0}
 .navPanel li+li{border-top:1px solid var(--line)}
