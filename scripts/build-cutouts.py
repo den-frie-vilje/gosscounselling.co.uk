@@ -19,7 +19,10 @@ Three assets come out in design/assets/:
                           narrower than the image: the crop is made by the frame or the viewport,
                           never by a line floating mid-section.
 
-  john-cutout-dark.webp   the same figure prepared for dark grounds. A matte pulled from a white
+  john-cutout-dark.webp   the same figure with a hard, honest matte: subject
+                          colour in every pixel and almost no partial coverage,
+                          so it composites correctly against any ground rather
+                          than being tuned to one. A matte pulled from a white
                           backdrop carries light wrap on the silhouette, which glows when
                           composited onto a dark band — the same problem as green spill. Treated
                           the standard keyer way: colour edge-extend (partially covered pixels
@@ -60,59 +63,50 @@ def knockout():
     print(f"  knockout: {im.size[0]}x{im.size[1]}")
 
 
-def dark_variant(bg=(13, 48, 59)):
-    """Prepare the figure for a dark ground.
+def solid_matte():
+    """One asset that composites correctly against ANY ground.
 
-    A matte lifted from a white backdrop is doubly wrong on a dark band: the
-    partially covered pixels carry backdrop-contaminated colour, and even after
-    decontamination the real rim light in the photograph reads as a glow. The
-    fix is the one a compositor uses on a dark plate:
+    The earlier variants blended their edge toward a specific destination
+    colour, which meant one asset per background — and Clear Water has two. The
+    fix is to make the matte honest instead of tuned:
 
-      1. colour edge-extend  — partial pixels take the nearest fully opaque
-         colour, so no backdrop colour survives in the fringe at all
-      2. choke               — pull the matte in, dropping the outermost and
-         most contaminated coverage
-      3. edge blend          — mix the remaining partial pixels toward the
-         DESTINATION colour in proportion to how uncovered they are, so the
-         fringe sits in the band instead of floating in front of it
-      4. negative light wrap — a narrow inward darkening, the inverse of the
-         light wrap you would add on a bright plate
+      1. colour edge-extend  every partially covered pixel takes the colour of
+         the nearest fully opaque pixel, so no backdrop colour survives anywhere
+         in the fringe — the RGB is the subject's own, everywhere
+      2. choke               pull the matte in past the contaminated coverage
+      3. harden the alpha    compress the remaining ramp to about a pixel, so
+         there is almost no partial coverage left to carry a wrong colour
+
+    Then `out = subject x alpha + ground x (1 - alpha)` is simply correct for
+    whatever ground it lands on. At display size the browser resamples the hard
+    edge back to a smooth one, using the subject's colour rather than a guess at
+    the background's.
     """
-    # Two contexts: the circular plate (7,32,40) above 880px and the lifted band
-    # (23,73,90) below it. The blend target sits between them, so neither shows
-    # more than about 10 points of luminance mismatch at the very edge.
-    bgv = np.array(bg, float)
     m = np.array(Image.open(f"{OUT}/john-cutout.webp").convert("RGBA")).astype(np.float32)
     A = m[..., 3:4] / 255.0
     RGB = m[..., :3]
     core = A[..., 0] >= 0.97
     _, ind = distance_transform_edt(~core, return_indices=True)
-    ext = RGB[ind[0], ind[1]]
-    w = np.clip((A[..., 0] - 0.05) / 0.92, 0, 1)[..., None]
-    RGB2 = RGB * w + ext * (1 - w)                       # 1. edge-extend
-    A2 = np.clip((A - 0.22) / 0.78, 0, 1)                # 2. choke, ~0.9px
-    blend = np.clip((1.0 - A2) * 0.9, 0, 1)              # 3. blend toward the ground
-    RGB3 = RGB2 * (1 - blend) + bgv * blend
-    dist = distance_transform_edt(A2[..., 0] > 0.5)
-    wrap = np.clip((2.6 - dist) / 2.6, 0, 1) * (A2[..., 0] > 0.02)
-    RGB4 = RGB3 * (1 - 0.14 * wrap)[..., None]           # 4. negative wrap
-    Image.fromarray(np.dstack([np.clip(RGB4, 0, 255), np.clip(A2 * 255, 0, 255)]).astype(np.uint8),
+    RGB2 = RGB[ind[0], ind[1]]                           # 1. subject colour everywhere
+    A2 = np.clip((A - 0.30) / 0.55, 0, 1)                # 2. choke
+    A3 = np.clip((A2 - 0.5) * 6.0 + 0.5, 0, 1)           # 3. harden to ~1px of ramp
+    Image.fromarray(np.dstack([np.clip(RGB2, 0, 255), np.clip(A3 * 255, 0, 255)]).astype(np.uint8),
                     "RGBA").save(f"{OUT}/john-cutout-dark.webp", "WEBP",
                                  quality=92, alpha_quality=100, exact=True, method=6)
     d = np.array(Image.open(f"{OUT}/john-cutout-dark.webp").convert("RGBA")).astype(np.float32)
     aa = d[..., 3:4] / 255.0
-    comp = d[..., :3] * aa + bgv * (1 - aa)
-    cl = 0.2126 * comp[..., 0] + 0.7152 * comp[..., 1] + 0.0722 * comp[..., 2]
-    dd = distance_transform_edt(aa[..., 0] > 0.02)
-    bgl = 0.2126 * bgv[0] + 0.7152 * bgv[1] + 0.0722 * bgv[2]
-    prof = [(lo, float(cl[sel].mean()))
-            for lo, hi in [(0, 1), (1, 2), (2, 3), (3, 5), (5, 8), (8, 14), (14, 25)]
-            for sel in [(dd >= lo) & (dd < hi) & (aa[..., 0] > 0.02)] if sel.any()]
-    print("  dark variant on rgb%s (luminance %.0f) by depth: %s"
-          % (tuple(int(v) for v in bg), bgl, ", ".join(f"{lo}px {v:.0f}" for lo, v in prof)))
-    interior = prof[-1][1]
-    overshoot = max(v for _, v in prof[:3]) - interior
-    print("  outermost 3px vs interior: %+.1f  (positive = a bright rim; want <= 0)" % overshoot)
+    partial = ((aa > 0.02) & (aa < 0.98)).mean() * 100
+    print("  solid matte: %.2f%% of pixels carry partial coverage (was ~2.8%%)" % partial)
+    for bg in [(7, 32, 40), (30, 98, 120), (247, 244, 238)]:
+        bgv = np.array(bg, float)
+        comp = d[..., :3] * aa + bgv * (1 - aa)
+        cl = 0.2126 * comp[..., 0] + 0.7152 * comp[..., 1] + 0.0722 * comp[..., 2]
+        dd = distance_transform_edt(aa[..., 0] > 0.5)
+        prof = [float(cl[(dd >= lo) & (dd < hi) & (aa[..., 0] > 0.5)].mean())
+                for lo, hi in [(1, 2), (2, 4), (4, 8), (8, 20)]]
+        bgl = 0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2]
+        print("    on rgb%-16s (lum %3.0f): edge %s  -> rim vs interior %+.1f"
+              % (str(tuple(bg)), bgl, " ".join(f"{v:.0f}" for v in prof), prof[0] - prof[-1]))
 
 
 def round_portrait():
@@ -149,7 +143,7 @@ if FROM_MASTER:
     print("  keeping design/assets/john-cutout.webp as it stands")
 else:
     knockout()
-dark_variant()
+solid_matte()
 round_portrait()
 for f in ("john-cutout.webp", "john-cutout-dark.webp", "john-portrait-round.webp"):
     print("  %-26s %6.0f KB" % (f, os.path.getsize(f"{OUT}/{f}") / 1024))
