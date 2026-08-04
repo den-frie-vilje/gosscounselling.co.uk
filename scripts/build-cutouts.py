@@ -21,17 +21,23 @@ Three assets come out in design/assets/:
 
   john-cutout-dark.webp   the same figure, same silhouette, with the white cyclorama taken
                           back out of BOTH his colour and his matte, so `F*a + ground*(1-a)`
-                          is right on any ground. Four published steps, all in solid_matte()
+                          is right on any ground. Five published steps, all in solid_matte()
                           below: a known-backing re-solve of alpha in the fringe (Wang &
                           Cohen 2007 eq. 2 with B measured rather than sampled, under the
                           sparsity prior of Rhemann et al. 2008); fast multi-level foreground
                           estimation (Germer et al., ICPR 2020, via PyMatting); a one-sided
-                          foreground-gamut bound; and an inverse light wrap — a fitted
-                          per-pixel gain 1/(1+psi) in linear light — for the real rim light
-                          the backdrop threw onto his shoulders. No choke and no dilate: the
-                          matte's support, its per-column top edge and the retouched crown's
-                          shape are bit-identical to the master, and partial coverage stays
-                          at 1.872%. Needs `python3 -m pip install pymatting`.
+                          foreground-gamut bound; and an inverse light wrap for the real rim
+                          light the backdrop threw onto him. That last step is TWO operators,
+                          because the rim light is two things: on skin and hair it is light
+                          reflected by the albedo, so it comes out as a fitted per-pixel gain
+                          1/(1+psi) in linear light; on the navy tee it is the dichromatic
+                          INTERFACE term (Shafer 1985), illuminant-coloured and additive, so
+                          it comes out as a measured per-pixel SUBTRACTION. Using the gain on
+                          the tee was what made the shoulders read as desaturated rather than
+                          darkened. No choke and no dilate: the matte's support, its
+                          per-column top edge and the retouched crown's shape are
+                          bit-identical to the master, and partial coverage stays at 1.872%.
+                          Needs `python3 -m pip install pymatting`.
 
   john-portrait-round.webp  the dark studio frame, which KEEPS its own background, graded and
                           cropped square on his face for circular use at small sizes.
@@ -204,6 +210,69 @@ def solid_matte():
        This is the achromatic-backing analogue of the Vlahos/Ultimatte despill rule,
        which is a one-sided clamp for the same physical reason.
 
+    4b. THE GARMENT — where the gain in (2) is the WRONG OPERATOR, and is replaced by a
+       subtraction. The client's note was "the shoulders look like a desaturation rather
+       than a darkening ... maybe a bit too aggressive, or can be coloured with the
+       t-shirt's hue". All three observations are the same defect, and the plate proves it.
+
+       Step (2) assumes the backdrop's contribution is rho * E_backdrop — light that is
+       reflected by the albedo, hence multiplicative, hence removable by a gain. On skin
+       and hair that holds. On the navy tee it does not: a cotton dielectric also returns
+       an INTERFACE (specular / sheen) component that carries the ILLUMINANT's spectrum,
+       not the albedo's. Shafer ("Using Color to Separate Reflection Components", Color
+       Research & Application 10(4), 1985) splits the two, L = m_b(g) c_b + m_s(g) c_s,
+       body plus interface; Klinker, Shafer & Kanade ("A Physical Approach to Color Image
+       Understanding", IJCV 4(1) 1990, 7-38) show the resulting colour cluster is a skewed
+       T whose highlight arm runs along the illuminant colour, and that an image can be
+       separated into "an image of just the highlights, and the original image with the
+       highlights removed".
+
+       The plate says the shoulder rim is almost ENTIRELY interface. Measured on the near
+       shoulder (frame-left, the side that faces the cyc), by depth into the silhouette,
+       decomposing the linear plate onto the deep-shirt direction u and the measured cyc
+       direction w = (1,1,1)/sqrt(3):
+
+           depth px       2     5     8    13    20    29    40    53    75   deep
+           m_b  x1e3   48.2  48.0  49.3  45.6  45.2  47.5  51.5  55.3  59.1   62.2
+           m_s  x1e3  533.5 211.6 124.0  72.3  45.1  34.0  26.0  19.2  11.4    1.5
+
+       The body term is FLAT. Every bit of the rim's excess is the achromatic interface
+       term. Equivalently: the rim is brighter than the interior and at the same time
+       LESS chromatic — its chromaticity marches monotonically to the illuminant's,
+       (0.225,0.246,0.530) deep to (0.325,0.326,0.349) at the edge. A multiplicative gain
+       cannot produce that and cannot undo it: dividing by (1+psi) scales the interface
+       term down along with the body term, so the pixel keeps the washed-out chromaticity
+       it started with and merely gets darker. Dark AND desaturated — the client's words.
+
+       Note this is also the faithful inverse of the operator being undone. Foundry's
+       LightWrap ADDS: its Highlight Merge defaults to "plus", which "adds the elements
+       together". Inverting an additive operator with a division was the error.
+
+       So on the garment the correction is a subtraction, in linear light:
+
+           u(x)  = the local body direction: the interior colour carried out to the
+                   silhouette by the same geodesic extension used for F_prior above
+                   (Rhemann et al. 2008 §2.1). Because u is extended FROM the interior it
+                   already carries the interior's own sheen, so no baseline term is
+                   needed and none is used — m_s measures against it as ~0 deep in
+                   (measured: -0.1e-3).
+           w     = the cyclorama, measured, a flat 255 -> (1,1,1)/sqrt(3) in linear light.
+           m_s   = the component of F along w once u is projected out (the 2x2 dichromatic
+                   solve; the residual off the u-w plane is fabric detail and is kept).
+           F    <- F - s * w,   s = clip(m_s, 0, (Y - Y_base) * sqrt(3)) * smoothstep(D)
+
+       The upper clip is the same one-sided argument as (4): the backdrop only ever ADDED
+       light, so de-lighting must not take the surface below what the interior
+       extrapolation Y_base says it is. It is what stops the far shoulder — which the cyc
+       barely reached — from being touched at all. The smoothstep is the same one psi
+       uses, so s is exactly zero by DREF and the shirt's interior is untouched.
+
+       Nothing is dialled and nothing is smoothed: s is measured per pixel and used as
+       measured. Applied only where the geodesically extended opaque colour is actually
+       the tee (B - R > 2, ramped over 8) and below the collar (rows 960-1040, ramped),
+       blended by that weight with the gain of (2) so there is no seam at the neck. Above
+       row 960 — the whole head, hair, ears, crown and face — the output is bit-identical.
+
     5. HOLDOUT / CORE MATTE — the ear/skull corner. Compositors trim a core matte where
        it demonstrably covers backdrop; that is what a holdout is for. Pixels the master
        calls opaque (alpha >= 250/255) whose plate colour the known-backing solve reads
@@ -246,6 +315,19 @@ def solid_matte():
     # -- 1. the local foreground colour prior, by geodesic extension -----------------
     Fprior = _geodesic_extend(master_rgb, A > 0.995, (A > 0.005) | core)
 
+    # -- the garment, measured rather than drawn: the geodesically extended opaque colour
+    #    is bluer than it is red exactly on the navy tee, and the row ramp keeps the neck,
+    #    the beard and the collar shadow out of it. Both terms are soft, so GW is a weight
+    #    and not a stencil: the dichromatic branch of delight() fades into the gain branch
+    #    across the collar instead of meeting it at a line.
+    _rows = np.arange(H)[:, None] + np.zeros((1, W))
+    _rr = np.clip((_rows - 960.0) / 80.0, 0, 1)
+    GW = gaussian_filter(np.clip((Fprior[..., 2] - Fprior[..., 0] - 2.0) / 8.0, 0, 1)
+                         * (_rr * _rr * (3 - 2 * _rr)), 3.0, mode="nearest") * core
+    GW = np.where(GW < 0.01, 0.0, GW)                 # hard zero off the garment
+    GAR = GW > 0.0
+    WV = np.ones(3) / np.sqrt(3.0)                    # the cyc's direction in linear light
+
     # -- 2. known-backing re-solve of alpha in the fringe ----------------------------
     BK = np.array([1.0, 1.0, 1.0])                    # the cyc, measured: a flat 255
     Ilin, Fplin = _srgb_to_linear(I), np.clip(_srgb_to_linear(Fprior), 0, 1)
@@ -281,7 +363,7 @@ def solid_matte():
     An = np.clip(np.where(hold, a_ls, An), 0, 1)
 
     # -- 3. foreground colour estimation (Germer et al. 2020), then the gamut bound ---
-    def delight(alpha, gamut=True):
+    def delight(alpha, gamut=True, dichro=True):
         F = estimate_foreground_ml(np.clip(I / 255.0, 0, 1), alpha,
                                    regularization=5e-3, gradient_weight=0.1) * 255.0
         lw = np.array([0.2126, 0.7152, 0.0722])
@@ -313,26 +395,53 @@ def solid_matte():
         a2 = np.where(np.abs(det) > 1e-12, (M11 * b2 - M12 * b1) / det, 0.0)
         psi = np.clip(a1 * W1 + a2 * W2, 0.0, PSI_MAX)
         t = np.clip((DREF - D) / (DREF * 0.35), 0, 1)  # hard off by DREF: interior untouched
-        psi = gaussian_filter(psi, 8.0, mode="nearest") * (t * t * (3 - 2 * t))
-        return F, np.clip(_linear_to_srgb(Flin / (1.0 + psi)[..., None]), 0, 255), psi
+        ts = t * t * (3 - 2 * t)
+        psi = gaussian_filter(psi, 8.0, mode="nearest") * ts
+        out = Flin / (1.0 + psi)[..., None]
 
-    _, Fd0, _ = delight(A, gamut=False)               # exactly what the previous method gave
+        # -- 5. the garment: the same light wrap, inverted as a SUBTRACTION ------------
+        # On the tee the backdrop's contribution is the dichromatic INTERFACE term
+        # (Shafer 1985; Klinker, Shafer & Kanade, IJCV 4(1) 1990) — illuminant-coloured
+        # and additive, not albedo-coloured and multiplicative. See 4b in the docstring:
+        # measured on the plate, the body coefficient m_b is flat from the silhouette to
+        # deep inside while m_s runs 533 -> 1.5, so the rim's excess is interface almost
+        # in full. A gain scales it instead of removing it; that is the desaturation.
+        if dichro and GAR.any():
+            U = _geodesic_extend(Flin, GAR & (D >= DREF), GAR)   # the body direction, from
+            U /= np.maximum(np.linalg.norm(U, axis=-1, keepdims=True), 1e-9)  # the interior
+            kk = np.clip((U * WV).sum(-1), -0.999, 0.999)
+            m_s = ((Flin @ WV) - kk * (Flin * U).sum(-1)) / np.maximum(1.0 - kk * kk, 1e-3)
+            # one-sided, exactly as in 4: the backdrop only ADDED light, so never take the
+            # surface below the interior's own extrapolated luminance. L(WV) = 1/sqrt(3).
+            s = np.clip(m_s, 0.0, np.maximum(Y - Ybase, 0.0) * np.sqrt(3.0)) * ts * GW
+            g = GW[..., None]
+            out = np.clip(Flin - s[..., None] * WV, 0.0, None) * g + out * (1.0 - g)
+        return F, np.clip(_linear_to_srgb(out), 0, 255), psi
+
+    # three foregrounds, all recomputed from the same inputs so nothing depends on disk:
+    #   Fd0  the method of two rounds ago (client's alpha, no gamut bound) — the baseline
+    #        the hair/ear/crown numbers have always been quoted against
+    #   Fdp  the CURRENTLY PUBLISHED asset: re-solved alpha, gamut bound, and the
+    #        multiplicative light wrap everywhere. This is "before" for the shoulder.
+    #   Fd   the new asset: as Fdp, but the garment gets the dichromatic subtraction.
+    _, Fd0, _ = delight(A, gamut=False, dichro=False)
+    _, Fdp, _ = delight(An, dichro=False)
     _, Fd, psi = delight(An)
 
     Image.fromarray(np.dstack([Fd, An * 255.0]).round().astype(np.uint8), "RGBA") \
          .save(f"{OUT}/john-cutout-dark.webp", "WEBP",
                quality=92, alpha_quality=100, exact=True, method=6)
-    _verify_solid_matte(master_rgb, A, An, Fd, Fd0, psi, D, core, top,
-                        np.vstack([xs, ys]), hold, I)
+    _verify_solid_matte(master_rgb, A, An, Fd, Fd0, Fdp, psi, D, core, top,
+                        np.vstack([xs, ys]), hold, I, GW)
 
 
-def _verify_solid_matte(master_rgb, A, An, Fd, Fd0, psi, D, core, top, curve, hold, I):
+def _verify_solid_matte(master_rgb, A, An, Fd, Fd0, Fdp, psi, D, core, top, curve, hold, I, GW):
     """Every number the brief asks for, measured on the file that was just written.
 
-    `before` throughout is the PREVIOUS published method recomputed from scratch on the
-    same inputs — Germer foreground estimation on the client's alpha plus the inverse
-    light wrap — so the comparison is reproducible and does not depend on whatever
-    happens to be on disk.
+    `before` throughout is a PREVIOUS published method recomputed from scratch on the
+    same inputs, so the comparison is reproducible and does not depend on whatever
+    happens to be on disk. For the hair, ears and crown that is Fd0 (the method of two
+    rounds ago); for the shoulder tables it is Fdp, the asset as published today.
     """
     d = np.array(Image.open(f"{OUT}/john-cutout-dark.webp").convert("RGBA")).astype(np.float64)
     aa, rgb = d[..., 3] / 255.0, d[..., :3]
@@ -369,7 +478,7 @@ def _verify_solid_matte(master_rgb, A, An, Fd, Fd0, psi, D, core, top, curve, ho
     dep = [(-6, -4), (-4, -2), (-2, 0), (0, 2), (2, 4), (4, 8)]
     print("  HAIR BAND = alpha>0.02 pixels within 8px of the master silhouette, rows %d-640"
           " (skull, temples and both ears): %d px" % (top, hairband.sum()))
-    for bg in [(7, 32, 40), (30, 98, 120)]:
+    for bg in [(7, 32, 40), (22, 75, 93)]:
         print("    on rgb%-15s depth px %s" % (str(tuple(bg)),
               " ".join("%7s" % ("%d..%d" % b) for b in dep)))
         for tag, img, al in (("before", Fd0, A), ("after ", rgb, aa)):
@@ -410,20 +519,81 @@ def _verify_solid_matte(master_rgb, A, An, Fd, Fd0, psi, D, core, top, curve, ho
     # -- composites: luminance by depth into the silhouette, three grounds ------------
     dd = distance_transform_edt(aa > 0.5)
     bands = [(1, 2), (2, 4), (4, 8), (8, 20)]
-    for bg in [(7, 32, 40), (30, 98, 120), (247, 244, 238)]:
+    for bg in [(7, 32, 40), (22, 75, 93), (247, 244, 238)]:
         for tag, img, al in (("master", master_rgb, A), ("new   ", rgb, aa)):
             cl = L(img * al[..., None] + np.array(bg, float) * (1 - al[..., None]))
             p = [float(cl[(dd >= lo) & (dd < hi) & (aa > 0.5)].mean()) for lo, hi in bands]
             print("    on rgb%-16s %s  1px %s  rim vs 8-20px %+6.1f"
                   % (str(tuple(bg)), tag, " ".join("%5.1f" % v for v in p), p[0] - p[-1]))
 
-    # -- shoulder rim: measured on the shoulders only, before and after ---------------
+    # == THE SHOULDER, IN CHROMA FIRST ================================================
+    # The client reported a DESATURATION, not a darkening, so the headline measurement is
+    # chroma, in a perceptually uniform space, binned by depth from the silhouette — the
+    # same binning the hair got last round. Luminance is printed underneath so the two can
+    # be read against each other: a luma-only check passes this defect straight through.
+    # OKLCh C (Ottosson 2020) on the COMPOSITE, over both grounds the asset actually sits
+    # on. `target` is the garment's own colour carried out to the silhouette geodesically
+    # and rescaled to the interior's extrapolated luminance — i.e. what the tee would read
+    # as at that depth if the cyclorama had never been there.
     rows, cols = np.arange(H)[:, None], np.arange(W)[None, :]
+    M1 = np.array([[0.4122214708, 0.5363325363, 0.0514459929],
+                   [0.2119034982, 0.6806995451, 0.1073969566],
+                   [0.0883024619, 0.2817188376, 0.6299787005]])
+    M2 = np.array([[0.2104542553, 0.7936177850, -0.0040720468],
+                   [1.9779984951, -2.4285922050, 0.4505937099],
+                   [0.0259040371, 0.7827717662, -0.8086757660]])
+
+    def okC(x):                                       # OKLCh chroma, x1000, from sRGB 0-255
+        ab = (np.cbrt(np.maximum(_srgb_to_linear(x) @ M1.T, 0.0)) @ M2.T)[..., 1:]
+        return np.hypot(ab[..., 0], ab[..., 1]) * 1000.0
+
+    Din, Dout2 = distance_transform_edt(core), distance_transform_edt(~core)
+    sdep = np.where(core, Din, -Dout2)                # signed depth, MASTER reference
+    gm = GW > 0.5
+    sb = [(1, 3), (3, 6), (6, 10), (10, 16), (16, 24), (24, 34), (34, 46), (46, 60), (60, 90)]
+    Fl = _srgb_to_linear(Fd)
+    Ub = _geodesic_extend(Fl, gm & (D >= 55.0), gm)
+    Yb = np.maximum(_geodesic_extend((Fl * np.array([0.2126, 0.7152, 0.0722])).sum(-1),
+                                     core & (D >= 55.0), core), 1e-6)
+    tgt = _linear_to_srgb(Ub * (Yb / np.maximum(
+        (Ub * np.array([0.2126, 0.7152, 0.0722])).sum(-1), 1e-9))[..., None])
+    print("  GARMENT = geodesically-extended opaque colour bluer than red, below the"
+          " collar: %d px, rows %d-%d" % (gm.sum(), rows[:, 0][gm.any(1)].min(),
+                                          rows[:, 0][gm.any(1)].max()))
+    for side, msk in (("NEAR shoulder (frame-left, faces the cyc)", gm & (cols < 880)),
+                      ("FAR  shoulder (frame-right)              ", gm & (cols >= 880))):
+        for bg in [(7, 32, 40), (22, 75, 93)]:
+            cmp_ = lambda im, al: im * al[..., None] + np.array(bg, float) * (1 - al[..., None])
+            print("  %s  on rgb%s" % (side, str(tuple(bg))))
+            print("      depth px      %s" % " ".join("%7s" % ("%d-%d" % b) for b in sb))
+            for lab, fn in (("OKLCh C x1e3", okC), ("luminance   ", L)):
+                for tag, img, al in (("before", Fdp, An), ("after ", rgb, aa),
+                                     ("target", tgt, An)):
+                    if tag == "target" and lab.startswith("lum"):
+                        continue
+                    v = fn(cmp_(img, al))
+                    print("      %s %s  %s" % (lab if tag == "before" else " " * 12, tag,
+                          " ".join("%7.2f" % v[msk & (sdep >= lo) & (sdep < hi)].mean()
+                                   for lo, hi in sb)))
+    print("  chroma restored: %.1f%% of target before, %.1f%% after (near shoulder, 1-46px)"
+          % tuple(100 * okC(img * An[..., None] + np.array((7, 32, 40), float)
+                            * (1 - An[..., None]))[gm & (cols < 880) & (sdep >= 1) & (sdep < 46)].mean()
+                  / okC(tgt * An[..., None] + np.array((7, 32, 40), float)
+                        * (1 - An[..., None]))[gm & (cols < 880) & (sdep >= 1) & (sdep < 46)].mean()
+                  for img in (Fdp, rgb)))
+
+    # -- the head must not have moved at all: bit-identity against today's published build
+    head = rows + np.zeros((1, W), int) < 960
+    print("  EVERYTHING ABOVE ROW 960 (crown, hair, ears, face): |after - published| max"
+          " %.4f/255 on %d px — hair and ears are untouched by this round"
+          % (np.abs(Fd - Fdp)[head].max(), int(head.sum())))
+
+    # -- shoulder rim: measured on the shoulders only, before and after ---------------
     shoulder = (aa > 0.9) & (rows > 1010)
     print("  shoulder rim, mean luminance by depth (the backdrop's own rim light):")
     for name, sel in (("near shoulder (left of frame)", shoulder & (cols < 880)),
                       ("far shoulder                 ", shoulder & (cols >= 880))):
-        for tag, img in (("before", Fd0), ("after ", rgb)):
+        for tag, img in (("before", Fdp), ("after ", rgb)):
             p = [float(L(img)[sel & (dd >= lo) & (dd < hi)].mean())
                  for lo, hi in [(1, 4), (4, 8), (8, 20), (20, 55), (80, 200)]]
             print("    %s %s  %s   edge vs interior %+6.1f"
