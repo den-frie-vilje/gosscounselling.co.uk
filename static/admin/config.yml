@@ -340,7 +340,12 @@ collections:
               # placeholders the pages resolve. A token here would be painted
               # onto the image as literal braces, and check-contact.ts refuses
               # one in this field and in the two others that script reads.
-              - { name: title, label: Headline on the card, widget: string }
+              - {
+                  name: title,
+                  label: Headline on the card,
+                  widget: string,
+                  hint: 'Leave it empty and the card uses the headline from the top of your home page, which is usually what you want. Fill it in only when the card needs a shorter or different line.'
+                }
 
   - name: general
     label: General
