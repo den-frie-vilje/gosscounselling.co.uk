@@ -209,14 +209,11 @@ collections:
           is the risk even when a name is not used. There are no star ratings on this site,
           deliberately.
         fields:
-          - { name: kicker, label: Kicker, widget: string }
-          - { name: heading, label: Heading, widget: string }
           - {
-              name: note,
-              label: Standing note,
+              name: kicker,
+              label: Kicker,
               widget: string,
-              required: false,
-              hint: 'Optional line under the heading, e.g. how these were gathered. Leave empty to hide it.'
+              hint: 'The small label above the quotes. There is no heading and no standing note: a quotation introduced by a sentence saying it is a quotation is weaker than the quotation.'
             }
           - name: items
             label: Testimonials

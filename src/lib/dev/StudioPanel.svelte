@@ -12,87 +12,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
-  interface Accent {
-    id: string;
-    name: string;
-    /** Wide gamut. What a P3 display renders. */
-    oklch: string;
-    /** What sRGB falls back to. */
-    hex: string;
-    /** The darker sibling for light grounds, and its sRGB fallback. */
-    inkOklch: string;
-    inkHex: string;
-    /** Computed WCAG ratio against the deep ground. */
-    onDeep: string;
-    note: string;
-  }
-
-  // Ratios computed rather than guessed; see scripts/check-contrast.ts for the
-  // same arithmetic. The accent marks structure, never text on a light ground,
-  // so the deep ground is the pairing that has to hold.
-  const ACCENTS: Accent[] = [
-    {
-      id: 'acid-lime',
-      inkOklch: 'oklch(0.55 0.14 100)',
-      inkHex: '#857100',
-      name: 'Acid lime',
-      oklch: 'oklch(0.92 0.22 122)',
-      hex: '#cdfa16',
-      onDeep: '12.67:1',
-      note: 'Greener and brighter than the pick.'
-    },
-    {
-      id: 'lime-straw',
-      inkOklch: 'oklch(0.54 0.14 98)',
-      inkHex: '#826e00',
-      name: 'Lime straw',
-      oklch: 'oklch(0.91 0.2 110)',
-      hex: '#ebeb00',
-      onDeep: '12.03:1',
-      note: 'The pick. Warm enough to sit with the sand and the gold.'
-    },
-    {
-      id: 'lime-sand',
-      inkOklch: 'oklch(0.53 0.13 96)',
-      inkHex: '#7e6b05',
-      name: 'Lime sand',
-      oklch: 'oklch(0.9 0.17 102)',
-      hex: '#f5e141',
-      onDeep: '11.53:1',
-      note: 'Sandier again, and the chroma starts coming down with it.'
-    },
-    {
-      id: 'sand-lime',
-      inkOklch: 'oklch(0.52 0.12 94)',
-      inkHex: '#7a670f',
-      name: 'Sand lime',
-      oklch: 'oklch(0.88 0.14 96)',
-      hex: '#f3d761',
-      onDeep: '10.78:1',
-      note: 'Closest to the sand ground. Warm, and no longer acid.'
-    },
-    {
-      id: 'dry-sand',
-      inkOklch: 'oklch(0.51 0.1 90)',
-      inkHex: '#75641d',
-      name: 'Dry sand',
-      oklch: 'oklch(0.86 0.11 92)',
-      hex: '#ebcf7a',
-      onDeep: '10.07:1',
-      note: 'The sandiest that still registers as an accent at all.'
-    },
-    {
-      id: 'neon-green',
-      inkOklch: 'oklch(0.52 0.15 145)',
-      inkHex: '#0f7527',
-      name: 'Neon green',
-      oklch: 'oklch(0.87 0.25 143)',
-      hex: '#53fb53',
-      onDeep: '11.21:1',
-      note: 'The green end, kept for comparison.'
-    }
-  ];
-
   const HEROES = [
     { id: 'stagger', name: 'Stagger', note: 'Each part in turn, reading order, John last.' },
     { id: 'block', name: 'One block', note: 'The column as one thing; he follows a beat behind.' },
@@ -100,7 +19,6 @@
     { id: 'none', name: 'None', note: 'Only the two pools behind him drift.' }
   ];
 
-  let accent = $state('lime-straw');
   let hero = $state('stagger');
   // Starts closed: it is a tool, not part of the page being judged.
   let open = $state(false);
@@ -116,22 +34,6 @@
   }
 
 
-  function applyAccent(id: string) {
-    accent = id;
-    const chosen = ACCENTS.find((a) => a.id === id);
-    if (!chosen) return;
-    const root = document.documentElement;
-    // Set the wide-gamut value where the display can show it, and the sRGB
-    // hex where it cannot, so the panel previews what each screen would get.
-    const supportsP3 = window.matchMedia('(color-gamut: p3)').matches;
-    root.style.setProperty('--color-accent', supportsP3 ? chosen.oklch : chosen.hex);
-    // The pair moves together: the bright value only draws on the dark bands,
-    // the ink value only on the light ones, and swapping one without the other
-    // makes half the rules on the page vanish.
-    root.style.setProperty('--color-accent-ink', supportsP3 ? chosen.inkOklch : chosen.inkHex);
-    localStorage.setItem('studio.accent', id);
-  }
-
   function applyHero(id: string) {
     hero = id;
     document.documentElement.setAttribute('data-hero', id);
@@ -145,9 +47,15 @@
   // effect on load, not a reactive derivation, and these setters assign state
   // of their own, which inside an effect is the loop-shaped mistake.
   onMount(() => {
-    const savedAccent = localStorage.getItem('studio.accent');
+    // The accent lived here too, until Ole settled on acid lime and it moved
+    // into src/app.css. Clear the override a previous sitting may have left on
+    // the root element, or the panel would go on quietly showing a colour the
+    // tokens no longer have.
+    localStorage.removeItem('studio.accent');
+    document.documentElement.style.removeProperty('--color-accent');
+    document.documentElement.style.removeProperty('--color-accent-ink');
+
     const savedHero = localStorage.getItem('studio.hero');
-    if (savedAccent) applyAccent(savedAccent);
     if (savedHero) applyHero(savedHero);
     else document.documentElement.setAttribute('data-hero', 'stagger');
   });
@@ -164,23 +72,6 @@
 
   {#if open}
     <div class="body">
-      <p class="head">Second accent</p>
-      <ul>
-        {#each ACCENTS as a (a.id)}
-          <li>
-            <button type="button" class:on={accent === a.id} onclick={() => applyAccent(a.id)}>
-              <span class="sw" style="background: {a.oklch}"></span>
-              <span class="sw sw-ink" style="background: {a.inkOklch}"></span>
-              <span class="txt">
-                <span class="nm">{a.name}</span>
-                <span class="nt">{a.note}</span>
-                <span class="nt">{a.hex} on dark · {a.inkHex} on light · {a.onDeep}</span>
-              </span>
-            </button>
-          </li>
-        {/each}
-      </ul>
-
       <p class="head">Hero entrance</p>
       <ul>
         {#each HEROES as h (h.id)}
@@ -289,18 +180,6 @@
   li button.on {
     border-color: rgb(130 201 220 / 0.6);
     background: rgb(255 255 255 / 0.09);
-  }
-  .sw {
-    flex: none;
-    width: 26px;
-    height: 26px;
-    border-radius: 5px;
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.25);
-  }
-  .sw-ink {
-    width: 14px;
-    height: 26px;
-    margin-left: -6px;
   }
   .txt {
     min-width: 0;
