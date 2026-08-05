@@ -95,18 +95,26 @@
            The head band can be a plain rectangle because at that height
            nothing but his head is in the frame: there are no shoulders up
            there for a straight edge to cut. -->
-      <div class="portrait">
-        <div class="headPop" aria-hidden="true">
-          <img class="heroCut cut-dark" src="/img/john-cutout-dark.webp" alt="" width="900" height="900" />
-        </div>
+      <!-- His shoulders are cut by the edges of the source photograph, so the
+           image is always wider than its frame: the visible cut is made by
+           the frame on desktop and by the viewport on a phone, never left
+           hanging mid-section.
 
-        <!-- A <picture>, so the browser fetches ONE matte rather than both and
-             throws half of it away: the preload scanner reads the raw HTML
-             before any CSS applies, so `display: none` deprioritises a
-             request without preventing it. It also keeps the alt text on
-             whichever image is actually shown, which two `<img>` tags did
-             not: at desktop widths the visible portrait had an empty alt and
-             the description sat on a hidden element. -->
+           There is no head-breaking-out-of-the-circle here, and that is a
+           computed result rather than a decision not to try. See
+           scripts/check-portrait-fit.ts: at EVERY scale from 100% to 160%,
+           either his crown fails to clear the plate or his shoulders have
+           already reached the plate's top edge, because they run off the
+           frame. A second layer behind the disc therefore always has a
+           visible edge, and the disc's own antialiased rim ends up drawn
+           across his face.
+
+           A <picture>, so the browser fetches ONE matte rather than both and
+           throws half of it away: the preload scanner reads raw HTML before
+           any CSS applies, so `display: none` deprioritises a request without
+           preventing it. It also keeps the alt text on whichever image is
+           actually shown. -->
+      <div class="portrait">
         <figure class="heroFig">
           <picture>
             <source media="(min-width: 880px)" srcset="/img/john-cutout.webp" type="image/webp" />
@@ -541,10 +549,6 @@
     display: block;
     position: relative;
   }
-  /* Below 880px there is no plate and nothing to break out of. */
-  .headPop {
-    display: none;
-  }
   .heroFig img {
     width: 118%;
     max-width: none;
@@ -659,74 +663,25 @@
     .portrait {
       container-type: inline-size;
       align-self: center;
-      /* He is not centred in his own photograph. Measured by scanning the
-         cutout's alpha across its top rows, the centre of his head sits 2.42%
-         of the image width to the right of the image's centre, so centring
-         the IMAGE in the circle leaves his head off to one side. A percentage
-         in `translate` resolves against the element's own width, so this
-         moves him by that exact fraction whatever size he is drawn at. */
+      /* The four numbers the plate composition rests on. They are named here,
+         together, because every one of them is a property of the photograph
+         rather than a matter of taste, and scripts/check-portrait-fit.ts
+         derives all four from the cutout's own alpha channel and fails the
+         build if the values below have drifted from what the file says.
+
+           --plate-img-width  how large he is drawn, against the plate
+           --head-shift       how far to move him so his HEAD, not his image,
+                              is centred; a percentage in `translate` resolves
+                              against the element's own width, so this holds at
+                              any size
+         Only two of them survive: the head-breaking-out layer that --pop and
+         --pop-depth served is gone, for the reason in the markup above. */
+      --plate-img-width: 136%;
       --head-shift: -2.42%;
+
       /* Room above the plate for the head to occupy. It is also what keeps
          the grid row tall enough that the pop is not clipped by the hero's
          own `overflow: clip`. */
-      /* 15%, measured: at 136% his crown clears the plate's top edge by 66px,
-         which is 14.7% of the 450px plate. A shorter band clips the top of
-         his head off, which is the exact comedy this was meant to fix. */
-      padding-top: 15%;
-    }
-    /* Not a band any more: a full-height layer BEHIND the plate, carrying the
-       whole dark-ground matte at exactly the plate's geometry, and faded out
-       just below the plate's top edge.
-
-       A rectangle could not do this. Its bottom was a straight tangent to the
-       top of the circle, so on either side of his head the matte was cut off
-       in mid-air where the arc had already curved away. Measured: at the
-       plate's top edge his silhouette spans 21% to 69% of the disc's width,
-       while the arc at those x positions is already 9% of the plate lower, so
-       there is always a crescent where a straight edge shows.
-
-       Behind the plate instead, the opaque disc hides everything inside the
-       circle, and the mask takes the layer to nothing a little below the
-       plate's top, so his shoulders fade out rather than ending on a line.
-       What is left visible is his head, above the circle, which is the whole
-       point. */
-    .headPop {
-      display: block;
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      overflow: hidden;
-      pointer-events: none;
-      /* The wrapper is 115 parts tall (15 of padding, 100 of plate), so the
-         plate's top edge is at 13.04% and that is exactly where the fade
-         starts: everything above the circle stays fully opaque, and the fade
-         happens below the top edge, where the disc has already taken over the
-         middle and only the shoulders at the sides are still exposed. Start
-         it any higher and his neck dissolves just before it reaches the
-         circle. Verified against the render: the plate's top measures 13.04%
-         of the layer. */
-      mask-image: linear-gradient(to bottom, #000 0 13.04%, rgb(0 0 0 / 0) 19%);
-    }
-    /* The plate sits above the layer and does the covering. */
-    .heroFig {
-      position: relative;
-      z-index: 1;
-    }
-    /* Exactly the placement the matte inside the plate has. The layer's own
-       bottom is the plate's bottom, so no offset is needed any more, and the
-       two are one continuous figure. */
-    .headPop img {
-      position: absolute;
-      left: 50%;
-      bottom: 0;
-      width: 136%;
-      /* Tailwind's preflight caps images at their container's width, which
-         silently rendered this twin 66px narrower than the one in the plate
-         and broke the registration the whole effect depends on. */
-      max-width: none;
-      height: auto;
-      transform: translateX(calc(-50% + var(--head-shift)));
-      display: block;
     }
     .heroFig {
       aspect-ratio: 1;
@@ -749,16 +704,14 @@
       );
       align-self: center;
     }
-    /* 136%, not 114%. The cutout is wider than it is tall, so at 114% its
-       top edge, which is his reconstructed crown, sat 18px BELOW the top of
-       the plate and there was nothing to break out with. At 136% the figure
-       is 489px tall in a 450px plate, so his head crosses the edge by about
-       the height of the band above it. */
+    /* The cutout is wider than it is tall, so drawn at the plate's own width
+       his reconstructed crown sits BELOW the plate's top and there is nothing
+       to break out with. See --plate-img-width above. */
     .heroFig img {
       position: absolute;
       left: 50%;
       bottom: 0;
-      width: 136%;
+      width: var(--plate-img-width);
       margin-left: 0;
       transform: translateX(calc(-50% + var(--head-shift)));
     }
