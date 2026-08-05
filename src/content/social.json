@@ -1,0 +1,7 @@
+{
+  "note": "Verified 2026-08-05; see docs/social-profiles.md for the evidence behind each one. Only profiles corroborated on two independent counts are here: a wrong link in a counsellor's footer sends his clients to a stranger.",
+  "profiles": [
+    { "platform": "facebook", "label": "Facebook", "url": "https://www.facebook.com/gosscounselling" },
+    { "platform": "instagram", "label": "Instagram", "url": "https://www.instagram.com/gosscounselling" }
+  ]
+}

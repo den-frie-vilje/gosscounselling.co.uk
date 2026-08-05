@@ -15,6 +15,7 @@ import siteData from '../../content/site.json';
 import contactData from '../../content/contact.json';
 import homeData from '../../content/home.json';
 import testimonialsData from '../../content/testimonials.json';
+import socialData from '../../content/social.json';
 import postsData from '../../content/posts.json';
 import { mockPosts, mockServiceDetail, mockTestimonials } from './mock';
 
@@ -205,6 +206,26 @@ export interface Posts {
   posts: Post[];
 }
 
+/**
+ * His social profiles, and only the ones verified on two independent counts:
+ * the phone number, the email, either domain, the location, the memberships,
+ * or a photograph matching his own. A wrong link in a counsellor's footer
+ * sends his clients to a stranger, so a single corroboration is not enough.
+ * The evidence for each is in docs/social-profiles.md.
+ */
+export interface SocialProfile {
+  /** Lowercase id, matched against SocialIcon's glyph table. */
+  platform: string;
+  label: string;
+  url: string;
+}
+
+export interface Social {
+  profiles: SocialProfile[];
+}
+
+export const social: Social = socialData;
+
 export const site: Site = siteData;
 export const contact: Contact = contactData;
 
@@ -212,17 +233,19 @@ export const contact: Contact = contactData;
    (see ./mock.ts). Production reads exactly the JSON in src/content/. */
 export const testimonials: Testimonials = mockTestimonials ?? testimonialsData;
 
-export const home: Home = mockServiceDetail
-  ? {
-      ...homeData,
-      services: {
-        ...homeData.services,
-        items: homeData.services.items.map((item) =>
-          mockServiceDetail[item.slug] ? { ...item, detail: mockServiceDetail[item.slug] } : item
-        )
-      }
+function withMockDetail(detail: Record<string, ServiceDetail>): Home {
+  return {
+    ...homeData,
+    services: {
+      ...homeData.services,
+      items: homeData.services.items.map((item) =>
+        detail[item.slug] ? { ...item, detail: detail[item.slug] } : item
+      )
     }
-  : homeData;
+  };
+}
+
+export const home: Home = mockServiceDetail ? withMockDetail(mockServiceDetail) : homeData;
 
 /* ---------------------------------------------------------------------------
    Addresses.

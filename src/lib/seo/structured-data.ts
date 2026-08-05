@@ -2,7 +2,7 @@
  * Canonical URLs, Schema.org graph, and the per-page SEO payload.
  */
 import { PUBLIC_SITE_URL } from '$env/static/public';
-import { site, contact, home, testimonials } from '$lib/content';
+import { site, contact, home, social, testimonials } from '$lib/content';
 
 /*
   `$env/static/public`, not dynamic. Static env is sourced from the committed
@@ -34,11 +34,19 @@ export function absUrl(path: string): string {
 const PRACTICE_ID = `${SITE_URL}/#practice`;
 const PERSON_ID = `${SITE_URL}/#john`;
 
-/** External profiles that disambiguate the entity. Single-sourced from the
- *  membership list rather than typed twice. */
-const personSameAs = site.memberships
-  .map((m) => m.href)
-  .filter((h): h is string => Boolean(h));
+/**
+ * External profiles that disambiguate the entity, single-sourced rather than
+ * typed twice: his verified social accounts, plus any membership register
+ * listing that has a URL.
+ *
+ * This is the property that tells a search engine the John Goss here is the
+ * John Goss there, and it was empty. His own site linked to neither of his
+ * accounts, so nothing connected them at all.
+ */
+const personSameAs = [
+  ...social.profiles.map((p) => p.url),
+  ...site.memberships.map((m) => m.href).filter((h): h is string => Boolean(h))
+];
 
 /**
  * The site-wide graph: the practice and the person, cross-linked by `@id`.
