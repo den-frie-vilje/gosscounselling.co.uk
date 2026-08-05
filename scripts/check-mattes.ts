@@ -41,29 +41,47 @@
  * Fail-closed: a missing alpha channel, mismatched dimensions, or zero
  * comparable pixels are failures rather than passes.
  */
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import sharp from 'sharp';
 
 /**
  * The one file the page paints, on every ground. `--asset <path>` points the
  * gate at another build instead, which is how it was checked that it fails on
- * the two it replaced rather than only passing on the one it was written for.
+ * the two it replaced rather than only passing on the one it was written for;
+ * `--master <path>` moves the reference with it, because an out-of-tree build
+ * has its own master and measuring it against this one would compare two
+ * different pictures.
  */
 const argv = process.argv.slice(2);
-const ASSET =
-  argv.indexOf('--asset') >= 0
-    ? argv[argv.indexOf('--asset') + 1]
-    : 'static/img/john-cutout-dark.webp';
-/** The master it is solved from. Nothing paints this; it is the reference. */
-const MASTER = 'static/img/john-cutout.webp';
+const arg = (name: string, fallback: string) => {
+  const i = argv.indexOf(name);
+  return i >= 0 && i + 1 < argv.length ? argv[i + 1] : fallback;
+};
+const ASSET = arg('--asset', 'static/img/john-cutout-dark.webp');
+/** The unsolved master: the same matte over untouched pixels. Nothing paints it. */
+const MASTER = arg('--master', 'static/img/john-cutout.webp');
 /**
- * The photograph both were cut from, if it is the one on disk. `scripts/
- * gen-cutouts.ts` keys whatever John uploads to `static/img/portrait/`, and
- * when he has, this file is no longer the source; the check below says so and
- * stands down rather than comparing against the wrong picture.
+ * The photograph the HAND pass cut from, and the alignment and backing it used:
+ * `scripts/build-cutouts.py` puts the matte over this plate bottom-aligned, and
+ * measured the cyclorama as a flat, blown-out 255.
  */
 const PLATE = 'docs/source-assets/John-Goss-1.jpg';
+/**
+ * What the CMS writes when John replaces his portrait, and the record
+ * `scripts/gen-cutouts.ts` leaves when it keys it. Once he has uploaded one,
+ * THAT photograph is the source and this file's hard-coded plate is not — but
+ * the check does not stand down for it any more, it follows the record.
+ *
+ * It used to stand down, and that note was written when this gate's other
+ * checks did the real work. They no longer do: the reproduction check is the
+ * only one here that needs no reference for the subject's own colour, and
+ * losing it the moment the pipeline starts running automatically would leave
+ * the automatic path gated more weakly than the hand one. Everything it needs —
+ * which picture, where the crop sits in it, and what the backing was measured
+ * to be — is in the audit record, so it is read from there.
+ */
 const CMS_SOURCE_DIR = 'static/img/portrait';
+const AUDIT = 'src/lib/generated/cutout-audit.json';
 
 /** Coverage buckets, as 8-bit alpha. The fringe is everything between them. */
 const FRINGE_LO = 6;
@@ -352,13 +370,13 @@ console.log(
 
 let failures = 0;
 
-// == THE STRONGEST CHECK, WHEN THE SOURCE IS STILL THE ONE ON DISK ===========
+// == THE STRONGEST CHECK: DOES IT REPRODUCE THE PHOTOGRAPH IT CAME FROM? =====
 // Everything above needs a REFERENCE for John's own colour, and this file's
 // reference is a ring propagation that is worth about +-20 levels where the
 // surface has a steep gradient at the outline. This check needs no reference at
-// all. The backing was a measured, blown-out white cyclorama, so
+// all. The backing was MEASURED, so
 //
-//     F*a + 255*(1 - a) = I
+//     F*a + B*(1 - a) = I
 //
 // is a statement about the photograph with no free parameters left, and an
 // asset that satisfies it while its foreground is flat in coverage is correct
@@ -368,53 +386,110 @@ let failures = 0;
 // Measured, over the fringe where the plate is not clipped: the asset that
 // ships 1.07, the plain knockout 13.59, the de-lit matte this replaced 16.95.
 // That is a thirteen-fold separation with nothing to argue about.
-const plateSource = existsSync(CMS_SOURCE_DIR)
-  ? readdirSync(CMS_SOURCE_DIR).filter((f) => /\.(jpe?g|png|webp|tiff?)$/i.test(f))
-  : [];
-if (plateSource.length > 0) {
-  console.log(
-    `\nthe photograph in ${CMS_SOURCE_DIR} (${plateSource.join(', ')}) is now the source, so the reproduction check stands down: it can only be run against the picture the matte was actually cut from.`
-  );
-} else if (!existsSync(PLATE)) {
-  console.error(`\nFAIL  ${PLATE} is missing, so the reproduction check cannot run.`);
+interface Origin {
+  /** The photograph. */
+  file: string;
+  /** Where the asset's (0,0) sits in it, in the photograph's own pixels. */
+  ox: number;
+  oy: number;
+  /** The backing, per channel, as `c + gx·xn + gy·yn` over the PHOTOGRAPH's frame. */
+  plane: { c: number; gx: number; gy: number }[];
+  how: string;
+}
+
+/** Which picture the matte on disk was actually cut from, and how it sits in it. */
+function origin(assetH: number, plateH: number): Origin | string {
+  const uploaded = existsSync(CMS_SOURCE_DIR)
+    ? readdirSync(CMS_SOURCE_DIR).filter((f) => /\.(jpe?g|png|webp|tiff?)$/i.test(f))
+    : [];
+  const flat = [0, 1, 2].map(() => ({ c: 255, gx: 0, gy: 0 }));
+  if (uploaded.length === 0) {
+    // The hand pass: build-cutouts.py bottom-aligns the matte on the plate and
+    // measured the cyclorama as a flat, blown-out 255.
+    return { file: PLATE, ox: 0, oy: -(assetH - plateH), plane: flat, how: 'the hand pass, bottom-aligned on its plate, against the flat 255 cyclorama it measured' };
+  }
+  // He has uploaded one, so scripts/gen-cutouts.ts keyed it and left the record
+  // of WHICH picture, WHERE the alpha crop landed in it, and what the backing
+  // was fitted to be. Without all three this check cannot be run honestly, and
+  // saying so is better than running it against the wrong picture.
+  if (!existsSync(AUDIT)) return `the photograph in ${CMS_SOURCE_DIR} (${uploaded.join(', ')}) is the source now, but ${AUDIT} is not on disk, so where the crop sits in it and what its backing was measured to be are both unknown. Re-run \`node scripts/gen-cutouts.ts\`.`;
+  let rec: {
+    source?: string;
+    crop?: { left: number; top: number; width: number; height: number };
+    derived?: { backing?: { plane?: { c: number; gx: number; gy: number }[] } };
+  };
+  try {
+    rec = JSON.parse(readFileSync(AUDIT, 'utf8'));
+  } catch (e) {
+    return `${AUDIT} could not be read (${(e as Error).message}), so the source of the matte is unknown.`;
+  }
+  const plane = rec.derived?.backing?.plane;
+  if (!rec.source || !rec.crop || !plane || plane.length !== 3) {
+    return `${AUDIT} does not carry the source, the crop and the fitted backing plane, so the reproduction check has nothing to align or subtract. Re-run \`node scripts/gen-cutouts.ts\`.`;
+  }
+  if (!existsSync(rec.source)) return `${AUDIT} names ${rec.source} as the source and it is not on disk.`;
+  return { file: rec.source, ox: rec.crop.left, oy: rec.crop.top, plane, how: `the keyed pass over ${rec.source}, cropped at (${rec.crop.left}, ${rec.crop.top}), against the backing plane it fitted` };
+}
+
+const probe = existsSync(PLATE) ? await sharp(PLATE).metadata() : { height: 0 };
+const from = origin(h, probe.height ?? 0);
+if (typeof from === 'string') {
+  console.log(`\nthe reproduction check stands down: ${from}`);
+} else if (!existsSync(from.file)) {
+  console.error(`\nFAIL  ${from.file} is missing, so the reproduction check cannot run.`);
   failures++;
 } else {
-  const { data: pd, info: pi } = await sharp(PLATE)
+  const { data: pd, info: pi } = await sharp(from.file)
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
-  if (pi.width !== w) {
+  // The overlap the two pictures actually share, minus the outermost 3px of the
+  // crop: those are the crop's OWN antialiasing — his shoulders run off the
+  // edges of the photograph and the top of his head is cut off, so the matte
+  // ramps there against nothing and no backing equation applies.
+  // build-cutouts.py excludes them from the solve, so they have to be excluded
+  // here too; included, those ~5,200 pixels alone move this mean from 1.03 to
+  // 18.38.
+  const y0 = Math.max(FRAME_EDGE, -from.oy);
+  const y1 = Math.min(h - FRAME_EDGE, pi.height - from.oy);
+  const x0 = Math.max(FRAME_EDGE, -from.ox);
+  const x1 = Math.min(w - FRAME_EDGE, pi.width - from.ox);
+  if (x1 - x0 < 16 || y1 - y0 < 16) {
     console.error(
-      `\nFAIL  ${PLATE} is ${pi.width}px wide and the matte is ${w}px. build-cutouts.py aligns them on the bottom edge at the same width; without that the reproduction check is comparing different pictures.`
+      `\nFAIL  the matte (${w}x${h}) and ${from.file} (${pi.width}x${pi.height}) overlap in only ${Math.max(0, x1 - x0)}x${Math.max(0, y1 - y0)} px at the recorded offset (${from.ox}, ${from.oy}). Without a real overlap the reproduction check is comparing different pictures.`
     );
     failures++;
   } else {
     const toLinear = (v: number) => {
-      const x = v / 255;
+      const x = Math.min(255, Math.max(0, v)) / 255;
       return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
     };
     const lut = Array.from({ length: 256 }, (_, v) => toLinear(v));
-    const lumLin = (d: Buffer | Uint8Array, o: number, ch: number) =>
+    const lumLin = (d: Buffer | Uint8Array, o: number) =>
       0.2126 * lut[d[o]] + 0.7152 * lut[d[o + 1]] + 0.0722 * lut[d[o + 2]];
-    const top = h - pi.height;
+    /** The fitted backing at a pixel of the PHOTOGRAPH, as linear luminance. */
+    const backingLum = (px: number, py: number) => {
+      const xn = (px / Math.max(pi.width - 1, 1)) * 2 - 1;
+      const yn = (py / Math.max(pi.height - 1, 1)) * 2 - 1;
+      const v = from.plane.map((p) => toLinear(p.c + p.gx * xn + p.gy * yn));
+      return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+    };
     /** Reproduction error, in 0-255 equivalents, over the unclipped fringe. */
     const repro = (img: Img): { mean: number; p95: number; n: number } => {
       const es: number[] = [];
-      // The outermost 3px of the crop are the crop's OWN antialiasing: his
-      // shoulders run off the edges of the photograph, so the matte ramps there
-      // against nothing, and no backing equation applies. build-cutouts.py
-      // excludes them from the solve, so they have to be excluded here too;
-      // included, those ~5,200 pixels alone move this mean from 1.03 to 18.38.
-      for (let y = top; y < h - FRAME_EDGE; y++) {
-        for (let x = FRAME_EDGE; x < w - FRAME_EDGE; x++) {
+      for (let y = y0; y < y1; y++) {
+        for (let x = x0; x < x1; x++) {
           const i = y * w + x;
           const a = asset.data[i * c + 3];
           if (a <= FRINGE_LO || a > FRINGE_HI) continue;
-          const po = ((y - top) * pi.width + x) * pi.channels;
+          const px = x + from.ox;
+          const py = y + from.oy;
+          const po = (py * pi.width + px) * pi.channels;
+          // A clipped plate carries no information: 255 over 255 is any alpha.
           if (Math.max(pd[po], pd[po + 1], pd[po + 2]) >= 252) continue;
           const al = img.data[i * img.c + 3] / 255;
-          const got = lumLin(img.data, i * img.c, img.c) * al + (1 - al);
-          es.push(Math.abs(got - lumLin(pd, po, pi.channels)) * 255);
+          const got = lumLin(img.data, i * img.c) * al + backingLum(px, py) * (1 - al);
+          es.push(Math.abs(got - lumLin(pd, po)) * 255);
         }
       }
       es.sort((p, q) => p - q);
@@ -433,7 +508,7 @@ if (plateSource.length > 0) {
     // it, and a third of it is a wide door.
     const limit = Math.max(3, theirs.mean / 3);
     console.log(
-      `\nreproduction of ${PLATE} in linear light, over ${mine.n} unclipped fringe px:\n  asset  mean ${mine.mean.toFixed(2)}  p95 ${mine.p95.toFixed(2)}\n  master mean ${theirs.mean.toFixed(2)}  p95 ${theirs.p95.toFixed(2)}  (the unsolved knockout, which sets the limit at ${limit.toFixed(2)})`
+      `\nreproduction of ${from.file} in linear light, over ${mine.n} unclipped fringe px\n  (${from.how}):\n  asset  mean ${mine.mean.toFixed(2)}  p95 ${mine.p95.toFixed(2)}\n  master mean ${theirs.mean.toFixed(2)}  p95 ${theirs.p95.toFixed(2)}  (the unsolved knockout, which sets the limit at ${limit.toFixed(2)})`
     );
     if (mine.mean > limit) {
       console.error(
