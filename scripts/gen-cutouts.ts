@@ -72,6 +72,19 @@ const opt = (name: string) => {
 const SELF_TEST = flag('--self-test');
 const COMPARE = flag('--compare');
 const OUT_DIR = resolve(root, opt('--out-dir') ?? 'static/img');
+/**
+ * Where the master goes, which is NOT beside the asset.
+ *
+ * Nothing on the site fetches the knockout, and `static/` is what the static
+ * adapter copies into the build, so writing it there shipped 316 KB of dead
+ * weight to every visitor. It was moved out by hand and then written straight
+ * back here on the first real upload, which is what an out-of-band fix earns
+ * when the script that regenerates the file does not know about it.
+ *
+ * An audit run (`--out-dir`) keeps everything together in its own folder, as
+ * before: the separation is about what ships, and nothing in /tmp ships.
+ */
+const MASTER_DIR = opt('--out-dir') ? OUT_DIR : resolve(root, 'assets/portrait');
 const SOURCE_ARG = opt('--source');
 /** An audit run leaves its record beside its own outputs, never over the real one. */
 const AUDIT_FILE =
@@ -660,6 +673,41 @@ function selfTest(): number {
 // Which photograph
 // ---------------------------------------------------------------------------
 
+/**
+ * What the CMS recorded, if anything.
+ *
+ * Sveltia writes the public path — `/img/portrait/whatever.jpg` — into
+ * `home.hero.portrait` when John uploads, and the file lands in `SRC_DIR`. So
+ * the field is the record of WHICH photograph is his, and the folder is where
+ * it physically is; they arrive together and this reads the first.
+ *
+ * It matters because the field would otherwise be decoration: a box John fills
+ * in that changes nothing, which is the one thing an editor must never be. The
+ * folder scan below still stands, for a photograph dropped in by hand, and
+ * still refuses to guess between two.
+ */
+function sourceFromContent(): string | null {
+  let home: { hero?: { portrait?: string } };
+  try {
+    home = JSON.parse(readFileSync(resolve(root, 'src/content/home.json'), 'utf8'));
+  } catch {
+    // The content file is svelte-check's business, not this script's.
+    return null;
+  }
+  const declared = home.hero?.portrait?.trim();
+  if (!declared) return null;
+
+  const p = resolve(root, 'static', declared.replace(/^\//, ''));
+  if (!existsSync(p)) {
+    console.error(
+      `cutouts: the CMS says his photograph is ${declared}, and ${rel(p)} is not there.\n` +
+        '         Nothing was keyed. Re-upload it, or clear the field to keep the portrait already in place.'
+    );
+    process.exit(1);
+  }
+  return p;
+}
+
 function findSource(): string | null {
   if (SOURCE_ARG) {
     const p = resolve(root, SOURCE_ARG);
@@ -669,6 +717,8 @@ function findSource(): string | null {
     }
     return p;
   }
+  const declared = sourceFromContent();
+  if (declared) return declared;
   if (!existsSync(SRC_DIR)) return null;
   let files: string[];
   try {
@@ -705,7 +755,7 @@ if (!source) {
   process.exit(0);
 }
 
-const masterPath = resolve(OUT_DIR, OUT_MASTER);
+const masterPath = resolve(MASTER_DIR, OUT_MASTER);
 const assetPath = resolve(OUT_DIR, OUT_ASSET);
 console.log(`cutouts: keying ${rel(source)}`);
 
@@ -730,6 +780,7 @@ try {
 report(result, rel(source));
 
 mkdirSync(OUT_DIR, { recursive: true });
+mkdirSync(MASTER_DIR, { recursive: true });
 mkdirSync(dirname(AUDIT_FILE), { recursive: true });
 const box = alphaBbox(result.alpha, result.width, result.height);
 // The master is the PHOTOGRAPH's own pixels under the solved matte — nothing keyed out of

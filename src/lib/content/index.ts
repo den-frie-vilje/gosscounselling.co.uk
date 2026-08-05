@@ -173,6 +173,11 @@ export interface Home {
      *  another. See $lib/copy-tokens. */
     ctaPrimary: string;
     ctaSecondary: string;
+    /** What the CMS records when John uploads a photograph, e.g.
+     *  `/img/portrait/john.jpg`. Read by the BUILD, not by the page: the
+     *  keying pipeline cuts it out and the page paints the result. Absent
+     *  until he uploads one, which is why it is optional. */
+    portrait?: string;
     portraitAlt: string;
   };
   steps: { kicker: string; heading: string; intro: string; items: Step[] };

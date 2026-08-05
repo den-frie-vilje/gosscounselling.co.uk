@@ -92,7 +92,10 @@ const STEPS: Step[] = [
     describe: 'Keying his portrait is the most expensive thing in the build.',
     // The keyer's own source counts: a change to the physics has to re-key, or the fix
     // ships everywhere except in the asset it was written for.
-    inputs: ['scripts/keyer.ts', 'scripts/gen-cutouts.ts'],
+    // `home.json` because the CMS records WHICH photograph is his in
+    // `hero.portrait`, so clearing or changing that field is a reason to re-key
+    // even when the folder's contents have not moved.
+    inputs: ['scripts/keyer.ts', 'scripts/gen-cutouts.ts', 'src/content/home.json'],
     optional: [PORTRAIT_SOURCE],
     outputs: [PORTRAIT_ASSETS, PORTRAIT_MASTERS],
     run: () => node('scripts/gen-cutouts.ts')
