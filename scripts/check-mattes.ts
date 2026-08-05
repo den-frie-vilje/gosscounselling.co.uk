@@ -33,8 +33,24 @@ const DARK = 'static/img/john-cutout-dark.webp';
 const INTERIOR_FROM = 10;
 /** Mean absolute channel difference allowed in the interior. */
 const MEAN_LIMIT = 1.0;
-/** And the worst single channel. */
-const MAX_LIMIT = 5;
+/**
+ * The worst single channel allowed, as a MARGIN over the encoder's own noise
+ * rather than an absolute number.
+ *
+ * The first version of this check hardcoded 5, which was a number I picked.
+ * It is below what the file format can deliver: both mattes are lossy WebP,
+ * which is VP8 and therefore YUV 4:2:0, so chroma is subsampled and a
+ * round-trip through the encoder moves pixels by up to 10 levels on its own.
+ * Measured at the pipeline's own settings: q92 max 10, q95 max 10, q98 max 8,
+ * q100 max 9, and only lossless reaches 0, at 4.4 times the bytes.
+ *
+ * So the gate now calibrates itself: it re-encodes the knockout through the
+ * same settings, compares it with itself, and takes that as the floor. What
+ * it asks is that the two mattes differ by no more than the encoder alone
+ * would, which is the strongest claim the format allows and is exactly the
+ * claim worth making.
+ */
+const MAX_MARGIN = 1;
 
 interface Img {
   data: Buffer;
@@ -53,6 +69,41 @@ async function load(path: string): Promise<Img> {
 
 const light = await load(LIGHT);
 const dark = await load(DARK);
+
+/**
+ * The encoder's own noise floor: the knockout, re-encoded at the pipeline's
+ * settings (`scripts/build-cutouts.py`: quality 92, alpha quality 100,
+ * effort 6), compared with itself. Anything at or under this is the format
+ * talking, not the mattes disagreeing.
+ */
+async function encodeFloor(): Promise<{ mean: number; max: number }> {
+  const round = await sharp(LIGHT)
+    .webp({ quality: 92, alphaQuality: 100, effort: 6 })
+    .toBuffer();
+  const { data: back, info } = await sharp(round)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  let n = 0;
+  let sum = 0;
+  let max = 0;
+  for (let i = 0; i < info.width * info.height; i++) {
+    const o = i * info.channels;
+    if (light.data[o + 3] < 250) continue;
+    const d = Math.max(
+      Math.abs(back[o] - light.data[o]),
+      Math.abs(back[o + 1] - light.data[o + 1]),
+      Math.abs(back[o + 2] - light.data[o + 2])
+    );
+    n++;
+    sum += d;
+    if (d > max) max = d;
+  }
+  if (n === 0) throw new Error('the encode floor compared zero pixels');
+  return { mean: sum / n, max };
+}
+
+const floor = await encodeFloor();
 
 if (light.w !== dark.w || light.h !== dark.h) {
   console.error(
@@ -115,6 +166,9 @@ if (compared === 0) {
   process.exit(1);
 }
 
+console.log(
+  `encoder's own noise floor: ${floor.mean.toFixed(2)} mean, ${floor.max} max (the knockout round-tripped against itself)`
+);
 console.log('difference between the two mattes, by distance inside the outline:');
 BUCKETS.forEach(([lo, hi], k) => {
   const t = tally[k];
@@ -131,9 +185,10 @@ for (const [k, [lo]] of BUCKETS.entries()) {
   const t = tally[k];
   if (!t.n) continue;
   const mean = t.sum / t.n;
-  if (mean > MEAN_LIMIT || t.max > MAX_LIMIT) {
+  const maxLimit = floor.max + MAX_MARGIN;
+  if (mean > MEAN_LIMIT || t.max > maxLimit) {
     console.error(
-      `\nFAIL  at ${lo}px and beyond the two mattes differ by ${mean.toFixed(2)} on average and ${t.max} at worst. That is interior, so the plate's edge draws a tonal step across him wherever it crosses. Allowed: ${MEAN_LIMIT} mean, ${MAX_LIMIT} max.`
+      `\nFAIL  at ${lo}px and beyond the two mattes differ by ${mean.toFixed(2)} on average and ${t.max} at worst. That is interior, so the plate's edge draws a tonal step across him wherever it crosses. Allowed: ${MEAN_LIMIT} mean, ${maxLimit} max (the encoder's own floor of ${floor.max}, plus ${MAX_MARGIN}).`
     );
     failures++;
   }
@@ -151,5 +206,5 @@ if (edge.n && edge.sum / edge.n < 1) {
 
 if (failures) process.exit(1);
 console.log(
-  `\nThe mattes agree where it matters: the edge treatment is present in the first pixels, and from ${INTERIOR_FROM}px inward they are the same photograph.`
+  `\nThe mattes agree where it matters: the edge treatment is present in the first pixels, and from ${INTERIOR_FROM}px inward they differ by no more than the encoder itself does.`
 );
