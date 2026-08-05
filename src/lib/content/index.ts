@@ -185,8 +185,9 @@ export interface Testimonials {
 
 export interface Post {
   /** Identifier, not copy: the post's address is built from it, so it is not
-   *  an editable field in the CMS. */
-  slug: string;
+   *  an editable field in the CMS. Optional because a post written in the
+   *  editor arrives without one, and `postSlug()` makes it from the title. */
+  slug?: string;
   title: string;
   /** ISO 8601. */
   publishAt: string;
@@ -234,6 +235,28 @@ export const home: Home = mockServiceDetail
    --------------------------------------------------------------------------- */
 
 /**
+ * Lowercase, hyphens, nothing else. Only ever used as a fallback: a service
+ * or a post added through the editor has no identifier of its own, and an
+ * address made from the title beats no address at all.
+ */
+function slugify(text: string): string {
+  return text
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function serviceSlug(service: Service): string {
+  return service.slug?.trim() || slugify(service.title);
+}
+
+export function postSlug(post: Post): string {
+  return post.slug?.trim() || slugify(post.title);
+}
+
+/**
  * Where a service's detail page lives, per docs/information-architecture.md.
  *
  * Client work sits under `/counselling/`, because that is the word people
@@ -244,9 +267,8 @@ export const home: Home = mockServiceDetail
  * nobody has to keep an address and a route in step by hand.
  */
 export function servicePath(service: Service): string {
-  return service.slug === 'supervision'
-    ? '/supervision/'
-    : `/counselling/${service.slug}/`;
+  const slug = serviceSlug(service);
+  return slug === 'supervision' ? '/supervision/' : `/counselling/${slug}/`;
 }
 
 /** The services that have a page. Ships empty: no service has a `detail`. */
@@ -257,7 +279,7 @@ export function detailServices(): Service[] {
 export const BLOG_PATH = '/blog/';
 
 export function postPath(post: Post): string {
-  return `${BLOG_PATH}${post.slug}/`;
+  return `${BLOG_PATH}${postSlug(post)}/`;
 }
 
 /* ---------------------------------------------------------------------------

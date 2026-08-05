@@ -386,7 +386,7 @@ def solid_matte():
     # over to the untreated core with matching slope as well as matching value, and
     # there is no slope discontinuity at a fixed distance from the silhouette for the
     # eye to read as a ring.
-    EDGE_IN, EDGE_OUT = 2.0, 18.0
+    EDGE_IN, EDGE_OUT = 2.0, 20.0
     te = np.clip((EDGE_OUT - D) / (EDGE_OUT - EDGE_IN), 0.0, 1.0)
     ts = te * te * te * (10.0 + te * (te * 6.0 - 15.0))
     # The client's file is the authority wherever the backdrop cannot have reached: on

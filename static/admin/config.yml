@@ -7,9 +7,18 @@
 # copy actually needs: a full toolbar invites structure the design has no place
 # for.
 #
-# Two collections:
+# Three collections:
 #   • General — the things reused across the site (site, contact, testimonials)
 #   • Page    — the home page, which is the whole scroll
+#   • Blog    — the posts, which may be empty and usually are
+#
+# ONE RULE FOR ANYONE ADDING A FIELD HERE. External links are John's to write
+# and stay ordinary string fields: a register listing, a body he trained with,
+# a link out of a post. An address that points at THIS site is never a field.
+# Page addresses are derived in code from the route tree, so there is no URL
+# for him to type and nothing for him to keep in step when a route changes.
+# The same goes for any field that would be a second copy of something the
+# code already has: a summary is written once and reused, never re-entered.
 
 backend:
   name: github
@@ -253,13 +262,18 @@ collections:
                 label: Services
                 widget: list
                 summary: '{{fields.title}}'
+                hint: >
+                  Each service can have a page of its own. Fill in "The longer version" at the
+                  bottom of a service and the page appears, with a link to it from this section;
+                  leave it empty and there is no page and no link. The web address of the page is
+                  fixed and set in the code, so there is nothing to type and nothing to keep in
+                  step.
                 fields:
-                  - {
-                      name: slug,
-                      label: Short name,
-                      widget: string,
-                      hint: 'Lowercase, hyphens, no spaces. Used internally; changing it is safe today but will become the page address later.'
-                    }
+                  # Not an editable field, on purpose: this is what the page's
+                  # address is built from. It is declared so the editor keeps
+                  # it on save rather than deleting it, which is exactly the
+                  # failure scripts/check-cms.ts exists to catch.
+                  - { name: slug, widget: hidden }
                   - { name: title, label: Title, widget: string }
                   - { name: who, label: Who it is for, widget: string }
                   - {
@@ -268,8 +282,47 @@ collections:
                       widget: markdown,
                       buttons: [bold, italic, link],
                       editor_components: [],
-                      modes: [rich_text]
+                      modes: [rich_text],
+                      hint: 'What you write here appears on the front page; anything in the longer section below is added underneath it on the service’s own page. So this is written once and you never have to keep two versions of it saying the same thing.'
                     }
+                  - name: detail
+                    label: The longer version
+                    widget: object
+                    required: false
+                    collapsed: true
+                    hint: 'Leave this empty and the service has no page of its own. Write something here and the page appears at the next deploy, opening with the body above and continuing with this.'
+                    fields:
+                      - {
+                          name: body,
+                          label: Body,
+                          widget: markdown,
+                          buttons: [bold, italic, link, bulleted-list],
+                          editor_components: [],
+                          modes: [rich_text],
+                          required: false,
+                          hint: 'Headings are welcome here; this is the long, specific page for one thing people search for.'
+                        }
+                      - name: seo
+                        label: Search
+                        widget: object
+                        required: false
+                        collapsed: true
+                        hint: 'Optional. Left empty, the page uses its own title and its opening lines.'
+                        fields:
+                          - {
+                              name: title,
+                              label: Page title,
+                              widget: string,
+                              required: false,
+                              hint: 'Browser tab and search result. Under about 60 characters.'
+                            }
+                          - {
+                              name: description,
+                              label: Meta description,
+                              widget: text,
+                              required: false,
+                              hint: 'About 150 characters, written for the person reading the search result.'
+                            }
 
           - name: about
             label: About me
@@ -398,3 +451,85 @@ collections:
               - { name: title, label: Title, widget: string }
               - { name: subtitle, label: Subtitle, widget: string }
               - { name: cta, label: Button text, widget: string }
+
+  # One file rather than one file per post: the list is short, it is edited in
+  # one place, and scripts/check-cms.ts diffs a `files:` entry against its JSON
+  # in both directions. A `folder:` collection is a different check and this
+  # site has none.
+  - name: blog
+    label: Blog
+    editor: { preview: false }
+    files:
+      - name: posts
+        label: Posts
+        file: src/content/posts.json
+        hint: >
+          There is no blog on the site until there is a post on it: with the list empty, the
+          Blog link, the blog page and the section on the front page are all absent, and the
+          site simply does not have one. The first published post brings all three into being.
+        fields:
+          - name: posts
+            label: Posts
+            widget: list
+            summary: '{{fields.title}}'
+            collapsed: true
+            fields:
+              # Not an editable field, on purpose: this is what the post's
+              # address is built from. Left empty on a new post, the address
+              # is made from the title instead.
+              - { name: slug, widget: hidden }
+              - { name: title, label: Title, widget: string }
+              - {
+                  name: status,
+                  label: Status,
+                  widget: select,
+                  default: draft,
+                  options:
+                    [
+                      { label: 'Draft — only you can see it', value: draft },
+                      { label: 'Published', value: published }
+                    ],
+                  hint: 'A draft stays on your side of the fence: it is not built into the site at all, so there is no page for it and nothing to find. Set it to Published with a date in the past and it goes live at the next build, within minutes of saving.'
+                }
+              - {
+                  name: publishAt,
+                  label: Publish on,
+                  widget: datetime,
+                  default: '{{now}}',
+                  hint: 'A date and time in the future means the post appears on the site at that moment, and not before. You do not have to be there: it shows up on its own. A date in the past means it is live as soon as the site rebuilds.'
+                }
+              - {
+                  name: excerpt,
+                  label: Summary,
+                  widget: text,
+                  hint: 'Two or three lines. This is what is shown in the list of posts and on the front page, so it is written once and never has to be repeated.'
+                }
+              - {
+                  name: body,
+                  label: Body,
+                  widget: markdown,
+                  buttons: [bold, italic, link, bulleted-list, quote],
+                  editor_components: [],
+                  modes: [rich_text]
+                }
+              - name: seo
+                label: Search
+                widget: object
+                required: false
+                collapsed: true
+                hint: 'Optional. Left empty, the post uses its own title and summary.'
+                fields:
+                  - {
+                      name: title,
+                      label: Page title,
+                      widget: string,
+                      required: false,
+                      hint: 'Browser tab and search result. Under about 60 characters.'
+                    }
+                  - {
+                      name: description,
+                      label: Meta description,
+                      widget: text,
+                      required: false,
+                      hint: 'About 150 characters, written for the person reading the search result.'
+                    }
