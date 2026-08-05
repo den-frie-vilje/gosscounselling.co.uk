@@ -7,5 +7,7 @@
   "whatsappHref": "https://wa.me/447776153426",
   "location": "Bletchley, Milton Keynes MK3",
   "locationNote": "In person in Bletchley, Milton Keynes, or online anywhere in the UK.",
-  "hoursNote": "If I can't answer, leave a message and I'll ring back."
+  "phoneNote": "Or leave a message.",
+  "emailNote": "Anything you would rather write down than say.",
+  "whatsappNote": "If writing is easier than talking."
 }
