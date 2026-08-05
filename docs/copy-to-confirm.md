@@ -54,6 +54,14 @@ Carried over from [content-coverage.md](content-coverage.md):
 
 ## 4. His Men's Therapy Hub listing contradicts this site
 
+**The site now links to that listing.** It is in the qualifications block as a chip,
+`https://menstherapyhub.co.uk/therapist/john-goss/`, so the discrepancies below are no
+longer only his business: a visitor can follow the link and read them. The email in
+`docs/emails/2026-08-05-listing-discrepancies.md` asks him to correct them. If he would
+rather not, remove the `href` from the MTH entry in `src/content/site.json` and the chip
+shows the name unlinked.
+
+
 Found 2026-08-05 at `menstherapyhub.co.uk/therapist/john-goss/`, and it is certainly him: the
 phone number `07776153426`, `goss-counselling.co.uk`, Milton Keynes, and both NCPS and COSRT all
 match. Last modified 2026-06-17.

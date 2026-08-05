@@ -55,6 +55,14 @@
       "logo": "/img/logos/professional-standards-authority.svg",
       "href": null,
       "isMembership": false
+    },
+    {
+      "abbr": "MTH",
+      "name": "Men's Therapy Hub",
+      "note": "Listed in the directory",
+      "logo": "/img/logos/mth-mono.png",
+      "href": "https://menstherapyhub.co.uk/therapist/john-goss/",
+      "isMembership": false
     }
   ]
 }
