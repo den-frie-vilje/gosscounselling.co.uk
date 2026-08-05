@@ -120,28 +120,19 @@ collections:
       - name: contact
         label: Contact details
         file: src/content/contact.json
-        hint: 'Shown in the contact section and the footer, and used by every Call button.'
+        hint: >
+          Shown in the contact section and the footer, and used by every Call button. Write the
+          number and the address the way you would say them; the dialling link, the email link
+          and the WhatsApp link are all worked out from them, so there is nothing here to keep
+          in step.
         fields:
           - { name: heading, label: Section heading, widget: string }
           - { name: email, label: Email, widget: string }
           - {
-              name: emailHref,
-              label: Email link,
+              name: phone,
+              label: Phone,
               widget: string,
-              hint: 'Starts with mailto: — e.g. mailto:info@gosscounselling.co.uk'
-            }
-          - { name: phone, label: Phone as shown, widget: string }
-          - {
-              name: phoneHref,
-              label: Phone link,
-              widget: string,
-              hint: 'International form so a phone can dial it: tel:+447776153426'
-            }
-          - {
-              name: whatsappHref,
-              label: WhatsApp link,
-              widget: string,
-              hint: 'https://wa.me/ followed by the number, no plus and no spaces.'
+              hint: 'However you would write it — 07776 153 426. The dialling link and the WhatsApp link are made from this.'
             }
           - { name: location, label: Where you work, widget: string }
           - { name: locationNote, label: Location note, widget: string }

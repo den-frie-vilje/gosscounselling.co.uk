@@ -18,6 +18,7 @@ import testimonialsData from '../../content/testimonials.json';
 import socialData from '../../content/social.json';
 import postsData from '../../content/posts.json';
 import { mockPosts, mockServiceDetail, mockTestimonials } from './mock';
+import { mailtoHref, telHref, whatsappHref } from '$lib/phone';
 
 export interface Membership {
   name: string;
@@ -51,13 +52,11 @@ export interface Site {
   memberships: Membership[];
 }
 
-export interface Contact {
+/** What John writes. The links are not in here: see `Contact`. */
+interface ContactCopy {
   heading: string;
   email: string;
-  emailHref: string;
   phone: string;
-  phoneHref: string;
-  whatsappHref: string;
   location: string;
   locationNote: string;
   /** Heading over the contact block in the full-page menu. In content rather
@@ -70,6 +69,20 @@ export interface Contact {
   phoneNote: string;
   emailNote: string;
   whatsappNote: string;
+}
+
+/**
+ * What the components get: his copy, plus the three links worked out from it.
+ *
+ * `whatsappHref` is nullable and the others are not. A `mailto:` or a `tel:`
+ * can always be built from the string he typed, even a malformed one, and a
+ * link that fails is visible; a wa.me address built from an unparseable number
+ * would be a working link to somebody else's phone, so there is none.
+ */
+export interface Contact extends ContactCopy {
+  emailHref: string;
+  phoneHref: string;
+  whatsappHref: string | null;
 }
 
 export interface Step {
@@ -233,7 +246,25 @@ export interface Social {
 export const social: Social = socialData;
 
 export const site: Site = siteData;
-export const contact: Contact = contactData;
+/**
+ * The contact block, with the three links worked out rather than typed.
+ *
+ * John writes the number and the address; `mailto:`, `tel:` and the wa.me
+ * address all follow from them. He used to type all five, which meant keeping
+ * `07776 153 426`, `tel:+447776153426` and `https://wa.me/447776153426` in
+ * step by hand — the country code, the dropped leading zero and the missing
+ * plus, three chances to send a caller to a stranger. `scripts/check-contact.ts`
+ * fails the build if what he wrote cannot be turned into a number that dials.
+ *
+ * WhatsApp is null when the number will not parse, and the row is skipped;
+ * there is no honest fallback for a wa.me address.
+ */
+export const contact: Contact = {
+  ...(contactData as ContactCopy),
+  emailHref: mailtoHref(contactData.email),
+  phoneHref: telHref(contactData.phone),
+  whatsappHref: whatsappHref(contactData.phone)
+};
 
 /* Mock content is merged in only where it exists, and it only exists in dev
    (see ./mock.ts). Production reads exactly the JSON in src/content/. */
