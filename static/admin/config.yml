@@ -159,6 +159,42 @@ collections:
             }
           - { name: whatsappNote, label: Note under WhatsApp, widget: string }
 
+      - name: social
+        label: Social profiles
+        file: src/content/social.json
+        hint: >
+          Shown as icons in the footer, and told to search engines so they know these accounts are
+          yours. Only add a profile that is actually yours; a wrong one here sends people to a
+          stranger. These are external addresses, so they are yours to write. Addresses on this
+          site are never typed in here.
+        fields:
+          - {
+              name: note,
+              label: Note to yourself,
+              widget: text,
+              required: false,
+              hint: 'Not shown anywhere on the site.'
+            }
+          - name: profiles
+            label: Profiles
+            widget: list
+            summary: '{{fields.label}}'
+            fields:
+              - {
+                  name: platform,
+                  label: Platform,
+                  widget: select,
+                  options: [facebook, instagram],
+                  hint: 'Which icon to draw. Ask for another platform if you start using one; each needs its glyph added.'
+                }
+              - {
+                  name: label,
+                  label: Name,
+                  widget: string,
+                  hint: 'Read out to anyone using a screen reader, in place of the icon.'
+                }
+              - { name: url, label: Address, widget: string }
+
       - name: testimonials
         label: Testimonials
         file: src/content/testimonials.json
