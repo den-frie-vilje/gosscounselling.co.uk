@@ -3,8 +3,8 @@
   "steps": {
     "cutouts": {
       "key": "42f0f868bfe2",
-      "ranAt": "2026-08-05T14:09:26.525Z",
-      "seconds": 0.11,
+      "ranAt": "2026-08-05T19:38:37.300Z",
+      "seconds": 0.18,
       "inputs": {
         "scripts/keyer.ts": "b827396527e8",
         "scripts/gen-cutouts.ts": "2008e9a31eea",
@@ -12,36 +12,36 @@
         "static/img/portrait/\\.(jpe?g|png|webp|tiff?)$": "no-directory"
       },
       "outputs": {
-        "static/img/john-cutout.webp": "5085cf019f09",
+        "static/img/john-cutout.webp": "82804543b68c",
         "static/img/john-portrait-round.webp": "fde29c2b3fb7",
         "assets/portrait/john-knockout.webp": "4f8eb67ba499"
       }
     },
     "og": {
-      "key": "3d15bfd92e9a",
-      "ranAt": "2026-08-05T14:09:31.765Z",
-      "seconds": 5.08,
+      "key": "3fb0f940c7e6",
+      "ranAt": "2026-08-05T19:38:42.433Z",
+      "seconds": 4.97,
       "inputs": {
         "scripts/gen-og.ts": "05b60dc69800",
-        "src/content/site.json": "93b5583388f9",
+        "src/content/site.json": "421b65d8c928",
         "src/content/home.json": "5ae6267d7d32",
         "src/lib/generated/portrait-geometry.json": "ab5e7e4a1d44",
         "pnpm-lock.yaml": "250d73c642e6",
-        "static/img/john-cutout.webp": "5085cf019f09",
+        "static/img/john-cutout.webp": "82804543b68c",
         "static/img/john-portrait-round.webp": "fde29c2b3fb7"
       },
       "outputs": {
-        "static/img/og/home.png": "1fa467e68b74"
+        "static/img/og/home.png": "4055129f042a"
       }
     },
     "portrait-geometry": {
-      "key": "c9daa42f06da",
-      "ranAt": "2026-08-05T14:09:26.681Z",
-      "seconds": 0.15,
+      "key": "49106c5c6e2e",
+      "ranAt": "2026-08-05T19:38:37.460Z",
+      "seconds": 0.16,
       "inputs": {
         "scripts/check-portrait-fit.ts": "68536fbb2c44",
         "src/lib/portrait.config.json": "5415beaa6ffe",
-        "static/img/john-cutout.webp": "5085cf019f09",
+        "static/img/john-cutout.webp": "82804543b68c",
         "static/img/john-portrait-round.webp": "fde29c2b3fb7",
         "assets/portrait/john-knockout.webp": "4f8eb67ba499"
       },
