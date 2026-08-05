@@ -478,12 +478,9 @@ collections:
           - name: og
             label: Social-share card
             widget: object
-            hint: 'The card shown when someone shares this page in a chat or on social media. Rebuilt automatically on the next deploy.'
+            hint: 'The card shown when someone shares this page in a chat or on social media. Rebuilt automatically on the next deploy. Only the title: the card also carries your name and the line under the hero, and it takes those from where you already wrote them rather than asking twice.'
             fields:
-              - { name: eyebrow, label: Eyebrow, widget: string }
               - { name: title, label: Title, widget: string }
-              - { name: subtitle, label: Subtitle, widget: string }
-              - { name: cta, label: Button text, widget: string }
 
   # One file rather than one file per post: the list is short, it is edited in
   # one place, and scripts/check-cms.ts diffs a `files:` entry against its JSON

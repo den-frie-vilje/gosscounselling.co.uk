@@ -43,21 +43,23 @@ const FONTS = [
 }));
 
 // Site tokens, mirrored from `src/app.css` (--color-deep, --color-teal-bright,
-// --color-on-deep-muted, --color-on-deep-kicker). Kept as literals because
-// satori never sees the stylesheet.
+// --color-on-deep-kicker). Kept as literals because satori never sees the
+// stylesheet.
 const DEEP = '#0a2833';
 const TEAL_BRIGHT = '#17a2c4';
 // The plate's own mid tone. The page draws it as three soft radial layers;
 // at 470px across, flattening to the middle of them is a few levels out and
 // satori would not take a gradient inside an image anyway.
 const PLATE = { r: 0x90, g: 0xc5, b: 0xd8, alpha: 1 };
-const ON_DEEP_MUTED = '#c2d7dd';
 const ON_DEEP_KICKER = '#82c9dc';
 const WHITE = '#ffffff';
 
 const NBSP = String.fromCharCode(160);
 const NAME: string = site.name;
-const TAGLINE: string = site.tagline;
+/** The hero's own eyebrow — where he is. One field, read here and rendered on
+ *  the page, rather than a second copy of the same sentence in the og block
+ *  that John would have to remember to keep in step. */
+const WHERE: string = home.hero?.eyebrow ?? '';
 
 /** Bind the last two words with a non-breaking space so a wrapped line
  *  never leaves a single-word orphan. */
@@ -80,6 +82,22 @@ const DISC = 470; // the disc's diameter on the card
 const DISC_X = 1200 - DISC - 72; // its left edge, with a right margin
 const DISC_Y = Math.round((630 - DISC) / 2);
 const COLUMN_W = DISC_X - 72 - 40;
+
+// The lockup sits at the bottom left, where the disc's curve has pulled away
+// from the column, so it has more room than the title above it. How much is
+// arithmetic, not a guess: the disc's left boundary at height y is
+//
+//     x(y) = cx - sqrt(r^2 - (y - cy)^2)
+//
+// and the tightest point is the TOP of the lockup block, where the circle is
+// still widest. Measured there, with the same 40px gutter the column keeps.
+const DISC_CX = DISC_X + DISC / 2;
+const DISC_CY = DISC_Y + DISC / 2;
+const DISC_R = DISC / 2;
+const LOCKUP_TOP = 630 - 64 - 96; // the card's bottom padding, then its height
+const LOCKUP_W = Math.floor(
+  DISC_CX - Math.sqrt(DISC_R ** 2 - (LOCKUP_TOP - DISC_CY) ** 2) - 72 - 40
+);
 
 /**
  * The disc: the plate's own gradient with the cutout composited onto it, and
@@ -106,7 +124,14 @@ async function discDataUri(): Promise<string | null> {
     const imgW = Math.round((parseFloat(geom.plateImgWidth) / 100) * DISC);
     const shift = Math.round((parseFloat(geom.headShift) / 100) * imgW);
 
-    const cutout = await sharp(read('static/img/john-cutout.webp'))
+    // The KEYED matte, for the same reason the hero uses it inside its disc:
+    // the plain knockout's fringe still carries the white cyclorama, and this
+    // canvas is the plate, PLATE above, luminance 187. Composited on it the
+    // knockout's fringe rises ABOVE the plate — 189.6, 192.8, 196.6, 198.2 as
+    // alpha climbs 0.02 to 0.35 — which is a bright rim traced around him.
+    // The keyed matte falls monotonically instead: 184.2, 183.4, 181.7,
+    // 177.6. See the note on .layerIn in src/routes/(site)/+page.svelte.
+    const cutout = await sharp(read('static/img/john-cutout-dark.webp'))
       .resize({ width: imgW, kernel: 'lanczos3' })
       .toBuffer();
     const { height: cutH = DISC } = await sharp(cutout).metadata();
@@ -179,14 +204,33 @@ function markup(card: Card, disc: string | null): string {
   const discImg = disc
     ? `<img src="${disc}" width="${DISC}" height="${DISC}" style="position:absolute;left:${DISC_X}px;top:${DISC_Y}px;width:${DISC}px;height:${DISC}px;" />`
     : '';
-  // Two things in the column, pushed apart: the title, and his name. A
-  // longer title pushes the name down rather than overprinting it.
+  // Two things in the column, pushed apart: the title, and his lockup. A
+  // longer title pushes the lockup down rather than overprinting it.
+  //
+  // The lockup is the header's, scaled up: his name in the display serif, and
+  // beneath it in the sans, letterspaced and set in caps, the line that says
+  // WHERE. Set on one line and separated by a middot, the name and the label
+  // competed for the same reading, and the name — the thing a person is being
+  // asked to recognise — was in the same face and size as the job title.
+  //
+  // What sits under the name is the hero's own eyebrow, the same field, not a
+  // copy of it: a card is usually seen next to a link that already says what
+  // he does, and where he is is the thing it does not say. It also means the
+  // line cannot drift from the page's, because there is only one of it.
+  //
+  // The ratio is the header's, 19px over 11.5px, so the card reads as the
+  // same lockup at a different size rather than as a second design of it.
+  const LOCKUP_NAME = 40;
+  const LOCKUP_UNDER = Math.round((11.5 / 19) * LOCKUP_NAME * 10) / 10; // 24.2
   return `
   <div style="display:flex;position:relative;width:1200px;height:630px;background:${DEEP};font-family:'Inter';">
     ${discImg}
     <div style="display:flex;flex-direction:column;justify-content:space-between;width:${COLUMN_W}px;height:100%;padding:64px 0 64px 72px;">
       <div style="display:flex;color:${WHITE};font-family:'Fraunces';font-size:68px;font-weight:600;line-height:1.06;">${noOrphans(card.title)}</div>
-      <div style="display:flex;color:${ON_DEEP_MUTED};font-size:26px;font-weight:600;">${NAME} · ${TAGLINE}</div>
+      <div style="display:flex;flex-direction:column;width:${LOCKUP_W}px;">
+        <div style="display:flex;color:${WHITE};font-family:'Fraunces';font-size:${LOCKUP_NAME}px;font-weight:600;letter-spacing:-0.01em;line-height:1.2;">${NAME}</div>
+        <div style="display:flex;color:${ON_DEEP_KICKER};font-size:${LOCKUP_UNDER}px;font-weight:600;letter-spacing:0.08em;line-height:1.3;margin-top:8px;">${WHERE.toUpperCase()}</div>
+      </div>
     </div>
   </div>`;
 }
