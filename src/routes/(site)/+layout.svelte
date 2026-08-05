@@ -5,8 +5,14 @@
 <script lang="ts">
   import SiteHeader from '$lib/components/SiteHeader.svelte';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
+  import StudioPanel from '$lib/dev/StudioPanel.svelte';
 
   let { children } = $props();
+
+  // `import.meta.env.DEV` is a compile-time constant, so the panel and its
+  // import are removed from the production bundle entirely rather than being
+  // shipped behind a runtime check.
+  const dev = import.meta.env.DEV;
 </script>
 
 <a href="#main" class="skip">Skip to content</a>
@@ -18,6 +24,10 @@
   </main>
   <SiteFooter />
 </div>
+
+{#if dev}
+  <StudioPanel />
+{/if}
 
 <style>
   /* Off-screen until focused, then a real, visible target at the top left. */
