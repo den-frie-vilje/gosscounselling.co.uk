@@ -174,10 +174,14 @@
   intro={home.steps.intro}
 >
   <!-- The only thing on the page that waits to be scrolled to. The line is
-       the sequence: it runs 1 to 3, down the discs where the steps stack and
-       across them where they sit in a row, drawn by the scroll rather than by
-       a timer, and it never retracts. -->
-  <ol class="stepList mark-row" use:scrollDraw={{ start: 0.78, end: 0.34 }}>
+       the sequence: it runs 1 to 3 down the discs where the steps stack, drawn
+       by the scroll rather than by a timer, and it never retracts.
+
+       It starts when the list's top passes 78% of the viewport and is complete
+       by the time its bottom reaches the halfway line, so the line has arrived
+       at step 3 while the reader is still looking at the section rather than
+       finishing as it leaves. -->
+  <ol class="stepList mark-row" use:scrollDraw={{ start: 0.78, end: 0.5 }}>
     {#each home.steps.items as step, i (step.title)}
       <li class="mark-row">
         <span class="disc mark mark-disc" aria-hidden="true">{i + 1}</span>
@@ -941,10 +945,13 @@
       top: 34px;
       bottom: -28px;
       width: 4px;
-      /* The ink sibling: this section's ground is the light mist, where the
-         bright value measures barely 1.1:1 and the line would simply not be
-         there. The bright one is for the dark bands. */
-      background: var(--color-accent-ink);
+      /* The light accent, by decision. Measured, it is 1.13:1 against this
+         section's mist ground, where the ink sibling was 4.46:1: on a light
+         ground this reads as a pale suggestion rather than a line. It is not
+         an accessibility failure, because the numbered discs carry the
+         sequence and the connector only decorates it, but it is very quiet.
+         If it should actually be seen, the section needs a darker ground. */
+      background: var(--color-accent);
       transform-origin: top center;
     }
     /* Each segment owns its own half of the travel, so the line reads 1 to 3
