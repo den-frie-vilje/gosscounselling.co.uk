@@ -78,12 +78,27 @@
            image is always wider than its frame: the visible cut is made by
            the frame on desktop and by the viewport on a phone, never left
            hanging mid-section. -->
+      <!-- Two mattes, not one image styled twice. The dark-ground cutout
+           carries keyer edge treatment (colour edge-extend, a matte choke and
+           a negative light wrap) so it does not glow on the deep band; that
+           same treatment shows as a dark fringe on a light plate, where the
+           plain knockout is correct. Which one is visible depends on the
+           plate, and the loser is `display: none`. When the plate is settled
+           this becomes one image again. -->
       <figure class="heroFig">
         <img
           use:latchVisible
-          class="heroCut"
+          class="heroCut cut-dark"
           src="/img/john-cutout-dark.webp"
           alt={home.hero.portraitAlt}
+          width="900"
+          height="900"
+        />
+        <img
+          class="heroCut cut-light"
+          src="/img/john-cutout.webp"
+          alt=""
+          aria-hidden="true"
           width="900"
           height="900"
         />
@@ -536,6 +551,22 @@
       }
     }
   }
+  /* Below 880px the ground is the deep gradient whatever the plate is, so the
+     dark matte is always the right one there. */
+  .cut-light {
+    display: none;
+  }
+  @media (min-width: 880px) {
+    :global(html[data-plate='sand']) .cut-dark,
+    :global(html[data-plate='drysand']) .cut-dark {
+      display: none;
+    }
+    :global(html[data-plate='sand']) .cut-light,
+    :global(html[data-plate='drysand']) .cut-light {
+      display: block;
+    }
+  }
+
   @keyframes hero-cut-reveal {
     from {
       opacity: 0;
@@ -557,7 +588,10 @@
     .heroFig {
       aspect-ratio: 1;
       border-radius: 50%;
-      background: #164b5d;
+      /* The plate cites the accent rather than repeating the band. Held as a
+         variable so the studio panel can swap it; the default is the teal it
+         has had, and `--plate-cut` says which matte belongs with it. */
+      background: var(--plate, #164b5d);
       align-self: center;
     }
     .heroFig img {

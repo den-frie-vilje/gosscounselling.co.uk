@@ -58,21 +58,24 @@
      the page allowed to be loud, which only works because it is almost never
      used.
 
-     It comes in a pair, and that is not a nicety. A light acid lime measures
-     12.67:1 on the deep ground and 1.05:1 against the sand: the same rule that
-     sings on the dark band is invisible in the qualifications section. So the
-     light value is for dark grounds and `--color-accent-ink` is its darker
-     sibling for light ones, same hue family, held above 3:1 against all three
-     light grounds so a rule drawn in it is a mark rather than a rumour.
+     Lime straw: warm enough to sit with the sand and the gold rather than
+     fighting them, and still saturated enough to be the one loud thing.
+
+     It comes in a pair, and that is not a nicety. The light value measures
+     12.03:1 on the deep ground and about 1:1 against the sand, so the same
+     rule that sings on the dark band would be invisible in the qualifications
+     section. The light value is for dark grounds; `--color-accent-ink` is its
+     darker sibling for light ones, same hue family, held above 3:1 against all
+     three light grounds so a rule drawn in it is a mark rather than a rumour.
 
      sRGB here; the wide-gamut values are in the @supports block below, so a
      P3 display gets the saturated ones and everything else degrades without a
      fallback chain in every rule.
 
-     Contrast, computed: light on deep 12.67:1; ink on paper 4.62:1, on mist
-     4.27:1, on sand 3.77:1. */
-  --color-accent: #cdfa16;
-  --color-accent-ink: #857100;
+     Contrast is computed and gated by scripts/check-contrast.ts, which knows
+     that a graphic mark's floor is 3:1 (WCAG 1.4.11) and not 4.5:1. */
+  --color-accent: #ebeb00;
+  --color-accent-ink: #826e00;
 
   /* Text on the dark bands */
   --color-on-deep: #e9f2f4;
@@ -106,10 +109,10 @@
 /* Wide gamut. The OKLCH value pushes chroma past what sRGB can hold, so a P3
    display renders it properly saturated and an sRGB one falls back to the
    hex above rather than being handed a gamut-mapped mud. */
-@supports (color: oklch(0.92 0.22 122)) {
+@supports (color: oklch(0.91 0.2 110)) {
   :root {
-    --color-accent: oklch(0.92 0.22 122);
-    --color-accent-ink: oklch(0.55 0.14 100);
+    --color-accent: oklch(0.91 0.2 110);
+    --color-accent-ink: oklch(0.54 0.14 98);
   }
 }
 
