@@ -55,7 +55,7 @@
     {#if kicker || heading || intro}
       <div class="section-head">
         {#if kicker}
-          <p class="t-kicker m-0 mb-3.5" class:on-deep={surface === 'deep'}>{kicker}</p>
+          <p class="t-kicker led m-0 mb-3.5" class:on-deep={surface === 'deep'}>{kicker}</p>
         {/if}
         {#if heading}
           {#if h1}

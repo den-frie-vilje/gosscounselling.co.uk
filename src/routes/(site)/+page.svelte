@@ -50,7 +50,9 @@
   <div class="container-page">
     <div class="heroGrid">
       <div class="heroCopy">
-        <p class="eyebrow">{home.hero.eyebrow}</p>
+        <p class="eyebrow t-kicker led !tracking-[0.16em] !text-on-deep-kicker">
+          {home.hero.eyebrow}
+        </p>
         <h1 class="t-display text-white">{home.hero.title}</h1>
         <p class="lede t-lead">{home.hero.lead}</p>
 
@@ -457,7 +459,8 @@
     margin: 24px 0 0;
     max-width: 40ch;
     padding-left: 16px;
-    border-left: 2px solid rgb(130 201 220 / 0.45);
+    /* The same accent, at the same 4px as the step connector. */
+    border-left: 4px solid var(--color-accent);
     font-family: var(--font-display);
     font-size: 16.5px;
     font-style: italic;
