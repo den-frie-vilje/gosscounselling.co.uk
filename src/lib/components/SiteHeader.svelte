@@ -370,7 +370,9 @@
       <h2 class="k">{contact.menuHeading}</h2>
       <a href={contact.phoneHref} onclick={close}>{contact.phone}</a>
       <a href={contact.emailHref} onclick={close}>{contact.email}</a>
-      <a href={contact.whatsappHref} onclick={close}>WhatsApp</a>
+      {#if contact.whatsappHref}
+        <a href={contact.whatsappHref} onclick={close}>WhatsApp</a>
+      {/if}
       <p class="place">{contact.location}</p>
     </div>
   </div>

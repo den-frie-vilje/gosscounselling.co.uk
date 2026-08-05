@@ -50,17 +50,22 @@
           <span class="go" aria-hidden="true"><Icon name="arrow" size={20} /></span>
         </a>
       </li>
-      <li>
-        <a href={contact.whatsappHref}>
-          <span class="ico"><Icon name="whatsapp" /></span>
-          <span class="txt">
-            <span class="k">WhatsApp</span>
-            <span class="v">{contact.phone}</span>
-            <span class="h">{contact.whatsappNote}</span>
-          </span>
-          <span class="go" aria-hidden="true"><Icon name="arrow" size={20} /></span>
-        </a>
-      </li>
+      <!-- Only when the number John typed makes a wa.me address. There is no
+           honest fallback for one that does not: a wa.me link built from a
+           broken number is a working link to a stranger's phone. -->
+      {#if contact.whatsappHref}
+        <li>
+          <a href={contact.whatsappHref}>
+            <span class="ico"><Icon name="whatsapp" /></span>
+            <span class="txt">
+              <span class="k">WhatsApp</span>
+              <span class="v">{contact.phone}</span>
+              <span class="h">{contact.whatsappNote}</span>
+            </span>
+            <span class="go" aria-hidden="true"><Icon name="arrow" size={20} /></span>
+          </a>
+        </li>
+      {/if}
       <li>
         <span class="place">
           <span class="ico"><Icon name="pin" /></span>
