@@ -11,7 +11,7 @@
   moment its time passes. See $lib/publish-clock.
 -->
 <script lang="ts">
-  import { livePosts, postPath, site } from '$lib/content';
+  import { contact, livePosts, postPath, site } from '$lib/content';
   import { publishClock } from '$lib/publish-clock.svelte';
   import { buildPageSeo } from '$lib/seo/structured-data';
   import { dateAttr, formatDate } from '$lib/date';
@@ -22,14 +22,22 @@
   const clock = publishClock();
   const posts = $derived(livePosts(clock.value));
 
-  // The description is the site's own, and that is a placeholder rather than
-  // a choice: a standfirst for the blog is copy, and copy here is John's to
-  // write (DECISIONS.md §19, docs/copy-to-confirm.md). His site description
-  // is at least true of the page.
+  // The description used to be `site.description` verbatim — the home page's
+  // own 147 characters, about fees and session lengths, on a page that lists
+  // none. Two pages sharing a description is two pages telling a search engine
+  // they are the same page, and the one that loses is this one.
+  //
+  // So it is assembled instead, and only out of sentences that are already
+  // published elsewhere on the site: his name, the job title from
+  // `site.schema`, and the location line from the contact block. Every clause
+  // is his and stays his when he edits it. The two words that are ours are
+  // "Writing from", which name the page rather than claim anything — the same
+  // footing as "Blog" and "From the blog" (docs/copy-to-confirm.md §5), and
+  // recorded there with the rest of them for him to overrule.
   const seo = buildPageSeo({
     path: '/blog/',
-    title: `Blog | ${site.name}`,
-    description: site.description,
+    title: `Blog | ${site.name}, ${site.tagline}`,
+    description: `Writing from ${site.name}, ${site.schema.jobTitle}. ${contact.locationNote}`,
     image: '/img/og/home.png'
   });
 </script>

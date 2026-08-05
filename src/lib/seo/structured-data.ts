@@ -3,6 +3,8 @@
  */
 import { PUBLIC_SITE_URL } from '$env/static/public';
 import { site, contact, home, social, testimonials } from '$lib/content';
+import { parsePhone } from '$lib/phone';
+import { entitySameAs, memberOfOrganizations, priceRangeFrom } from '$lib/seo/entity';
 
 /*
   `$env/static/public`, not dynamic. Static env is sourced from the committed
@@ -42,11 +44,28 @@ const PERSON_ID = `${SITE_URL}/#john`;
  * This is the property that tells a search engine the John Goss here is the
  * John Goss there, and it was empty. His own site linked to neither of his
  * accounts, so nothing connected them at all.
+ *
+ * The rule itself lives in $lib/seo/entity, with no imports, so that
+ * `scripts/check-seo.ts` can gate the code that ships rather than a copy of
+ * it. What that gate enforces is the part no code can decide: every URL that
+ * reaches here has to be one docs/social-profiles.md records as VERIFIED.
  */
-const personSameAs = [
-  ...social.profiles.map((p) => p.url),
-  ...site.memberships.map((m) => m.href).filter((h): h is string => Boolean(h))
-];
+const personSameAs = entitySameAs(social.profiles, site.memberships);
+
+/**
+ * The number in international form, for machines only.
+ *
+ * John writes "07776 153 426", which is how you would say it and how it is
+ * set on the page. Schema.org asks for a number a machine can dial without
+ * knowing which country it is reading from, and a bare UK trunk number is
+ * ambiguous outside the UK — `07776…` is a valid national number in several
+ * other places. The site already turns his string into E.164 for `tel:` and
+ * for wa.me, through the same parser, so this is the fourth consumer of one
+ * number rather than a fifth copy of it. `scripts/check-contact.ts` fails the
+ * build if it will not parse; the fallback below is for that build's benefit
+ * only, and never reaches a deploy.
+ */
+const TELEPHONE = parsePhone(contact.phone).e164 ?? contact.phone;
 
 /**
  * The site-wide graph: the practice and the person, cross-linked by `@id`.
@@ -66,6 +85,11 @@ const personSameAs = [
  * address held there, not from anything on a website.
  */
 function siteGraph(): object[] {
+  // Read off the fee table the page publishes, never typed. It was the
+  // literal `'£45-£110'` under a comment claiming it was derived; see
+  // $lib/seo/entity, where the rule lives so a build gate can test the code
+  // that actually ships rather than a second copy of it.
+  const fees = priceRangeFrom(home.fees.rows);
   return [
     {
       '@type': 'ProfessionalService',
@@ -73,7 +97,7 @@ function siteGraph(): object[] {
       name: site.name,
       description: site.description,
       url: `${SITE_URL}/`,
-      telephone: contact.phone,
+      telephone: TELEPHONE,
       email: contact.email,
       address: {
         '@type': 'PostalAddress',
@@ -82,13 +106,13 @@ function siteGraph(): object[] {
         postalCode: 'MK3',
         addressCountry: 'GB'
       },
-      // Derived from the fee rows actually published on the page, rather
-      // than a hand-picked band nobody chose.
-      priceRange: '£45-£110',
+      ...(fees ? { priceRange: fees } : {}),
       // `knowsAbout`, not `serviceType`: the latter's domain is Service, not
       // LocalBusiness, so it was three lines that looked like they were doing
       // work and were not. Same reason `provider` and `availableLanguage`
-      // came out; `founder` already carries the link to the person.
+      // came out; `founder` already carries the link to the person. The
+      // `schema.serviceType` field John could still edit in the CMS has now
+      // gone too — it fed nothing here or anywhere else.
       knowsAbout: site.schema.knowsAbout,
       areaServed: site.schema.areaServed.map((name) => ({ '@type': 'Place', name })),
       founder: { '@id': PERSON_ID }
@@ -100,23 +124,17 @@ function siteGraph(): object[] {
       jobTitle: site.schema.jobTitle,
       description: site.schema.bio,
       url: `${SITE_URL}/`,
-      telephone: contact.phone,
+      telephone: TELEPHONE,
       email: contact.email,
       knowsAbout: site.schema.knowsAbout,
       knowsLanguage: 'en-GB',
       worksFor: { '@id': PRACTICE_ID },
       ...(personSameAs.length ? { sameAs: personSameAs } : {}),
-      // Only the bodies he actually belongs to. The Professional Standards
-      // Authority accredits the register; it is not somewhere he is a member,
-      // and claiming otherwise to a search engine would be a small lie about
-      // a counsellor's credentials.
-      memberOf: site.memberships
-        .filter((m) => m.isMembership)
-        .map((m) => ({
-          '@type': 'Organization',
-          name: m.name,
-          ...(m.href ? { url: m.href } : {})
-        }))
+      // Only the bodies he actually belongs to — the Professional Standards
+      // Authority accredits the register rather than admitting him, and Men's
+      // Therapy Hub is a directory that lists him. The filter is in
+      // $lib/seo/entity so that scripts/check-seo.ts gates this exact code.
+      memberOf: memberOfOrganizations(site.memberships)
     }
   ];
 }
@@ -216,6 +234,10 @@ interface BuildPageSeoInput {
   ogTitle?: string;
   image?: string;
   imageAlt?: string;
+  /** Open Graph object type. Defaults to `website`; a post passes `article`.
+   *  It is here rather than in `SeoHead` because `SeoHead` renders what it is
+   *  handed and decides nothing, which is what makes it readable. */
+  ogType?: string;
   graph?: object[];
 }
 
@@ -239,7 +261,7 @@ export function buildPageSeo(input: BuildPageSeoInput): PageSeo {
     themeColor: THEME_COLOR,
     canonical,
     og: {
-      type: 'website',
+      type: input.ogType ?? 'website',
       siteName: site.name,
       title: ogTitle,
       description: input.description,
