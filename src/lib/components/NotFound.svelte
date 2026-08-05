@@ -41,7 +41,7 @@
 
     <p class="mt-10 mb-0 flex flex-wrap gap-4">
       <a class="btn btn-primary" href={contact.phoneHref}>{home.hero.ctaPrimary}</a>
-      <a class="btn btn-quiet" href={contact.emailHref}>{home.hero.ctaSecondary}</a>
+      <a class="btn btn-outline" href={contact.emailHref}>{home.hero.ctaSecondary}</a>
     </p>
   </div>
 </section>
