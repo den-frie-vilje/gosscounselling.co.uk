@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "build:staging": "vite build --mode staging",
-    "build:production": "vite build --mode production",
+    "build:staging": "pnpm build --mode staging",
+    "build:production": "pnpm build --mode production",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
     "precheck": "node scripts/gen-assets.ts",
@@ -30,7 +30,8 @@
     "check:seo": "node scripts/check-seo.ts",
     "check:contrast": "node scripts/check-contrast.ts",
     "check:portrait": "node scripts/check-portrait-fit.ts",
-    "check:mattes": "node scripts/check-mattes.ts"
+    "check:mattes": "node scripts/check-mattes.ts",
+    "postbuild": "node scripts/gen-404.ts"
   },
   "engines": {
     "node": "~25",

@@ -6,10 +6,18 @@ const config = {
   preprocess: vitePreprocess(),
   kit: {
     adapter: adapter({
-      // SPA-fallback shell for any route that opts out of prerender.
-      // nginx's try_files falls through to /200.html for paths that
-      // didn't prerender; prerendered routes still emit their own .html.
-      fallback: '200.html',
+      // The shell for a path that did not prerender — which, on a site where
+      // every route prerenders, means a path that does not exist.
+      //
+      // It was `200.html`, and nginx fell through to it, so every typo and
+      // every stale link answered HTTP 200 with an empty page. A crawler
+      // reading that has been told the page exists and is blank, which is
+      // worse than being told it is gone. `404.html` is also the filename
+      // Netlify, Cloudflare Pages and GitHub Pages serve with a 404 status
+      // without being configured to, which matters because the copy-to-host
+      // workflow hands the same build/ to a host where deploy/nginx.conf
+      // does not exist.
+      fallback: '404.html',
       // Allow non-prerenderable routes without failing the static build.
       strict: false
     }),
