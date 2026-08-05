@@ -21,7 +21,7 @@
 <script lang="ts">
   import { flushSync, onMount } from 'svelte';
   import { sectionEl, warnUnregistered } from '$lib/nav-sections.svelte';
-  import { contact, livePosts, navFor, site } from '$lib/content';
+  import { contact, home, livePosts, navFor, site } from '$lib/content';
   import { publishClock } from '$lib/publish-clock.svelte';
   import Icon from './Icon.svelte';
 
@@ -367,7 +367,11 @@
     </ul>
 
     <div class="menucontact">
-      <h2 class="k">{contact.menuHeading}</h2>
+      <!-- The contact section's own heading, not a second copy of it. There
+           used to be a `contact.menuHeading` field beside it, and both said
+           "Get in touch": one sentence, two boxes in the editor, and no way
+           to tell from either which one the visitor was looking at. -->
+      <h2 class="k">{home.contact.heading}</h2>
       <a href={contact.phoneHref} onclick={close}>{contact.phone}</a>
       <a href={contact.emailHref} onclick={close}>{contact.email}</a>
       {#if contact.whatsappHref}

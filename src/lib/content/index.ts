@@ -19,6 +19,7 @@ import socialData from '../../content/social.json';
 import postsData from '../../content/posts.json';
 import { mockPosts, mockServiceDetail, mockTestimonials } from './mock';
 import { mailtoHref, telHref, whatsappHref } from '$lib/phone';
+import { resolveDeep, resolveTokens, type TokenValues } from '$lib/copy-tokens';
 
 export interface Membership {
   name: string;
@@ -41,27 +42,39 @@ export interface Site {
   name: string;
   tagline: string;
   description: string;
+  /** Carries `{year}`, filled in at render time by `footerNote()`. */
   footerNote: string;
+  /* There is no `serviceType`. It was in the CMS and in this interface for
+     months, and nothing ever read it: `schema.org/serviceType` has domain
+     Service, not LocalBusiness, so the graph could not use it and used
+     `knowsAbout` instead (see $lib/seo/structured-data). A field John could
+     edit with no effect anywhere teaches him the editor is lying to him, so
+     it is gone from both sides rather than left as a comment saying it does
+     nothing. */
   schema: {
     jobTitle: string;
     bio: string;
-    serviceType: string;
     knowsAbout: string[];
     areaServed: string[];
   };
   memberships: Membership[];
 }
 
-/** What John writes. The links are not in here: see `Contact`. */
+/**
+ * What John writes. The links are not in here: see `Contact`.
+ *
+ * Details only, no headings. There were two — `heading` and `menuHeading` —
+ * and all three copies of "Get in touch" (this file's two, plus
+ * `home.contact.heading`) had to be edited together to change one sentence.
+ * `heading` was read by nothing at all; the contact section has always used
+ * the home page's own heading beside its kicker and intro, where the rest of
+ * that section's copy lives. The menu panel now reads that same one.
+ */
 interface ContactCopy {
-  heading: string;
   email: string;
   phone: string;
   location: string;
   locationNote: string;
-  /** Heading over the contact block in the full-page menu. In content rather
-   *  than hardcoded, so it is editable with the rest of the copy. */
-  menuHeading: string;
   /* The three notes under the contact rows. Kept deliberately free of any
      claim about how John's practice runs at his end: an earlier draft said
      visitors would not reach a receptionist and would get a call back, and
@@ -143,16 +156,21 @@ export interface FaqItem {
   a: string;
 }
 
+/* There is no `navLabel`. It said "Home" and nothing on the site read it:
+   the brand in the header is `site.name` over `site.tagline`, and the bar is
+   built from `nav` below. It had been editable, and dead, since the first
+   commit. */
 export interface Home {
-  navLabel: string;
   hero: {
     eyebrow: string;
     title: string;
     lead: string;
     /** His own sentence, from the old site. */
     aside: string;
-    /** Inline markdown. */
+    /** Inline markdown. Carries `{whatsapp}`. */
     reassure: string;
+    /** Carries `{phone}`, so the button cannot read one number and dial
+     *  another. See $lib/copy-tokens. */
     ctaPrimary: string;
     ctaSecondary: string;
     portraitAlt: string;
@@ -165,6 +183,7 @@ export interface Home {
     heading: string;
     intro: string;
     rows: FeeRow[];
+    /** `body` is markdown and carries `{mailto}`. */
     note: { title: string; body: string };
   };
   quals: {
@@ -177,6 +196,7 @@ export interface Home {
   };
   faq: { kicker: string; heading: string; items: FaqItem[] };
   contact: { kicker: string; heading: string; intro: string };
+  /** `description` is NOT in home.json and is not a field: see `home` below. */
   seo: { title: string; description: string };
   /** The share card. Only the title is John's to write here: the card also
    *  carries his name and the hero's own eyebrow, and it reads those from
@@ -245,7 +265,6 @@ export interface Social {
 
 export const social: Social = socialData;
 
-export const site: Site = siteData;
 /**
  * The contact block, with the three links worked out rather than typed.
  *
@@ -266,11 +285,47 @@ export const contact: Contact = {
   whatsappHref: whatsappHref(contactData.phone)
 };
 
+/**
+ * What `{phone}`, `{whatsapp}` and the rest stand for in John's copy.
+ *
+ * Same rule as the hrefs above, one layer down. The number used to appear
+ * three more times in his PROSE — spelled out on the hero button, linked as a
+ * wa.me address under it, and his email linked from the low-income note —
+ * where a search for a field name never found it. Those three are now
+ * placeholders filled in here from the one place he types each thing, so the
+ * button cannot read a number the site no longer dials.
+ *
+ * `contact` is the source and is deliberately NOT resolved: resolving the
+ * thing the values come from is how you get a placeholder that resolves to
+ * itself. `{year}` is left alone on purpose, because it is not a property of
+ * the content; `footerNote()` answers it at render time.
+ *
+ * `scripts/check-contact.ts` is the gate: it refuses a placeholder this list
+ * does not know, and refuses the number, the address or a wa.me link written
+ * out longhand in any content file but contact.json.
+ */
+const COPY: TokenValues = {
+  phone: contact.phone,
+  email: contact.email,
+  tel: contact.phoneHref,
+  mailto: contact.emailHref,
+  whatsapp: contact.whatsappHref
+};
+
+export const site: Site = resolveDeep(siteData, COPY);
+
 /* Mock content is merged in only where it exists, and it only exists in dev
    (see ./mock.ts). Production reads exactly the JSON in src/content/. */
-export const testimonials: Testimonials = mockTestimonials ?? testimonialsData;
+export const testimonials: Testimonials = resolveDeep(
+  mockTestimonials ?? testimonialsData,
+  COPY
+);
 
-function withMockDetail(detail: Record<string, ServiceDetail>): Home {
+/** home.json as it is on disk: everything `Home` has except the description,
+ *  which is not in the file and is not a field. */
+type HomeSource = Omit<Home, 'seo'> & { seo: { title: string } };
+
+function withMockDetail(detail: Record<string, ServiceDetail>): HomeSource {
   return {
     ...homeData,
     services: {
@@ -282,7 +337,28 @@ function withMockDetail(detail: Record<string, ServiceDetail>): Home {
   };
 }
 
-export const home: Home = mockServiceDetail ? withMockDetail(mockServiceDetail) : homeData;
+const homeSource: HomeSource = mockServiceDetail ? withMockDetail(mockServiceDetail) : homeData;
+const homeResolved = resolveDeep(homeSource, COPY);
+
+/**
+ * The home page.
+ *
+ * `seo.description` is derived, not written. It was a field, and it held a
+ * byte-for-byte copy of `site.description`: the same 150 characters in two
+ * boxes in the editor, one of which John would eventually change and the
+ * other of which he would not — and the one he did not change is the one a
+ * stranger reads in a search result. This site is one page, so the site's
+ * description IS the home page's; the blog index, the share card and the
+ * Schema.org graph were all already using it.
+ *
+ * If the two ever genuinely need to differ, this is where the override goes
+ * back, as an OPTIONAL field falling back to here rather than a required one
+ * repeating it.
+ */
+export const home: Home = {
+  ...homeResolved,
+  seo: { ...homeResolved.seo, description: site.description }
+};
 
 /* ---------------------------------------------------------------------------
    Addresses.
@@ -370,10 +446,12 @@ export function postPath(post: Post): string {
  */
 export const BUILD_TIME: number = Date.parse(PUBLIC_BUILD_TIME) || Date.now();
 
-const allPosts: Post[] = [
-  ...(postsData as Posts).posts,
-  ...(mockPosts ? mockPosts.posts : [])
-];
+/* Through the same resolver as the rest of the copy, so a post can say "call
+   me on {phone}" and mean whatever the number is on the day it is read. */
+const allPosts: Post[] = resolveDeep(
+  [...(postsData as Posts).posts, ...(mockPosts ? mockPosts.posts : [])],
+  COPY
+);
 
 /**
  * Everything in the build, newest first. Drafts are gone by here.
@@ -466,7 +544,14 @@ export function navFor(hasPosts: boolean): NavItem[] {
   return hasPosts ? nav : nav.filter((item) => item.id !== 'blog');
 }
 
-/** Footer note with the `{year}` placeholder resolved. */
+/**
+ * Footer note with `{year}` filled in.
+ *
+ * The one placeholder the load-time pass deliberately leaves standing, because
+ * the year a page is READ in is not a property of the content. Same syntax as
+ * the rest, and in the same vocabulary, so John does not have to know that
+ * this one is answered somewhere else.
+ */
 export function footerNote(year: number): string {
-  return site.footerNote.replace('{year}', String(year));
+  return resolveTokens(site.footerNote, { year: String(year) });
 }

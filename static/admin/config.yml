@@ -7,18 +7,34 @@
 # copy actually needs: a full toolbar invites structure the design has no place
 # for.
 #
-# Three collections:
-#   • General — the things reused across the site (site, contact, testimonials)
-#   • Page    — the home page, which is the whole scroll
+# Three collections, in the order John reaches for them rather than the order
+# the files were written:
+#   • Page    — the home page, which is the whole site, and what he opens for
+#               almost every edit he will ever make
+#   • General — the things reused across it, commonest first: his contact
+#               details, then testimonials, his social profiles, and last the
+#               name-and-search settings he will touch about once
 #   • Blog    — the posts, which may be empty and usually are
 #
-# ONE RULE FOR ANYONE ADDING A FIELD HERE. External links are John's to write
-# and stay ordinary string fields: a register listing, a body he trained with,
-# a link out of a post. An address that points at THIS site is never a field.
-# Page addresses are derived in code from the route tree, so there is no URL
-# for him to type and nothing for him to keep in step when a route changes.
-# The same goes for any field that would be a second copy of something the
-# code already has: a summary is written once and reused, never re-entered.
+# THREE RULES FOR ANYONE ADDING A FIELD HERE.
+#
+# 1. External links are John's to write and stay ordinary string fields: a
+#    register listing, a body he trained with, a link out of a post. An
+#    address that points at THIS site is never a field. Page addresses are
+#    derived in code from the route tree, so there is no URL for him to type
+#    and nothing for him to keep in step when a route changes.
+#
+# 2. Nothing is asked for twice. Not as a second field, and not spelled out
+#    inside a sentence either: his number, his email address and the WhatsApp
+#    link are written as {phone}, {email}, {tel}, {mailto} and {whatsapp}
+#    wherever a piece of copy needs them, and filled in at build time from
+#    Contact details. $lib/copy-tokens has the list; scripts/check-contact.ts
+#    refuses an unknown one, and refuses the number written out longhand.
+#
+# 3. A field nothing renders must not exist. `navLabel`, `schema.serviceType`
+#    and the contact block's own `heading` all sat here for months with
+#    nothing reading them; an editor that accepts a change and does nothing
+#    with it teaches him not to trust the ones that work.
 
 backend:
   name: github
@@ -35,218 +51,37 @@ media_folder: static/img
 public_folder: /img
 
 collections:
-  - name: general
-    label: General
-    # No side preview pane: it renders a generic field dump rather than the
-    # real site. Changes are reviewed on staging instead.
-    editor: { preview: false }
-    files:
-      - name: site
-        label: Site
-        file: src/content/site.json
-        fields:
-          - { name: name, label: Name, widget: string }
-          - { name: tagline, label: Tagline, widget: string }
-          - {
-              name: description,
-              label: Meta description,
-              widget: text,
-              hint: 'About 150 to 160 characters. Used in search results and link previews.'
-            }
-          - {
-              name: footerNote,
-              label: Footer note,
-              widget: string,
-              hint: 'Use {year} for the year; it is filled in automatically.'
-            }
-          - name: schema
-            label: Search & structured data
-            widget: object
-            hint: 'Feeds the Schema.org data search engines read. Not shown on the page.'
-            fields:
-              - { name: jobTitle, label: Job title, widget: string }
-              - { name: bio, label: Bio, widget: text }
-              - { name: serviceType, label: Service type, widget: string }
-              - {
-                  name: knowsAbout,
-                  label: Topics you work with,
-                  widget: list,
-                  field: { name: topic, label: Topic, widget: string }
-                }
-              - {
-                  name: areaServed,
-                  label: Areas served,
-                  widget: list,
-                  field: { name: area, label: Area, widget: string }
-                }
-          - name: memberships
-            label: Membership and registration
-            widget: list
-            summary: '{{fields.abbr}}'
-            hint: 'Shown as a row each, mark beside name, in the qualifications section, and in the structured data.'
-            fields:
-              - { name: name, label: Full name, widget: string }
-              - { name: abbr, label: Abbreviation, widget: string }
-              - {
-                  name: logo,
-                  label: Mark,
-                  widget: image,
-                  media_folder: '/static/img/logos',
-                  public_folder: '/img/logos',
-                  hint: 'Shown on a white plate beside the name. All the plates are the same size, so the mark does not have to be.'
-                }
-              - {
-                  name: isMembership,
-                  label: You are a member of this body,
-                  widget: boolean,
-                  default: true,
-                  hint: 'Off for a body that accredits rather than admits, such as the Professional Standards Authority. Only the ones you belong to are declared as memberships to search engines.'
-                }
-              - {
-                  name: note,
-                  label: Grade,
-                  widget: string,
-                  required: false,
-                  hint: 'e.g. Accredited Member. Leave empty for a plain membership.'
-                }
-              - {
-                  name: href,
-                  label: Register listing,
-                  widget: string,
-                  required: false,
-                  hint: 'Your public listing on their register. Leave empty and the name shows unlinked.'
-                }
-
-      - name: contact
-        label: Contact details
-        file: src/content/contact.json
-        hint: >
-          Shown in the contact section and the footer, and used by every Call button. Write the
-          number and the address the way you would say them; the dialling link, the email link
-          and the WhatsApp link are all worked out from them, so there is nothing here to keep
-          in step.
-        fields:
-          - { name: heading, label: Section heading, widget: string }
-          - { name: email, label: Email, widget: string }
-          - {
-              name: phone,
-              label: Phone,
-              widget: string,
-              hint: 'However you would write it — 07776 153 426. The dialling link and the WhatsApp link are made from this.'
-            }
-          - { name: location, label: Where you work, widget: string }
-          - { name: locationNote, label: Location note, widget: string }
-          - {
-              name: phoneNote,
-              label: Note under the phone number,
-              widget: string,
-              hint: 'Keep this to what the visitor can do. Anything about how quickly you reply is a promise the page will keep making.'
-            }
-          - { name: emailNote, label: Note under the email address, widget: string }
-          - {
-              name: menuHeading,
-              label: Heading over the contact block in the menu,
-              widget: string
-            }
-          - { name: whatsappNote, label: Note under WhatsApp, widget: string }
-
-      - name: social
-        label: Social profiles
-        file: src/content/social.json
-        hint: >
-          Shown as icons in the footer, and told to search engines so they know these accounts are
-          yours. Only add a profile that is actually yours; a wrong one here sends people to a
-          stranger. These are external addresses, so they are yours to write. Addresses on this
-          site are never typed in here.
-        fields:
-          - {
-              name: note,
-              label: Note to yourself,
-              widget: text,
-              required: false,
-              hint: 'Not shown anywhere on the site.'
-            }
-          - name: profiles
-            label: Profiles
-            widget: list
-            summary: '{{fields.label}}'
-            fields:
-              - {
-                  name: platform,
-                  label: Platform,
-                  widget: select,
-                  options: [facebook, instagram],
-                  hint: 'Which icon to draw. Ask for another platform if you start using one; each needs its glyph added.'
-                }
-              - {
-                  name: label,
-                  label: Name,
-                  widget: string,
-                  hint: 'Read out to anyone using a screen reader, in place of the icon.'
-                }
-              - { name: url, label: Address, widget: string }
-
-      - name: testimonials
-        label: Testimonials
-        file: src/content/testimonials.json
-        hint: >
-          The section only appears once there is at least one testimonial; an empty list shows
-          nothing at all, so it is safe to leave until you have one. Worth knowing before you
-          start: neither the NCPS nor the COSRT code addresses testimonials directly, so the
-          general duties apply, which are honest advertising, not exploiting the position of
-          trust, and confidentiality. The BACP allows client testimonials on its own directory
-          listings where you have the person's permission. If you would rather not quote current
-          or recent clients, supervisees and colleagues are the safer source. Identifying detail
-          is the risk even when a name is not used. There are no star ratings on this site,
-          deliberately.
-        fields:
-          - {
-              name: kicker,
-              label: Kicker,
-              widget: string,
-              hint: 'The small label above the quotes. There is no heading and no standing note: a quotation introduced by a sentence saying it is a quotation is weaker than the quotation.'
-            }
-          - name: items
-            label: Testimonials
-            widget: list
-            summary: '{{fields.name}}'
-            fields:
-              - { name: quote, label: Quote, widget: text }
-              - {
-                  name: name,
-                  label: Attribution,
-                  widget: string,
-                  hint: 'Anonymised for client work, e.g. "Supervisee, 2025". A name only where the person is a colleague and has agreed to it.'
-                }
-              - {
-                  name: detail,
-                  label: Role or context,
-                  widget: string,
-                  required: false
-                }
-
   - name: page
     label: Page
+    # No side preview pane: it renders a generic field dump rather than the
+    # real site. Changes are reviewed on staging instead.
     editor: { preview: false }
     files:
       - name: home
         label: Home — the whole scroll
         file: src/content/home.json
+        hint: >
+          The whole site, top to bottom, in the order a visitor scrolls through it. Nothing here
+          can break the page: every section is always there, and every field is words rather
+          than layout.
         fields:
-          - { name: navLabel, label: Navigation label, widget: string }
-
           - name: hero
             label: Top of the page
             widget: object
             fields:
-              - { name: eyebrow, label: Eyebrow, widget: string }
+              - {
+                  name: eyebrow,
+                  label: Small label above the headline,
+                  widget: string,
+                  hint: 'Also printed under your name on the card people see when they share the site, so it is written here once and used in both places.'
+                }
               - { name: title, label: Headline, widget: string }
-              - { name: lead, label: Lead, widget: text }
+              - { name: lead, label: Opening paragraph, widget: text }
               - {
                   name: aside,
-                  label: Aside,
+                  label: The quieter line,
                   widget: text,
-                  hint: 'The quieter line hung off a rule under the lead. Currently your own sentence from the old site.'
+                  hint: 'Hung off a rule under the opening paragraph. Currently your own sentence from the old site.'
                 }
               - {
                   name: reassure,
@@ -254,23 +89,35 @@ collections:
                   widget: markdown,
                   buttons: [bold, italic, link],
                   editor_components: [],
-                  modes: [rich_text]
+                  modes: [rich_text],
+                  hint: 'The WhatsApp link here points at {whatsapp}, which is filled in from your number under General → Contact details. Leave it as it is and it can never point at the wrong phone.'
                 }
-              - { name: ctaPrimary, label: First button, widget: string }
+              - {
+                  name: ctaPrimary,
+                  label: First button,
+                  widget: string,
+                  hint: 'Write {phone} where the number should appear and it is filled in from Contact details. Typing the number out instead is how the button ends up reading one number and dialling another.'
+                }
               - { name: ctaSecondary, label: Second button, widget: string }
-              - { name: portraitAlt, label: Photo description, widget: string }
+              - {
+                  name: portraitAlt,
+                  label: Photo description,
+                  widget: string,
+                  hint: 'Read out to anyone who cannot see the photo. A few words are plenty.'
+                }
 
           - name: steps
             label: What happens when you get in touch
             widget: object
             fields:
-              - { name: kicker, label: Kicker, widget: string }
+              - { name: kicker, label: Small label above the heading, widget: string }
               - { name: heading, label: Heading, widget: string }
-              - { name: intro, label: Intro, widget: text }
+              - { name: intro, label: Line under the heading, widget: text }
               - name: items
                 label: Steps
                 widget: list
                 summary: '{{fields.title}}'
+                hint: 'Numbered on the page in the order they are listed here, so dragging one up renumbers them for you.'
                 fields:
                   - { name: title, label: Title, widget: string }
                   - { name: body, label: Body, widget: text }
@@ -279,9 +126,9 @@ collections:
             label: How I can help
             widget: object
             fields:
-              - { name: kicker, label: Kicker, widget: string }
+              - { name: kicker, label: Small label above the heading, widget: string }
               - { name: heading, label: Heading, widget: string }
-              - { name: intro, label: Intro, widget: text }
+              - { name: intro, label: Line under the heading, widget: text }
               - name: items
                 label: Services
                 widget: list
@@ -342,7 +189,7 @@ collections:
                             }
                           - {
                               name: description,
-                              label: Meta description,
+                              label: Description in search results,
                               widget: text,
                               required: false,
                               hint: 'About 150 characters, written for the person reading the search result.'
@@ -352,7 +199,7 @@ collections:
             label: About me
             widget: object
             fields:
-              - { name: kicker, label: Kicker, widget: string }
+              - { name: kicker, label: Small label above the heading, widget: string }
               - { name: heading, label: Heading, widget: string }
               - {
                   name: body,
@@ -362,19 +209,28 @@ collections:
                   editor_components: [],
                   modes: [rich_text]
                 }
-              - { name: photoAlt, label: Photo description, widget: string }
+              - {
+                  name: photoAlt,
+                  label: Photo description,
+                  widget: string,
+                  hint: 'Read out to anyone who cannot see the photo.'
+                }
 
           - name: fees
             label: Fees
             widget: object
             fields:
-              - { name: kicker, label: Kicker, widget: string }
+              - { name: kicker, label: Small label above the heading, widget: string }
               - { name: heading, label: Heading, widget: string }
-              - { name: intro, label: Intro, widget: text }
+              - { name: intro, label: Line under the heading, widget: text }
               - name: rows
                 label: Fee groups
                 widget: list
                 summary: '{{fields.title}}'
+                hint: >
+                  These are also where search engines get the price range they show for the
+                  practice: it is worked out from the lowest and highest number written below,
+                  so it follows your fees rather than having to be updated separately.
                 fields:
                   - { name: title, label: Group, widget: string }
                   - name: lines
@@ -393,26 +249,28 @@ collections:
                 label: Low-income note
                 widget: object
                 fields:
-                  - { name: title, label: Title, widget: string }
+                  - { name: title, label: Heading, widget: string }
                   - {
                       name: body,
                       label: Body,
                       widget: markdown,
                       buttons: [bold, italic, link],
                       editor_components: [],
-                      modes: [rich_text]
+                      modes: [rich_text],
+                      hint: 'The "Get in touch" link here points at {mailto}, which is filled in from your address under General → Contact details, so changing your email changes this link too.'
                     }
 
           - name: quals
             label: Qualifications and membership
             widget: object
             fields:
-              - { name: kicker, label: Kicker, widget: string }
+              - { name: kicker, label: Small label above the heading, widget: string }
               - { name: heading, label: Heading, widget: string }
               - name: items
                 label: Qualifications
                 widget: list
                 summary: '{{fields.title}} ({{fields.detail}})'
+                hint: 'Listed on the page in the order they are in here.'
                 fields:
                   - { name: title, label: Qualification, widget: string }
                   - {
@@ -426,13 +284,13 @@ collections:
                 widget: object
                 hint: 'Just the heading. The bodies themselves are edited under General → Site, so their names are not typed twice.'
                 fields:
-                  - { name: title, label: Title, widget: string }
+                  - { name: title, label: Heading, widget: string }
 
           - name: faq
             label: Questions people ask
             widget: object
             fields:
-              - { name: kicker, label: Kicker, widget: string }
+              - { name: kicker, label: Small label above the heading, widget: string }
               - { name: heading, label: Heading, widget: string }
               - name: items
                 label: Questions
@@ -453,25 +311,237 @@ collections:
           - name: contact
             label: Get in touch
             widget: object
-            hint: 'The heading and intro only. The phone number, email and WhatsApp link live under General → Contact details.'
+            hint: 'The heading and the line under it. The phone number, email and WhatsApp link live under General → Contact details. This heading is also the one over the contact block in the phone menu, so it is written here and nowhere else.'
             fields:
-              - { name: kicker, label: Kicker, widget: string }
+              - { name: kicker, label: Small label above the heading, widget: string }
               - { name: heading, label: Heading, widget: string }
-              - { name: intro, label: Intro, widget: text }
+              - { name: intro, label: Line under the heading, widget: text }
 
           - name: seo
             label: Search
             widget: object
+            hint: >
+              Only the title. The description under it in a search result is the one under
+              General → Site: this page IS the site, and the two boxes held the same 150
+              characters word for word, which meant editing one of them and not the other.
             fields:
+              # Same reason as the slug fields: it is read straight from the
+              # file by scripts/gen-og.ts as the share card's fallback title,
+              # so a placeholder must never appear here (check-contact.ts).
               - { name: title, label: Page title, widget: string, hint: 'Browser tab and search result.' }
-              - { name: description, label: Meta description, widget: text }
 
           - name: og
             label: Social-share card
             widget: object
-            hint: 'The card shown when someone shares this page in a chat or on social media. Rebuilt automatically on the next deploy. Only the title: the card also carries your name and the line under the hero, and it takes those from where you already wrote them rather than asking twice.'
+            hint: 'The card shown when someone shares this page in a chat or on social media. Rebuilt automatically on the next deploy. Only the title: the card also carries your name and the small label from the top of the page, and it takes those from where you already wrote them rather than asking twice.'
             fields:
-              - { name: title, label: Title, widget: string }
+              # The card is drawn by scripts/gen-og.ts, in plain node, straight
+              # from the JSON — so it never sees the {phone}-style
+              # placeholders the pages resolve. A token here would be painted
+              # onto the image as literal braces, and check-contact.ts refuses
+              # one in this field and in the two others that script reads.
+              - { name: title, label: Headline on the card, widget: string }
+
+  - name: general
+    label: General
+    editor: { preview: false }
+    files:
+      - name: contact
+        label: Contact details
+        file: src/content/contact.json
+        hint: >
+          Your number and your address, in one place. They are shown in the contact section, in
+          the phone menu and in the footer, they are behind every Call button, and they are what
+          {phone}, {email}, {tel}, {mailto} and {whatsapp} stand for wherever those appear in
+          your copy. Write them the way you would say them: the dialling link, the email link
+          and the WhatsApp link are all worked out from them, so there is nothing here to keep
+          in step, and changing the number here changes it everywhere at the next deploy.
+        fields:
+          - {
+              name: phone,
+              label: Phone,
+              widget: string,
+              hint: 'However you would write it — 07776 153 426. The dialling link and the WhatsApp link are made from this. If what you type cannot be dialled, the site refuses to publish rather than shipping a Call button that rings nobody.'
+            }
+          - {
+              name: phoneNote,
+              label: Note under the phone number,
+              widget: string,
+              hint: 'Keep this to what the visitor can do. Anything about how quickly you reply is a promise the page will keep making.'
+            }
+          - {
+              name: whatsappNote,
+              label: Note under WhatsApp,
+              widget: string,
+              hint: 'The WhatsApp row uses the same number as the phone row; there is nothing separate to enter.'
+            }
+          - { name: email, label: Email, widget: string }
+          - { name: emailNote, label: Note under the email address, widget: string }
+          - {
+              name: location,
+              label: Where you work,
+              widget: string,
+              hint: 'Shown beside a pin in the contact section and in the phone menu.'
+            }
+          - { name: locationNote, label: Note under where you work, widget: string }
+
+      - name: testimonials
+        label: Testimonials
+        file: src/content/testimonials.json
+        hint: >
+          The section only appears once there is at least one testimonial; an empty list shows
+          nothing at all, so it is safe to leave until you have one. Worth knowing before you
+          start: neither the NCPS nor the COSRT code addresses testimonials directly, so the
+          general duties apply, which are honest advertising, not exploiting the position of
+          trust, and confidentiality. The BACP allows client testimonials on its own directory
+          listings where you have the person's permission. If you would rather not quote current
+          or recent clients, supervisees and colleagues are the safer source. Identifying detail
+          is the risk even when a name is not used. There are no star ratings on this site,
+          deliberately.
+        fields:
+          - {
+              name: kicker,
+              label: Small label above the quotes,
+              widget: string,
+              hint: 'There is no heading and no standing note: a quotation introduced by a sentence saying it is a quotation is weaker than the quotation.'
+            }
+          - name: items
+            label: Testimonials
+            widget: list
+            summary: '{{fields.name}}'
+            fields:
+              - { name: quote, label: Quote, widget: text }
+              - {
+                  name: name,
+                  label: Who said it,
+                  widget: string,
+                  hint: 'Anonymised for client work, e.g. "Supervisee, 2025". A name only where the person is a colleague and has agreed to it.'
+                }
+              - {
+                  name: detail,
+                  label: Role or context,
+                  widget: string,
+                  required: false
+                }
+
+      - name: social
+        label: Social profiles
+        file: src/content/social.json
+        hint: >
+          Shown as icons in the footer, and told to search engines so they know these accounts are
+          yours. Only add a profile that is actually yours; a wrong one here sends people to a
+          stranger. These are external addresses, so they are yours to write. Addresses on this
+          site are never typed in here.
+        fields:
+          - {
+              name: note,
+              label: Note to yourself,
+              widget: text,
+              required: false,
+              hint: 'Not shown anywhere on the site. It is here to record how each profile below was confirmed to be yours, which is worth having written down.'
+            }
+          - name: profiles
+            label: Profiles
+            widget: list
+            summary: '{{fields.label}}'
+            fields:
+              - {
+                  name: platform,
+                  label: Platform,
+                  widget: select,
+                  options: [facebook, instagram],
+                  hint: 'Which icon to draw. Ask for another platform if you start using one; each needs its glyph added.'
+                }
+              - {
+                  name: label,
+                  label: Name,
+                  widget: string,
+                  hint: 'Read out to anyone using a screen reader, in place of the icon.'
+                }
+              - { name: url, label: Address, widget: string }
+
+      - name: site
+        label: Site
+        file: src/content/site.json
+        hint: >
+          Your name, the line under it, and what search engines are told about the practice.
+          These change about once. Everything a visitor reads on the page itself is under Page.
+        fields:
+          - { name: name, label: Name, widget: string }
+          - { name: tagline, label: Tagline, widget: string }
+          - {
+              name: description,
+              label: Description in search results,
+              widget: text,
+              hint: 'About 150 to 160 characters. Used in search results and link previews.'
+            }
+          - {
+              name: footerNote,
+              label: Footer note,
+              widget: string,
+              hint: 'Use {year} for the year; it is filled in automatically, so the copyright line is never out of date.'
+            }
+          - name: schema
+            label: What search engines are told
+            widget: object
+            hint: 'Read by machines, not shown anywhere on the page. Getting it wrong makes the site harder to find; it cannot break anything a visitor sees.'
+            fields:
+              - { name: jobTitle, label: Job title, widget: string }
+              - {
+                  name: bio,
+                  label: A sentence or two about you,
+                  widget: text,
+                  hint: 'For search engines only. Your own About me section is under Page.'
+                }
+              - {
+                  name: knowsAbout,
+                  label: Topics you work with,
+                  widget: list,
+                  field: { name: topic, label: Topic, widget: string }
+                }
+              - {
+                  name: areaServed,
+                  label: Areas served,
+                  widget: list,
+                  field: { name: area, label: Area, widget: string }
+                }
+          - name: memberships
+            label: Membership and registration
+            widget: list
+            summary: '{{fields.abbr}}'
+            hint: 'Shown as a row each, logo beside name, in the qualifications section on the page, and told to search engines. Listed in the order they are in here.'
+            fields:
+              - { name: name, label: Full name, widget: string }
+              - { name: abbr, label: Abbreviation, widget: string }
+              - {
+                  name: logo,
+                  label: Logo,
+                  widget: image,
+                  media_folder: '/static/img/logos',
+                  public_folder: '/img/logos',
+                  hint: 'Shown on a white plate beside the name. All the plates are the same size, so the logo does not have to be.'
+                }
+              - {
+                  name: isMembership,
+                  label: You are a member of this body,
+                  widget: boolean,
+                  default: true,
+                  hint: 'Off for a body that accredits rather than admits, such as the Professional Standards Authority. Only the ones you belong to are declared as memberships to search engines.'
+                }
+              - {
+                  name: note,
+                  label: Note beside the name,
+                  widget: string,
+                  required: false,
+                  hint: 'Your grade, e.g. Accredited Member — or, for a body you are not a member of, what its relationship to you is. Leave empty and just the name shows.'
+                }
+              - {
+                  name: href,
+                  label: Register listing,
+                  widget: string,
+                  required: false,
+                  hint: 'Your public listing on their register. Leave empty and the name shows unlinked.'
+                }
 
   # One file rather than one file per post: the list is short, it is edited in
   # one place, and scripts/check-cms.ts diffs a `files:` entry against its JSON
@@ -549,7 +619,7 @@ collections:
                     }
                   - {
                       name: description,
-                      label: Meta description,
+                      label: Description in search results,
                       widget: text,
                       required: false,
                       hint: 'About 150 characters, written for the person reading the search result.'
