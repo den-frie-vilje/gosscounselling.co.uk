@@ -17,7 +17,7 @@
 <section id="contact" class="section-y bg-deep text-on-deep">
   <div class="container-page">
     <div class="section-head">
-      <p class="t-kicker led kicker-deep m-0 mb-3.5">{home.contact.kicker}</p>
+      <p class="t-kicker kicker-deep m-0 mb-3.5">{home.contact.kicker}</p>
       <h2 class="t-h2 text-white">{home.contact.heading}</h2>
       <p class="text-on-deep-muted mt-4 mb-0 text-[18px]">{home.contact.intro}</p>
     </div>
