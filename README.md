@@ -4,27 +4,39 @@ Site for **John Goss** — counsellor and clinical supervisor in Bletchley, Milt
 A rebuild of `goss-counselling.co.uk` (WordPress on HealthHosts) onto his own unhyphenated
 domain, which matches his email address.
 
-**Status: design iteration.** Three directions are up for John to choose from; the app has not
-been scaffolded yet. See [DECISIONS.md](DECISIONS.md) for why that order.
+**Status: building.** John has chosen, and the site is the two directions he picked, combined:
+Clear Water's blue, bold opening band and divided-not-boxed layout, lightened with Quiet
+Practice's warm ground and air. See [DECISIONS.md](DECISIONS.md) §16.
 
-## Design directions
+## Running it
+
+```sh
+pkgx pnpm install
+pkgx pnpm dev --host 0.0.0.0    # vite on :5173, reachable from the LAN
+pkgx pnpm check                 # svelte-check, the CMS key-diff and the contrast check
+pkgx pnpm build --mode staging  # static output into build/
+```
+
+`pnpm check` is what the image build runs before `pnpm build`, so all three gates fail the
+image rather than production:
+
+- `svelte-check` — the content JSON against its interfaces in `src/lib/content/index.ts`
+- `scripts/check-cms.ts` — the Sveltia config against the JSON, both directions. A key the
+  config does not name is deleted the first time the editor saves that file
+- `scripts/check-contrast.ts` — every colour pairing, 4.5:1 for text and 3:1 for graphic marks
+
+Both checkers are self-tested against injected faults before their clean runs are believed:
+`pkgx pnpm check:cms:selftest`.
+
+## The design directions
+
+The four prototypes John chose from are archived in
+[docs/design-directions/](docs/design-directions/). Serve the repo root and open
+`/docs/design-directions/`:
 
 ```sh
 python3 -m http.server 5199 --bind 0.0.0.0
 ```
-
-Served from the repo root so the prototypes can reach `docs/source-assets/`. Open
-`http://<this-machine>:5199/design/` for the chooser, or go straight to a direction:
-
-- `/quiet-practice.html` — **Quiet Practice**: warm paper, ink-green, serif display. Editorial
-  and discreet.
-- `/full-colour.html` — **Full Colour**: warm cream with a coral-to-violet spectrum running down
-  the page. Optimistic, type-led, no cards.
-- `/clear-water.html` — **Clear Water**: teal and sand, geometric sans. Calm and professional,
-  with the fees answered before anyone has to ask.
-
-All three are self-contained HTML, use John's real content, and are built to the same brief:
-one scroll, call-or-email only, no booking system.
 
 ## Documentation
 
