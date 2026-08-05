@@ -15,6 +15,7 @@
   import { buildPageSeo, faqNode, reviewNodes } from '$lib/seo/structured-data';
   import { renderInline } from '$lib/markdown';
   import { scrollDraw } from '$lib/actions/scroll-draw';
+  import geometry from '$lib/generated/portrait-geometry.json';
   import { latchVisible } from '$lib/actions/latch-visible';
   import SeoHead from '$lib/components/SeoHead.svelte';
   import Section from '$lib/components/Section.svelte';
@@ -31,6 +32,23 @@
   // The hide and the fade are pure CSS on a scroll-driven `view()` timeline,
   // so there is no hydration blink. `latchVisible` only stops the fade running
   // backwards once he has been seen.
+
+  // Every one of these is measured off whichever cutout is in the repo, by
+  // scripts/check-portrait-fit.ts, and written out for the page to read. They
+  // are NOT typed into the stylesheet: while they were, the mask circle came
+  // out 9.91px wider than the plate because a value had been copied from an
+  // earlier run of that script. A number that lives in two places drifts, and
+  // this is also what lets John replace his portrait through the CMS.
+  const portraitVars = [
+    `--plate-img-width: ${geometry.plateImgWidth}`,
+    `--head-shift: ${geometry.headShift}`,
+    `--push-in-scale: ${geometry.pushInScale}`,
+    `--mask-size: ${geometry.maskSize}`,
+    `--mask-position: ${geometry.maskPosition}`,
+    `--layer-pad: ${geometry.layerPad}`,
+    `--matte-drop: ${geometry.matteDrop}`,
+    `--disc-inset: ${geometry.discInset}`
+  ].join('; ');
 
   const seo = buildPageSeo({
     path: '/',
@@ -111,7 +129,7 @@
            All the numbers are in scripts/check-portrait-fit.ts, derived from
            the cutout's own alpha channel, and the build fails if the tokens
            below drift from them. -->
-      <div class="portrait">
+      <div class="portrait" style={portraitVars}>
         <figure class="heroFig">
           <div class="plateBg" aria-hidden="true"></div>
 
@@ -695,52 +713,9 @@
     .portrait {
       container-type: inline-size;
       align-self: center;
-      /* The four numbers the plate composition rests on. They are named here,
-         together, because every one of them is a property of the photograph
-         rather than a matter of taste, and scripts/check-portrait-fit.ts
-         derives all four from the cutout's own alpha channel and fails the
-         build if the values below have drifted from what the file says.
-
-           --plate-img-width  how large he is drawn, against the plate
-           --head-shift       how far to move him so his HEAD, not his image,
-                              is centred; a percentage in `translate` resolves
-                              against the element's own width, so this holds at
-                              any size
-         Only two of them survive: the head-breaking-out layer that --pop and
-         --pop-depth served is gone, for the reason in the markup above. */
-      /* How far his crown clears the top of the plate once the push-in has
-         settled. This is the number anyone has an opinion about; the width
-         that produces it falls out of the cutout's aspect and the push-in's
-         own scale, and the script computes and gates it. */
-      --crown-clear: 7%;
-      --push-in-scale: 1.045;
-      --plate-img-width: 130.16%;
-      --head-shift: -2.42%;
-
-      /* The circle, expressed as a mask tile inside the LAYER's box. The
-         layers are the image's box, not the plate's, so that no rectangle
-         edge falls anywhere near the figure; the tile is the plate, square in
-         pixels, which is why its size is a different percentage of the box's
-         width than of its height. Both derived by the script. */
-      --mask-size: 76.83% 93.15%;
-      --mask-position: 60.44% 100%;
-
-      /* Room at the top of each layer for the push-in's overshoot. A transform
-         does not change layout, so the scaled image reaches above its own box;
-         the mask is sized to that box, so without this the crown falls outside
-         the mask and is cut clean off. Half the overshoot, because the scale
-         is about the image's centre: the other half goes below the plate's
-         bottom, where the circle has already ended and nothing is painted.
-
-         Against the PLATE, because a percentage padding resolves against the
-         containing block's inline size and this layer's containing block is
-         the plate, not the layer. Reading that reference wrong left it 4.41px
-         short and the crown still clipped by exactly that much. */
-      --layer-pad: 2.36%;
-
-      /* Where the outer layer fades out. It starts below his crown and ends
-         where he is back inside the circle, so the outer layer is painting
-         nothing by the time the fade finishes and the edge cannot be seen. */
+      /* The geometry tokens are set as an inline style from
+         src/lib/generated/portrait-geometry.json, which is measured off the
+         cutout itself. Only the two below are style rather than measurement. */
       --out-fade-start: 7%;
       --out-fade-end: 21%;
 
@@ -773,9 +748,14 @@
       overflow: visible;
       align-self: center;
     }
+    /* Inset by a sub-pixel, so the masked figure overlaps the disc's own edge
+       rather than meeting it exactly. Meeting exactly leaves a hairline of the
+       sand showing around him wherever the two antialiased edges round apart.
+       Where he is transparent the disc's edge is the visible one, and it is
+       three quarters of a pixel smaller than it was, which is nothing. */
     .plateBg {
       position: absolute;
-      inset: 0;
+      inset: var(--disc-inset);
       border-radius: 50%;
       /* The plate cites the accent's own family rather than repeating the
          band. Off-centre, so the light falls from the upper left where the

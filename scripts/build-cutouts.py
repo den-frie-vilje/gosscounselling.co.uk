@@ -306,6 +306,25 @@ def solid_matte():
     core = A > 0.5
     D = distance_transform_edt(core)
     DREF, SIG_NEAR, SIG_WIDE, SIG_FIT, PSI_MAX = 55.0, 6.0, 30.0, 40.0, 3.0
+
+    # -- 6. THE TRANSITION MASK: where the de-lighting is allowed to act ---------------
+    # A CORE/EDGE split, the three-pass keyer's own device: an edge matte carries the
+    # treatment, a core matte is left alone, and a transition mask with an eroded,
+    # feathered falloff decides where one becomes the other. See the docstring's §6.
+    # EDGE_OUT is the erode; EDGE_IN..EDGE_OUT is the feather. Beyond EDGE_OUT the
+    # window is EXACTLY zero, so the interior is the master's own pixels, bit for bit,
+    # and the sand plate's edge can cross him there without a step.
+    #
+    # smootherstep (Perlin's C2 quintic) rather than the C1 smoothstep used before:
+    # the window's derivative is zero at BOTH ends, so the treated band hands over to
+    # the untreated interior with matching slope as well as matching value. A slope
+    # discontinuity at a fixed distance from the silhouette is exactly what draws a
+    # ring, and C2 is what removes it. Overridable only so the falloff can be swept
+    # and measured; the committed values are the ones the sweep chose.
+    EDGE_IN = float(os.environ.get("EDGE_IN", 2.0))
+    EDGE_OUT = float(os.environ.get("EDGE_OUT", 10.0))
+    te = np.clip((EDGE_OUT - D) / (EDGE_OUT - EDGE_IN), 0.0, 1.0)
+    ts = te * te * te * (10.0 + te * (te * 6.0 - 15.0))
     # The client's file is the authority wherever the backdrop cannot have reached: on
     # solid pixels, deep inside the figure, and in the crown he painted above the plate.
     settled = (A > 0.995) | (D >= DREF)
@@ -394,8 +413,6 @@ def solid_matte():
         a1 = np.where(np.abs(det) > 1e-12, (M22 * b1 - M12 * b2) / det, 0.0)
         a2 = np.where(np.abs(det) > 1e-12, (M11 * b2 - M12 * b1) / det, 0.0)
         psi = np.clip(a1 * W1 + a2 * W2, 0.0, PSI_MAX)
-        t = np.clip((DREF - D) / (DREF * 0.35), 0, 1)  # hard off by DREF: interior untouched
-        ts = t * t * (3 - 2 * t)
         psi = gaussian_filter(psi, 8.0, mode="nearest") * ts
         out = Flin / (1.0 + psi)[..., None]
 
