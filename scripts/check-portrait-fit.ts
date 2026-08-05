@@ -208,6 +208,75 @@ const tileH = 1 / boxH;
 const posX = imgW - 1 > 0 ? -imgLeft / (imgW - 1) : 0;
 const posY = boxH - 1 > 0 ? (overshoot + (imgH - 1)) / (boxH - 1) : 0;
 
+// ---- the outer layer's vertical fade ------------------------------------
+// `.layerOut` paints whatever falls OUTSIDE the circle, and he falls outside it
+// in two separate places: his crown, above the disc, and his shoulders, either
+// side of it and all the way down. Only the second one wants removing, so the
+// layer carries a vertical fade — and until this was solved, that fade was two
+// style numbers (7% -> 21%) rather than a measurement.
+//
+// It has exactly one constraint, and breaking it is visible: the fade must
+// still be at 1 everywhere the CROWN lies outside the circle. Where it is not,
+// the same opaque skin is painted at full strength on the plate just inside the
+// arc and at partial strength over the deep band just outside it, and the eye
+// reads a step across his head that no matte can fix. Measured at the old 7%,
+// on the arc where the circle crosses his skull: the outer layer was down to
+// 0.63 while the inner one was at 1, a 19.2 luminance-level step on opaque
+// pixels.
+//
+// So the fade has to fit in the GAP — the rows where nothing of him lies
+// outside the circle at all — and the gap is wide (about 12% to 71% of the
+// layer box), so satisfying this costs the design nothing.
+//
+// Solved over the whole push-in, because the image scales against a mask that
+// does not: the crown reaches further out of the circle the further he pushes
+// in, and it is the settled state that binds.
+const circle = { cx: 0.5, cy: 0.5, r: 0.5 }; // the mask tile IS the plate, solved above
+const imgCx = imgLeft + imgW / 2;
+const imgCy = 1 - imgH / 2;
+
+/** Rows (as a fraction of the layer box) where any of him lies outside the circle. */
+function outsideBand(s: number): { crownEnd: number; bodyStart: number } | null {
+  let crownEnd = -1;
+  let bodyStart = -1;
+  let seenInside = false;
+  for (const row of rows) {
+    const y0 = 1 - imgH + row.y * imgH;
+    const y = imgCy + (y0 - imgCy) * s + matteDrop * imgH;
+    const dy = y - circle.cy;
+    const hw = Math.abs(dy) < circle.r ? Math.sqrt(circle.r * circle.r - dy * dy) : -1;
+    const l = imgCx + (imgLeft + row.left * imgW - imgCx) * s;
+    const r = imgCx + (imgLeft + row.right * imgW - imgCx) * s;
+    const outside = l < circle.cx - hw || r > circle.cx + hw;
+    const frac = (y - (1 - boxH)) / boxH;
+    if (outside) {
+      if (!seenInside) crownEnd = frac;
+      else if (bodyStart < 0) bodyStart = frac;
+    } else {
+      seenInside = true;
+    }
+  }
+  return crownEnd < 0 || bodyStart < 0 ? null : { crownEnd, bodyStart };
+}
+
+let fadeFloor = 0;
+let fadeCeil = 1;
+for (const s of [1, 1 + (pushScale - 1) / 2, pushScale]) {
+  const b = outsideBand(s);
+  if (!b) {
+    console.error(
+      `\nFAIL  could not separate his crown from his shoulders against the mask circle at push-in ${s}. Without that gap there is nowhere to put .layerOut's fade.`
+    );
+    process.exit(1);
+  }
+  fadeFloor = Math.max(fadeFloor, b.crownEnd);
+  fadeCeil = Math.min(fadeCeil, b.bodyStart);
+}
+// A quarter of a point inside the bound, and the same 14-point span the design
+// had, unless the gap is too narrow to hold it.
+const outFadeStart = Math.ceil(fadeFloor * 400) / 400 + 0.0025;
+const outFadeEnd = Math.min(outFadeStart + 0.14, Math.floor(fadeCeil * 400) / 400 - 0.0025);
+
 // ---- report -------------------------------------------------------------
 const pct = (v: number) => `${(v * 100).toFixed(2)}%`;
 console.log(`cutout          ${w}x${h}, aspect ${(h / w).toFixed(4)}`);
@@ -222,6 +291,9 @@ console.log(
 );
 console.log(`mask tile       ${pct(tileW)} ${pct(tileH)} at ${pct(posX)} ${pct(posY)}`);
 console.log(`layer padding   ${pct(layerPad)} for the push-in's overshoot`);
+console.log(
+  `outer fade      ${pct(outFadeStart)} -> ${pct(outFadeEnd)}, inside the gap ${pct(fadeFloor)}..${pct(fadeCeil)} where none of him is outside the circle`
+);
 console.log(`disc inset      ${config.discInset}px, so the mask overlaps the disc's edge`);
 console.log(`disc settles    from ${config.discSettle} on the reveal`);
 
@@ -251,6 +323,12 @@ if (softRows > h * 0.05) {
   );
   failures++;
 }
+if (outFadeEnd <= outFadeStart) {
+  console.error(
+    `\nFAIL  the gap between his crown and his shoulders (${pct(fadeFloor)}..${pct(fadeCeil)} of the layer box) is too narrow for .layerOut's fade. Either it starts while the circle is still crossing his head, which steps his skull, or it is still fading where his shoulders are already outside, which shows them on the band.`
+  );
+  failures++;
+}
 if (config.discInset <= 0) {
   console.error(
     `\nFAIL  discInset is ${config.discInset}px. The disc has to sit slightly inside the mask, or its edge shows as a rim around him.`
@@ -272,6 +350,8 @@ writeFileSync(
       maskSize: `${pct(tileW)} ${pct(tileH)}`,
       maskPosition: `${pct(posX)} ${pct(posY)}`,
       layerPad: pct(layerPad),
+      outFadeStart: pct(outFadeStart),
+      outFadeEnd: pct(outFadeEnd),
       matteDrop: pct(matteDrop),
       discInset: `${config.discInset}px`,
       discSettle: config.discSettle,

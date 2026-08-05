@@ -47,6 +47,8 @@
     `--mask-size: ${geometry.maskSize}`,
     `--mask-position: ${geometry.maskPosition}`,
     `--layer-pad: ${geometry.layerPad}`,
+    `--out-fade-start: ${geometry.outFadeStart}`,
+    `--out-fade-end: ${geometry.outFadeEnd}`,
     `--matte-drop: ${geometry.matteDrop}`,
     `--disc-inset: ${geometry.discInset}`,
     `--disc-settle: ${geometry.discSettle}`
@@ -149,41 +151,38 @@
               decoding="async"
             />
 
-            <!-- Inside the circle: the KEYED matte, not the plain knockout.
-                 This used to be the knockout, on the reasoning that the keyed
-                 variant read as a dark fringe on a light ground. Measured,
-                 that is now the wrong way round, and the knockout was the
-                 faint bright rim around him.
+            <!-- ONE FILE, BOTH SIDES OF THE CIRCLE. That is the whole point of
+                 the asset, and it is what makes the head crossing the disc's
+                 edge stop being a special case: the two layers are the same
+                 photograph in the same place at the same size, so across the
+                 arc only the GROUND changes, which is what `F*a + B*(1-a)` is
+                 for.
 
-                 The knockout is the client's file matted against a white
-                 cyclorama and never de-spilled in COLOUR, so its fringe still
-                 carries the backdrop: over the pixels that land inside the
-                 disc its foreground runs 235-242 in luminance wherever alpha
-                 is under 0.35, against a plate of 187. Composited, that goes
-                 189.6, 192.8, 196.6, 198.2 as alpha climbs 0.02 -> 0.35 —
-                 ABOVE the plate, which a blend of a 97-luminance figure over
-                 a 187 ground cannot produce at all. At the size he is
-                 actually drawn (450px plate, so 1 CSS px = 3.07 source px)
-                 28.1% of that fringe is brighter than the plate, 16.6% by
-                 more than 10, peaking +53.0; on a 2x screen 33.1% and 20.8%,
-                 peaking +62.8. It traces his whole outline: 31.3% of the
-                 fringe at the ears and temples, 25.1% at the face and beard,
-                 14.4% through the hair.
+                 It took three goes to get there. The plain knockout
+                 (john-cutout.webp, still the master everything is measured
+                 from) is matted against a white cyclorama and never de-spilled
+                 in COLOUR, so its fringe carries the backdrop: at the drawn
+                 size 31.9% of it composites BRIGHTER than the plate it sits
+                 on, peaking +48.0, which a blend of a 97-luminance figure over
+                 a 187 ground cannot produce at all. That was a bright rim
+                 traced round him. The keyed matte that replaced it fixed the
+                 rim by de-lighting the edge, and traded it for the opposite
+                 fault: its foreground ran 24 to 41 levels DARKER than John's
+                 own colour at every coverage down to 2%, so on the deep band
+                 40.7% of the fringe sat more than 10 levels under him. A drawn-on
+                 dark line, and Ole saw it on his upper head.
 
-                 The keyed matte has the cyc taken back out of both its colour
-                 and its matte (scripts/build-cutouts.py, solid_matte), so
-                 `F*a + ground*(1-a)` is right on ANY ground, including this
-                 one. Same measurement: 184.2, 183.4, 181.7, 177.6 — monotone
-                 down from the plate to him, 0.0% of it more than 5 above the
-                 plate, max +2.0 at 1x and +7.5 at 2x. Against a reference
-                 composite (the same de-spilled colour carried at the master's
-                 own coverage) it errs +0.9 to +12.1 LIGHT, never dark, where
-                 the knockout errs +6.3 to +36.2 light. So there is no dark
-                 fringe to avoid; there was, before the choke and the negative
-                 light wrap came out of the pipeline.
-
-                 Both layers now carry the same file, which also takes 323 KB
-                 off the hero: the desktop hero was fetching both cutouts. -->
+                 What ships now is solved rather than graded — the backing is
+                 measured, so alpha follows from John's own colour and the
+                 foreground follows in closed form from alpha; see
+                 scripts/build-cutouts.py, solid_matte(). Nothing in the file
+                 knows what it will be composited over. At the drawn size, of
+                 the fringe pixels that depart from a composite of John's own
+                 colour by more than 10 levels: knockout 61.0%, the old keyed
+                 matte 40.9%, this 2.7% — and 2.1% through the hair, 2.4% at
+                 the face and beard, 0.4% at the neck, 11.0% at the ears and
+                 temples, where the surface is at a grazing angle and the plain
+                 photograph is dark there too. -->
             <div class="layer layerIn">
               <img
                 src="/img/john-cutout-dark.webp"
@@ -193,8 +192,8 @@
               />
             </div>
 
-            <!-- Outside it: the keyed matte, because the ground there is the
-                 deep band, and its edge treatment is built for that. -->
+            <!-- Outside it: the same file. It is `aria-hidden` and alt-empty
+                 because the layer above already names him. -->
             <div class="layer layerOut" aria-hidden="true">
               <img src="/img/john-cutout-dark.webp" alt="" width="900" height="900" />
             </div>
@@ -770,11 +769,28 @@
     .portrait {
       container-type: inline-size;
       align-self: center;
-      /* The geometry tokens are set as an inline style from
+      /* Every geometry token is set as an inline style from
          src/lib/generated/portrait-geometry.json, which is measured off the
-         cutout itself. Only the two below are style rather than measurement. */
-      --out-fade-start: 7%;
-      --out-fade-end: 21%;
+         cutout itself. --out-fade-start and --out-fade-end used to be the two
+         exceptions, hand-typed at 7% and 21%, and they were wrong: the fade
+         began while the circle was still crossing his skull, so the same
+         opaque skin was painted at full strength on the plate just inside the
+         arc and at 0.63 over the deep band just outside it.
+
+         Measured on the rendered hero, along rays through the arc, fitting the
+         luminance profile either side and taking the gap between them — so a
+         curving forehead reads as zero and only a STEP shows: 13.7 levels mean
+         and 30.9 at p95, against a floor of 9.05/22.5 for the same rays on the
+         figure painted ONCE with no circle at all. With the fade solved it is
+         9.05/22.5 — identical to the floor, to three decimal places. The
+         two-layer construction is now indistinguishable from a single layer,
+         which is what it always claimed to be.
+
+         This was Ole's "luminosity jumps on his upper head where the circle
+         mask intersects", and it was on OPAQUE skin, so no matte could have
+         fixed it. They are now solved from the silhouette in
+         scripts/check-portrait-fit.ts and the build fails if the gap between
+         his crown and his shoulders cannot hold them. */
 
       /* The two masks OVERLAP by this much rather than meeting exactly.
          Complementary edges sum to 1 in arithmetic, but Safari rounds each
@@ -1285,6 +1301,10 @@
      is clickable in some rows and not in others is a worse promise than a
      linked name. */
   .bname a {
+    /* Same 24px floor as the footer's, and for the same reason: the name of a
+       register is not a link in a sentence, it is a target on its own. */
+    display: inline-block;
+    padding-block: 2px;
     color: inherit;
     text-decoration-color: var(--color-line);
     text-underline-offset: 3px;

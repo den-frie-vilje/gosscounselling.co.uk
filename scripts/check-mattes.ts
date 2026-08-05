@@ -1,56 +1,134 @@
 /**
- * The two cutouts must differ only at their EDGE.
+ * The hero cut-out must be correct on EVERY ground, because one file is now
+ * painted on all of them.
  *
  *     pkgx node scripts/check-mattes.ts
  *
- * The hero composites both at once: a circular sand plate carries the plain
- * knockout inside it, and the keyed matte shows outside it on the deep band,
- * partitioned by complementary CSS masks. They are the same photograph at the
- * same size, so the join has to be invisible.
+ * WHAT THIS USED TO CHECK, AND WHY IT DOESN'T ANY MORE. There were two mattes:
+ * the plain knockout inside the plate's circle and a keyed variant outside it
+ * on the deep band. The gate was that they agreed everywhere except within a
+ * few pixels of the outline, because otherwise the circle drew a tonal step
+ * across his body. Both of those files still exist, but only one is painted,
+ * and the property worth gating is no longer a relationship between two files.
+ * It is a property of the one: that its straight-alpha foreground carries
+ * JOHN's colour at every coverage and not the cyclorama's, which is precisely
+ * what makes `F*a + ground*(1-a)` right over the light plate inside the circle
+ * and the deep band outside it at the same time.
  *
- * It is invisible only if the two agree everywhere the circle's edge can
- * cross, which is everywhere except the silhouette's own outline. The keyed
- * variant is allowed, and required, to differ within a few pixels of that
- * outline: the colour edge-extend, the matte choke and the narrow negative
- * light wrap are what stop the silhouette glowing on a dark ground. What it
- * may not do is carry that treatment inward, because then the circle draws a
- * tonal step across his body.
+ * THE MEASUREMENT. A white backing contaminates a fringe in one direction
+ * only: it makes the foreground BRIGHTER than the surface it belongs to, and
+ * more so the lower the coverage, because that is where more of the backing
+ * was in the pixel. So compare each partially-covered pixel's unpremultiplied
+ * colour with the OPAQUE pixels around it — the same surface, where there was
+ * never any backing to mix in — and bucket the difference by coverage. A clean
+ * asset is flat. The plain knockout, measured here, climbs to +130 as coverage
+ * falls; the keyed matte it replaced fell to -40 instead, which is a de-light
+ * rather than a backing but is just as visible, as a drawn-on dark line on the
+ * band. Both fail this gate. What ships passes it.
  *
- * This check exists because it did exactly that: measured at 13.00 mean
- * absolute channel difference in the first two pixels, which is the wanted
- * edge treatment, but still 6.42 at 10 to 20 pixels in and 3.63 at 20 to 40,
- * which is not.
+ * The comparison is done unpremultiplied on purpose. Premultiplied, a bright
+ * fringe and a high-coverage fringe are the same picture, and the question has
+ * no answer.
  *
- * Fail-closed: mismatched dimensions, a missing alpha channel, or zero
+ * The bounds are not chosen, they are the ENCODER's, self-calibrated the same
+ * way this script has always done it: re-encode the asset's own decoded pixels
+ * through the pipeline's settings, compare them with themselves, and take what
+ * is left as the floor. Both mattes are lossy WebP, which is VP8 and therefore
+ * YUV 4:2:0, so chroma is subsampled and a round trip moves pixels by several
+ * levels on its own. Asking for better than the format can deliver is asking
+ * for a red build that no correct asset could turn green.
+ *
+ * Fail-closed: a missing alpha channel, mismatched dimensions, or zero
  * comparable pixels are failures rather than passes.
  */
+import { existsSync, readdirSync } from 'node:fs';
 import sharp from 'sharp';
 
-const LIGHT = 'static/img/john-cutout.webp';
-const DARK = 'static/img/john-cutout-dark.webp';
-
-/** Beyond this distance inside the outline, the two must agree. */
-const INTERIOR_FROM = 10;
-/** Mean absolute channel difference allowed in the interior. */
-const MEAN_LIMIT = 1.0;
 /**
- * The worst single channel allowed, as a MARGIN over the encoder's own noise
- * rather than an absolute number.
- *
- * The first version of this check hardcoded 5, which was a number I picked.
- * It is below what the file format can deliver: both mattes are lossy WebP,
- * which is VP8 and therefore YUV 4:2:0, so chroma is subsampled and a
- * round-trip through the encoder moves pixels by up to 10 levels on its own.
- * Measured at the pipeline's own settings: q92 max 10, q95 max 10, q98 max 8,
- * q100 max 9, and only lossless reaches 0, at 4.4 times the bytes.
- *
- * So the gate now calibrates itself: it re-encodes the knockout through the
- * same settings, compares it with itself, and takes that as the floor. What
- * it asks is that the two mattes differ by no more than the encoder alone
- * would, which is the strongest claim the format allows and is exactly the
- * claim worth making.
+ * The one file the page paints, on every ground. `--asset <path>` points the
+ * gate at another build instead, which is how it was checked that it fails on
+ * the two it replaced rather than only passing on the one it was written for.
  */
-const MAX_MARGIN = 1;
+const argv = process.argv.slice(2);
+const ASSET =
+  argv.indexOf('--asset') >= 0
+    ? argv[argv.indexOf('--asset') + 1]
+    : 'static/img/john-cutout-dark.webp';
+/** The master it is solved from. Nothing paints this; it is the reference. */
+const MASTER = 'static/img/john-cutout.webp';
+/**
+ * The photograph both were cut from, if it is the one on disk. `scripts/
+ * gen-cutouts.ts` keys whatever John uploads to `static/img/portrait/`, and
+ * when he has, this file is no longer the source; the check below says so and
+ * stands down rather than comparing against the wrong picture.
+ */
+const PLATE = 'docs/source-assets/John-Goss-1.jpg';
+const CMS_SOURCE_DIR = 'static/img/portrait';
+
+/** Coverage buckets, as 8-bit alpha. The fringe is everything between them. */
+const FRINGE_LO = 6;
+const FRINGE_HI = 249;
+const BUCKETS: [number, number][] = [
+  [6, 16],
+  [16, 31],
+  [31, 51],
+  [51, 89],
+  [89, 140],
+  [140, 204],
+  [204, 250]
+];
+/**
+ * Extra margin over the encoder's own floor.
+ *
+ * The reference this gate compares against is a EUCLIDEAN box mean of the
+ * nearby opaque pixels, not the geodesic extension `scripts/build-cutouts.py`
+ * solves with, so it carries a small positive bias: the interior inside the
+ * window is brighter than the rim at the edge of it. Measured on the shipped
+ * asset, this gate's reference is a ring-propagated Euclidean one where the
+ * build script solves a geodesic extension, and the two agree to a couple of
+ * levels. The margin covers that. It is nowhere near enough to let a
+ * contaminated fringe through: the plain knockout reads +135 on the same
+ * measurement and the de-lit matte this replaced reads -30 in the tiles where
+ * its light wrap landed hardest.
+ */
+const MARGIN = 5;
+/** Below this coverage, no grazing-angle surface can explain a dark fringe. */
+const NO_SHADING_ABOVE = 89;
+/**
+ * The gate is also run TILE BY TILE, not only over the whole fringe.
+ *
+ * That is not thoroughness, it is the difference between catching the defect
+ * and missing it. The matte this replaced averaged -7 over the whole fringe at
+ * low coverage, which is inside any sane bound; the average hid a +1 at the
+ * crown and a -41 at the neck, because its de-lighting was fitted per pixel
+ * and landed hardest where the cyclorama had reached furthest. A localised
+ * dark line is exactly as visible as a global one and a mean cannot see it.
+ */
+const TILE = 128;
+/** A tile needs this many fringe pixels before its mean means anything. */
+const TILE_MIN = 200;
+/** How far past the matte to carry the reference, for the colour-bleed check. */
+const BLEED_RINGS = 4;
+/** The crop's own antialiasing, at the edges of the frame he runs off. */
+const FRAME_EDGE = 3;
+/**
+ * What a single tile may depart by. Not the encoder's floor: over a tile this
+ * gate is limited by its own REFERENCE, not by the format.
+ *
+ * The reference is a ring propagation, which is Euclidean-in-character and
+ * therefore wrong where the surface has a steep gradient right at the outline —
+ * the hairline above the ear, the lit top edge of a dark shoulder. Measured, on
+ * the asset that ships: this gate reads up to 20.5 in the tile at x 512 y 512,
+ * where `scripts/build-cutouts.py`'s geodesic solve reads +1.2 for the same
+ * pixels. That 20 is the reference's error and nothing else.
+ *
+ * So the bound sits above it, and it is still far below what it exists to
+ * reject: the plain knockout reads +167 in its worst tile, and the de-lit matte
+ * this replaced reads -30. Tightening this without first porting the geodesic
+ * extension into this file would only produce a red build that no correct asset
+ * could turn green — which is the same mistake the old hardcoded max of 5 made.
+ */
+const TILE_LIMIT = 25;
 
 interface Img {
   data: Buffer;
@@ -62,22 +140,31 @@ interface Img {
 async function load(path: string): Promise<Img> {
   const image = sharp(path);
   const meta = await image.metadata();
-  if (!meta.hasAlpha) throw new Error(`${path}: no alpha channel`);
+  if (!meta.hasAlpha) throw new Error(`${path}: no alpha channel, so there is no matte`);
   const { data, info } = await image.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   return { data, w: info.width, h: info.height, c: info.channels };
 }
 
-const light = await load(LIGHT);
-const dark = await load(DARK);
+const asset = await load(ASSET);
+const master = await load(MASTER);
+
+if (asset.w !== master.w || asset.h !== master.h) {
+  console.error(
+    `${ASSET} is ${asset.w}x${asset.h} and ${MASTER} is ${master.w}x${master.h}. The geometry is measured off the master and applied to the asset, so they must match exactly.`
+  );
+  process.exit(1);
+}
+
+const { w, h, c } = asset;
+const lum = (d: Buffer, o: number) => 0.2126 * d[o] + 0.7152 * d[o + 1] + 0.0722 * d[o + 2];
 
 /**
- * The encoder's own noise floor: the knockout, re-encoded at the pipeline's
- * settings (`scripts/build-cutouts.py`: quality 92, alpha quality 100,
- * effort 6), compared with itself. Anything at or under this is the format
- * talking, not the mattes disagreeing.
+ * The encoder's own noise floor, self-calibrated: the asset's decoded pixels
+ * pushed back through the pipeline's settings (`scripts/build-cutouts.py`:
+ * quality 92, alpha quality 100, effort 6) and compared with themselves.
  */
 async function encodeFloor(): Promise<{ mean: number; max: number }> {
-  const round = await sharp(LIGHT)
+  const round = await sharp(asset.data, { raw: { width: w, height: h, channels: c as 4 } })
     .webp({ quality: 92, alphaQuality: 100, effort: 6 })
     .toBuffer();
   const { data: back, info } = await sharp(round)
@@ -89,12 +176,9 @@ async function encodeFloor(): Promise<{ mean: number; max: number }> {
   let max = 0;
   for (let i = 0; i < info.width * info.height; i++) {
     const o = i * info.channels;
-    if (light.data[o + 3] < 250) continue;
-    const d = Math.max(
-      Math.abs(back[o] - light.data[o]),
-      Math.abs(back[o + 1] - light.data[o + 1]),
-      Math.abs(back[o + 2] - light.data[o + 2])
-    );
+    const a = asset.data[i * c + 3];
+    if (a <= FRINGE_LO || a > FRINGE_HI) continue;
+    const d = Math.abs(lum(back, o) - lum(asset.data, i * c));
     n++;
     sum += d;
     if (d > max) max = d;
@@ -105,106 +189,350 @@ async function encodeFloor(): Promise<{ mean: number; max: number }> {
 
 const floor = await encodeFloor();
 
-if (light.w !== dark.w || light.h !== dark.h) {
-  console.error(
-    `the two mattes are different sizes: ${light.w}x${light.h} and ${dark.w}x${dark.h}. They composite as one figure, so they must match exactly.`
-  );
-  process.exit(1);
+/**
+ * The surface each fringe pixel belongs to: the luminance of the OPAQUE pixels,
+ * propagated outward across the fringe one ring at a time.
+ *
+ * A wide box mean was tried first and is wrong here. It reaches 20px deep into
+ * the interior, so on the shoulder — where the shirt is dark and the lit rim is
+ * at the very edge — it reports a surface far darker than the pixel's own, and
+ * calls real modelling contamination. Propagating from the nearest opaque ring
+ * instead takes the rim's own opaque continuation, which is the surface the
+ * fringe pixel actually belongs to. It is the cheap Euclidean cousin of the
+ * geodesic extension `scripts/build-cutouts.py` solves with.
+ *
+ * Geodesic matters, and cheaply: the propagation is allowed to travel only
+ * through pixels the matte holds. Without that restriction it crosses the gap
+ * between an earlobe and the skull behind it and reports the cheek on the far
+ * side as "the surface", which reads as 20 levels of contamination that is not
+ * there. Rhemann, Rother & Gelautz make the same argument for their sample sets
+ * (BMVC 2008, sec 2.1): spread in geodesic distance, "which respects the shape
+ * of the foreground object".
+ *
+ * A few extra rings run past the matte afterwards, unrestricted, so the empty
+ * pixels just outside it have a reference for the colour-bleed check.
+ */
+function nearestOpaqueLuma(): Float64Array {
+  const val = new Float64Array(w * h);
+  const known = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    if (asset.data[i * c + 3] >= 250) {
+      known[i] = 1;
+      val[i] = lum(asset.data, i * c);
+    }
+  }
+  const next = new Float64Array(w * h);
+  const gained = new Uint8Array(w * h);
+  const reached = new Uint8Array(w * h);
+
+  /** One ring. `inside` keeps the propagation within the matte. */
+  const ring = (inside: boolean): number => {
+    let grew = 0;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x;
+        if (known[i]) continue;
+        if (inside && asset.data[i * c + 3] === 0) continue;
+        let sum = 0;
+        let n = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          const yy = y + dy;
+          if (yy < 0 || yy >= h) continue;
+          for (let dx = -1; dx <= 1; dx++) {
+            const xx = x + dx;
+            if (xx < 0 || xx >= w) continue;
+            const j = yy * w + xx;
+            if (known[j]) {
+              sum += val[j];
+              n++;
+            }
+          }
+        }
+        if (n) {
+          next[i] = sum / n;
+          gained[i] = 1;
+          grew++;
+        }
+      }
+    }
+    for (let i = 0; i < w * h; i++) {
+      if (gained[i]) {
+        val[i] = next[i];
+        known[i] = 1;
+        gained[i] = 0;
+        reached[i] = 1;
+      }
+    }
+    return grew;
+  };
+
+  // Phase one: through the matte, until every partly-covered pixel has one.
+  // Bounded, because a matte with an enclosed transparent hole never converges.
+  for (let pass = 0; pass < 64 && ring(true) > 0; pass++);
+  // Phase two: a few rings past it, for the colour-bleed check.
+  for (let pass = 0; pass < BLEED_RINGS && ring(false) > 0; pass++);
+
+  const out = new Float64Array(w * h).fill(NaN);
+  for (let i = 0; i < w * h; i++) {
+    if (reached[i] && asset.data[i * c + 3] < 250) out[i] = val[i];
+  }
+  return out;
 }
 
-const { w, h, c } = light;
-const opaque = (i: number) => light.data[i * c + 3] >= 250 && dark.data[i * c + 3] >= 250;
+const ref = nearestOpaqueLuma();
 
-// Distance inside the outline, by a two-pass chamfer over the opaque mask.
-// Approximate, and that is fine: it only has to separate "at the edge" from
-// "well inside it".
-const dist = new Float32Array(w * h).fill(1e6);
-for (let i = 0; i < w * h; i++) if (!opaque(i)) dist[i] = 0;
-for (let pass = 0; pass < 2; pass++) {
-  for (let y = 1; y < h; y++)
-    for (let x = 1; x < w; x++) {
-      const i = y * w + x;
-      dist[i] = Math.min(dist[i], dist[i - 1] + 1, dist[i - w] + 1, dist[i - w - 1] + 1.414);
-    }
-  for (let y = h - 2; y >= 0; y--)
-    for (let x = w - 2; x >= 0; x--) {
-      const i = y * w + x;
-      dist[i] = Math.min(dist[i], dist[i + 1] + 1, dist[i + w] + 1, dist[i + w + 1] + 1.414);
-    }
-}
-
-const BUCKETS: [number, number][] = [
-  [0, 2],
-  [2, 5],
-  [5, 10],
-  [10, 20],
-  [20, 40],
-  [40, 80],
-  [80, Infinity]
-];
-const tally = BUCKETS.map(() => ({ n: 0, sum: 0, max: 0 }));
+const tally = BUCKETS.map(() => ({ n: 0, sum: 0 }));
+const masterTally = BUCKETS.map(() => ({ n: 0, sum: 0 }));
+const tilesW = Math.ceil(w / TILE);
+const tiles = Array.from({ length: tilesW * Math.ceil(h / TILE) }, () => ({
+  lowN: 0,
+  lowSum: 0,
+  allN: 0,
+  allSum: 0
+}));
+let bled = 0;
+let bledN = 0;
 
 for (let i = 0; i < w * h; i++) {
-  if (!opaque(i)) continue;
-  const o = i * c;
-  const delta = Math.max(
-    Math.abs(dark.data[o] - light.data[o]),
-    Math.abs(dark.data[o + 1] - light.data[o + 1]),
-    Math.abs(dark.data[o + 2] - light.data[o + 2])
-  );
-  const d = dist[i];
-  const b = BUCKETS.findIndex(([lo, hi]) => d >= lo && d < hi);
+  const a = asset.data[i * c + 3];
+  const r = ref[i];
+  if (Number.isNaN(r)) continue;
+  if (a === 0) {
+    // COLOUR BLEED. Where the matte is empty the RGB is still encoded, and VP8
+    // subsamples chroma across it into the fringe, so it has to hold John's
+    // colour rather than white or black.
+    bled += Math.abs(lum(asset.data, i * c) - r);
+    bledN++;
+    continue;
+  }
+  if (a <= FRINGE_LO || a > FRINGE_HI) continue;
+  const b = BUCKETS.findIndex(([lo, hi]) => a >= lo && a < hi);
   if (b < 0) continue;
+  const d = lum(asset.data, i * c) - r;
   tally[b].n++;
-  tally[b].sum += delta;
-  if (delta > tally[b].max) tally[b].max = delta;
+  tally[b].sum += d;
+  const t = tiles[Math.floor(i / w / TILE) * tilesW + Math.floor((i % w) / TILE)];
+  t.allN++;
+  t.allSum += d;
+  if (a < NO_SHADING_ABOVE) {
+    t.lowN++;
+    t.lowSum += d;
+  }
+  const ma = master.data[i * c + 3];
+  if (ma > FRINGE_LO && ma <= FRINGE_HI) {
+    masterTally[b].n++;
+    masterTally[b].sum += lum(master.data, i * c) - r;
+  }
 }
 
 const compared = tally.reduce((n, t) => n + t.n, 0);
 if (compared === 0) {
-  console.error('compared zero pixels. That is a failure, not a pass.');
+  console.error('compared zero fringe pixels. That is a failure, not a pass.');
   process.exit(1);
 }
 
 console.log(
-  `encoder's own noise floor: ${floor.mean.toFixed(2)} mean, ${floor.max} max (the knockout round-tripped against itself)`
+  `encoder's own floor: ${floor.mean.toFixed(2)} mean, ${floor.max.toFixed(1)} max over the fringe (the asset round-tripped against itself)`
 );
-console.log('difference between the two mattes, by distance inside the outline:');
+console.log(
+  `\nunpremultiplied foreground vs the opaque surface around it, by coverage.\npositive is toward the white cyclorama, which is the only direction a backing can contaminate in:`
+);
+console.log(`  ${'coverage'.padEnd(12)} ${'n'.padStart(8)} ${'asset'.padStart(9)} ${'master'.padStart(9)}`);
 BUCKETS.forEach(([lo, hi], k) => {
   const t = tally[k];
   if (!t.n) return;
-  const label = hi === Infinity ? `${lo}+` : `${lo}-${hi}`;
+  const m = masterTally[k];
   console.log(
-    `  ${label.padEnd(8)} n=${String(t.n).padStart(8)}  mean |delta| ${(t.sum / t.n).toFixed(2).padStart(6)}  max ${String(t.max).padStart(3)}`
+    `  ${`${(lo / 255).toFixed(2)}-${(hi / 255).toFixed(2)}`.padEnd(12)} ${String(t.n).padStart(8)} ${(t.sum / t.n).toFixed(1).padStart(9)} ${(m.n ? (m.sum / m.n).toFixed(1) : '-').padStart(9)}`
   );
 });
+console.log(
+  `\ncolour bleed into the empty region: ${bledN ? (bled / bledN).toFixed(1) : 'n/a'} mean levels from the nearby opaque surface, over ${bledN} px`
+);
 
 let failures = 0;
-for (const [k, [lo]] of BUCKETS.entries()) {
-  if (lo < INTERIOR_FROM) continue;
+
+// == THE STRONGEST CHECK, WHEN THE SOURCE IS STILL THE ONE ON DISK ===========
+// Everything above needs a REFERENCE for John's own colour, and this file's
+// reference is a ring propagation that is worth about +-20 levels where the
+// surface has a steep gradient at the outline. This check needs no reference at
+// all. The backing was a measured, blown-out white cyclorama, so
+//
+//     F*a + 255*(1 - a) = I
+//
+// is a statement about the photograph with no free parameters left, and an
+// asset that satisfies it while its foreground is flat in coverage is correct
+// over any ground by construction. In linear light, because the camera did the
+// mixing in radiance and not in sRGB.
+//
+// Measured, over the fringe where the plate is not clipped: the asset that
+// ships 1.07, the plain knockout 13.59, the de-lit matte this replaced 16.95.
+// That is a thirteen-fold separation with nothing to argue about.
+const plateSource = existsSync(CMS_SOURCE_DIR)
+  ? readdirSync(CMS_SOURCE_DIR).filter((f) => /\.(jpe?g|png|webp|tiff?)$/i.test(f))
+  : [];
+if (plateSource.length > 0) {
+  console.log(
+    `\nthe photograph in ${CMS_SOURCE_DIR} (${plateSource.join(', ')}) is now the source, so the reproduction check stands down: it can only be run against the picture the matte was actually cut from.`
+  );
+} else if (!existsSync(PLATE)) {
+  console.error(`\nFAIL  ${PLATE} is missing, so the reproduction check cannot run.`);
+  failures++;
+} else {
+  const { data: pd, info: pi } = await sharp(PLATE)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  if (pi.width !== w) {
+    console.error(
+      `\nFAIL  ${PLATE} is ${pi.width}px wide and the matte is ${w}px. build-cutouts.py aligns them on the bottom edge at the same width; without that the reproduction check is comparing different pictures.`
+    );
+    failures++;
+  } else {
+    const toLinear = (v: number) => {
+      const x = v / 255;
+      return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+    };
+    const lut = Array.from({ length: 256 }, (_, v) => toLinear(v));
+    const lumLin = (d: Buffer | Uint8Array, o: number, ch: number) =>
+      0.2126 * lut[d[o]] + 0.7152 * lut[d[o + 1]] + 0.0722 * lut[d[o + 2]];
+    const top = h - pi.height;
+    /** Reproduction error, in 0-255 equivalents, over the unclipped fringe. */
+    const repro = (img: Img): { mean: number; p95: number; n: number } => {
+      const es: number[] = [];
+      // The outermost 3px of the crop are the crop's OWN antialiasing: his
+      // shoulders run off the edges of the photograph, so the matte ramps there
+      // against nothing, and no backing equation applies. build-cutouts.py
+      // excludes them from the solve, so they have to be excluded here too;
+      // included, those ~5,200 pixels alone move this mean from 1.03 to 18.38.
+      for (let y = top; y < h - FRAME_EDGE; y++) {
+        for (let x = FRAME_EDGE; x < w - FRAME_EDGE; x++) {
+          const i = y * w + x;
+          const a = asset.data[i * c + 3];
+          if (a <= FRINGE_LO || a > FRINGE_HI) continue;
+          const po = ((y - top) * pi.width + x) * pi.channels;
+          if (Math.max(pd[po], pd[po + 1], pd[po + 2]) >= 252) continue;
+          const al = img.data[i * img.c + 3] / 255;
+          const got = lumLin(img.data, i * img.c, img.c) * al + (1 - al);
+          es.push(Math.abs(got - lumLin(pd, po, pi.channels)) * 255);
+        }
+      }
+      es.sort((p, q) => p - q);
+      return {
+        mean: es.reduce((t, v) => t + v, 0) / (es.length || 1),
+        p95: es[Math.floor(es.length * 0.95)] ?? 0,
+        n: es.length
+      };
+    };
+    const mine = repro(asset);
+    const theirs = repro(master);
+    // The limit, self-calibrated like everything else here: the plain knockout
+    // is the asset with NO solve on it at all -- its foreground is the observed
+    // pixel and its alpha is the ramp the retoucher drew -- so its reproduction
+    // error is what "unsolved" costs. A solved asset has to be a long way inside
+    // it, and a third of it is a wide door.
+    const limit = Math.max(3, theirs.mean / 3);
+    console.log(
+      `\nreproduction of ${PLATE} in linear light, over ${mine.n} unclipped fringe px:\n  asset  mean ${mine.mean.toFixed(2)}  p95 ${mine.p95.toFixed(2)}\n  master mean ${theirs.mean.toFixed(2)}  p95 ${theirs.p95.toFixed(2)}  (the unsolved knockout, which sets the limit at ${limit.toFixed(2)})`
+    );
+    if (mine.mean > limit) {
+      console.error(
+        `\nFAIL  the asset's foreground and matte do not reproduce the photograph they were cut from: ${mine.mean.toFixed(2)} mean against a limit of ${limit.toFixed(2)}. Either the coverage or the colour is wrong, and since the backing was measured there is nothing else it could be. An asset that cannot reproduce its own source cannot be right over an arbitrary ground either.`
+      );
+      failures++;
+    }
+  }
+}
+
+const brightLimit = floor.max + MARGIN;
+const darkLimit = -(floor.max + MARGIN);
+
+for (const [k, [lo, hi]] of BUCKETS.entries()) {
   const t = tally[k];
   if (!t.n) continue;
-  const mean = t.sum / t.n;
-  const maxLimit = floor.max + MAX_MARGIN;
-  if (mean > MEAN_LIMIT || t.max > maxLimit) {
+  const d = t.sum / t.n;
+  const label = `${(lo / 255).toFixed(2)}-${(hi / 255).toFixed(2)}`;
+  if (d > brightLimit) {
     console.error(
-      `\nFAIL  at ${lo}px and beyond the two mattes differ by ${mean.toFixed(2)} on average and ${t.max} at worst. That is interior, so the plate's edge draws a tonal step across him wherever it crosses. Allowed: ${MEAN_LIMIT} mean, ${maxLimit} max (the encoder's own floor of ${floor.max}, plus ${MAX_MARGIN}).`
+      `\nFAIL  at coverage ${label} the foreground is ${d.toFixed(1)} levels BRIGHTER than the surface it belongs to. A white backing is the only thing that does that, so there is cyclorama left in the fringe and this asset will draw a bright rim around him on the plate. Allowed: ${brightLimit.toFixed(1)} (the encoder's own worst case of ${floor.max.toFixed(1)}, plus ${MARGIN} for this gate's Euclidean reference).`
+    );
+    failures++;
+  }
+  // The dark direction only has a legitimate explanation at HIGH coverage,
+  // where a grazing-angle surface is genuinely darker than its own interior --
+  // and there the plain knockout, which carries no treatment at all, is darker
+  // too, which is the check. At low coverage there is no such story: a
+  // systematic dark bias is a de-spill or a negative light wrap, and it reads
+  // as a drawn-on dark line on the deep band.
+  if (hi <= NO_SHADING_ABOVE && d < darkLimit) {
+    console.error(
+      `\nFAIL  at coverage ${label} the foreground is ${d.toFixed(1)} levels DARKER than the surface it belongs to. At that coverage no shading can account for it, so a de-spill or a negative light wrap has been applied to the edge, and it will read as a dark line around him on the deep band. Allowed: ${darkLimit.toFixed(1)} (the encoder's own worst case of ${floor.max.toFixed(1)}, plus ${MARGIN}).`
     );
     failures++;
   }
 }
 
-// The edge treatment has to still be there. A dark matte that matches the
-// light one everywhere is not a dark matte, and it will glow on the band.
-const edge = tally[0];
-if (edge.n && edge.sum / edge.n < 1) {
+// The same bounds, tile by tile. `low` is the coverage below which no
+// grazing-angle surface can explain a dark fringe, so both directions are
+// gated there; above it only the bright direction is, since that is the only
+// one a backing can push.
+let worstTileLow = { d: 0, x: -1, y: -1 };
+let worstTileHigh = { d: 0, x: -1, y: -1 };
+for (const [k, t] of tiles.entries()) {
+  const x = (k % tilesW) * TILE;
+  const y = Math.floor(k / tilesW) * TILE;
+  if (t.lowN >= TILE_MIN) {
+    const d = t.lowSum / t.lowN;
+    if (Math.abs(d) > Math.abs(worstTileLow.d)) worstTileLow = { d, x, y };
+    if (Math.abs(d) > TILE_LIMIT) {
+      console.error(
+        `\nFAIL  in the ${TILE}px tile at x ${x} y ${y} the low-coverage fringe sits ${d.toFixed(1)} levels ${d > 0 ? 'BRIGHTER' : 'DARKER'} than the surface around it, over ${t.lowN} px. At that coverage neither shading nor the encoder can account for it: ${d > 0 ? 'there is backing left in the fringe' : 'a de-spill or a negative light wrap has been applied there'}. Allowed: ${TILE_LIMIT}, which is this gate's own reference error and not the encoder's.`
+      );
+      failures++;
+    }
+  }
+  if (t.allN >= TILE_MIN) {
+    const d = t.allSum / t.allN;
+    if (d > worstTileHigh.d) worstTileHigh = { d, x, y };
+    if (d > TILE_LIMIT) {
+      console.error(
+        `\nFAIL  in the ${TILE}px tile at x ${x} y ${y} the fringe is ${d.toFixed(1)} levels brighter than the surface around it, over ${t.allN} px. Only a backing does that. Allowed: ${TILE_LIMIT}.`
+      );
+      failures++;
+    }
+  }
+}
+console.log(
+  `worst ${TILE}px tile: ${worstTileLow.d.toFixed(1)} at low coverage (x ${worstTileLow.x} y ${worstTileLow.y}), ${worstTileHigh.d.toFixed(1)} brightest over all coverage (x ${worstTileHigh.x} y ${worstTileHigh.y}); allowed +-${TILE_LIMIT}`
+);
+
+// The colour bleed has to be there. White or black in the transparent region
+// gets subsampled into the fringe by 4:2:0 whatever the fringe itself holds.
+if (bledN === 0) {
   console.error(
-    `\nFAIL  the two mattes are identical at the edge as well (${(edge.sum / edge.n).toFixed(2)} mean). The keyed variant has lost its edge treatment and will glow on the deep band.`
+    '\nFAIL  found no transparent pixels near the figure to check the colour bleed on.'
+  );
+  failures++;
+} else if (bled / bledN > 6 * (floor.max + MARGIN)) {
+  console.error(
+    `\nFAIL  where the matte is empty the RGB sits ${(bled / bledN).toFixed(1)} levels off the surface beside it. VP8 subsamples chroma across that boundary into the fringe, so the empty region has to carry John's colour and not white or black.`
+  );
+  failures++;
+}
+
+// No hair may have been deleted: the asset's support is the master's.
+let lost = 0;
+for (let i = 0; i < w * h; i++) {
+  if (master.data[i * c + 3] > 0 && asset.data[i * c + 3] === 0) lost++;
+}
+if (lost > 0) {
+  console.error(
+    `\nFAIL  ${lost} px the master's matte holds are empty in the asset. The solve may reshape the ramp — that is what it is for — but it may not drop a pixel out of the matte altogether, because at this scale that is a hair.`
   );
   failures++;
 }
 
 if (failures) process.exit(1);
 console.log(
-  `\nThe mattes agree where it matters: the edge treatment is present in the first pixels, and from ${INTERIOR_FROM}px inward they differ by no more than the encoder itself does.`
+  `\nOne asset, correct on every ground: across the whole fringe its foreground stays within ${brightLimit.toFixed(1)} levels of the surface it belongs to in the direction a backing could push it, so it carries John and not the cyclorama.`
 );
