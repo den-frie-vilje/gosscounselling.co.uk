@@ -171,8 +171,8 @@ def solid_matte():
     every coverage — which is the whole claim of this file, and the reason there is now one
     asset rather than two.
 
-    WHERE IT CANNOT BE TRUSTED, AND WHAT HAPPENS THERE. Two things, both properties of the
-    photograph rather than choices made here, and both measured per pixel rather than
+    WHERE IT CANNOT BE TRUSTED, AND WHAT HAPPENS THERE. Three things, all properties of the
+    photograph rather than choices made here, and all measured per pixel rather than
     assumed:
 
       1. NOISE GAIN. The unpremultiply divides by alpha, so at alpha 0.05 a one-level error
@@ -186,6 +186,16 @@ def solid_matte():
          what a blown-out backdrop behind hair looks like. There alpha falls back to a
          monotone transfer curve fitted from the pixels where the plate does speak — one
          curve for the whole fringe — and F falls back to the interior colour.
+
+      3. NO PHOTOGRAPH AT ALL. John-Goss-1.jpg is 1440 rows and the master is 1452, because
+         the frame clips the top of his head and Ole reconstructed the crown by hand above
+         it. Rows 0..11 of `I` are therefore not an observation, they are the constant 255
+         this function fills in for the cyc — and there was no cyc behind them. So F may
+         never be taken from `I` on the strength of an alpha this function computed itself;
+         it is taken from the MASTER wherever the MASTER calls the pixel opaque, which is
+         the only source that knows the difference. See the note at step 3 in the code: not
+         keying that off the master put 45 opaque pixels of his scalp on the page as pure
+         white.
 
     WHAT IS DELIBERATELY NOT DONE ANY MORE. No de-spill, no light wrap, no dichromatic
     subtraction, no choke, no dilate, no core/edge window, no distance-from-silhouette term
@@ -289,13 +299,50 @@ def solid_matte():
     An[A <= 0.0] = 0.0
 
     # -- 3. F, in closed form, at that alpha -----------------------------------------
+    #
+    # AN OPAQUE PIXEL HAS NO BACKING CONTRIBUTION TO REMOVE, and it is THE MASTER that
+    # says which pixels those are. Both the handover weight and the F == I shortcut used
+    # to key off `An`, the alpha this function had just recomputed, and that was wrong in
+    # the one place it mattered most. His head is cut off at row 0 of John-Goss-1.jpg, so
+    # `top` is 12 and rows 0..11 of `I` above are not a photograph at all — they are the
+    # constant 255 this function fills in to stand for the blown-out cyc. There was never
+    # a cyclorama behind those pixels: they are the crown Ole reconstructed by hand.
+    # `Flin[solid] = Ilin[solid]` then copied that fabricated white straight into F, and
+    # 45 fully opaque pixels of his scalp — rows 9-11, x 914..933 — shipped as rgb(255,
+    # 253,252) where the master reads rgb(126,90,73). Nothing had gone wrong with the
+    # alpha: at those pixels A is exactly 1, so `band` is False, `An` is copied from the
+    # master unchanged, and there is no small alpha and no 1/alpha blow-up anywhere near
+    # them. F was simply read from a place where no photograph exists.
+    #
+    # So the one test that decides it is the MASTER's, and there is only one of it now.
+    # Where the master calls a pixel opaque its colour is already John's own and the
+    # matting equation has nothing to say about it, whatever the solve went on to compute.
+    # Where the master calls it partial, `conf` — which is zero outside the plate, because
+    # there is no plate there — decides how much of the direct solve to believe, as it
+    # always did; the `An >= 0.995 => wF = 1` override that used to sit in front of `conf`
+    # is gone with the shortcut it belonged to. That second half matters too: 67 more
+    # pixels above row 12 had their alpha raised past 0.995 by the transfer curve, took
+    # F = I = white on the strength of it, and were left at 1.15x John's luminance by the
+    # gamut bound below rather than at John's own.
+    #
+    # A HARD SWITCH, NOT A HANDOVER BAND, and that was measured rather than assumed. The
+    # step in F across the A = 0.995 contour is +10.0 levels inside the plate BEFORE this
+    # change and +9.0 after, so the fix does not open a seam — it closes one, from +146.6
+    # to -9.4 in the rows above the plate. And a band would have to blend toward the
+    # master's own fringe, which is exactly what still carries the cyclorama: measured
+    # against the interior it runs +20.7 levels at coverage 0.50-0.80, +97.4 at 0.20-0.50
+    # and +123.7 below that. Carried out end to end, a band down to A = 0.90 lifts the
+    # reproduction error from 1.09 to 1.36 and opens a new -20.2 tile at x 1536 y 896
+    # against a +-25 limit; one down to 0.98 changes no measurement at all and still
+    # leaves 3.0 levels of the white on the 45 pixels it exists to remove.
+    Mlin = np.clip(_srgb_to_linear(master_rgb), 0, 1)
     a3 = np.maximum(An, 1e-6)[..., None]
     Fdirect = (Ilin - BK * (1 - a3)) / a3
     w = np.clip((An - 0.10) / 0.10, 0, 1)             # 1/alpha noise gain becomes usable
-    wF = np.where(An >= 0.995, 1.0, conf * (w * w * (3 - 2 * w)))
+    solid = A >= 0.995                                # the MASTER's alpha, not the solve's
+    wF = conf * (w * w * (3 - 2 * w))
     Flin = np.clip(wF[..., None] * Fdirect + (1 - wF[..., None]) * Fplin, 0, 1)
-    solid = An >= 0.995
-    Flin[solid] = Ilin[solid]                         # alpha == 1 => F == I, exactly
+    Flin[solid] = Mlin[solid]                         # opaque => F is the master's colour
 
     # -- 4. the one-sided gamut bound: spill only ever ADDS light --------------------
     Yf, Yp = (Flin * LW).sum(-1), (Fplin * LW).sum(-1)
@@ -356,6 +403,22 @@ def _verify_solid_matte(master_rgb, A, An, Fd, Fprior, I, top, curve, conf):
     print("  the plate carries no information (clipped at 255) on %.1f%% of the fringe;"
           " there alpha takes that curve and F takes the interior colour"
           % (100 * (conf[fringe] < 0.5).mean()))
+
+    # -- the opaque interior is the master's, not the solve's ----------------------
+    # The rows above `top` are Ole's reconstruction of the crown and the plate does not
+    # reach them, so an opaque pixel there whose colour came from `I` came from a 255
+    # that was filled in rather than photographed. That is the defect this reports on.
+    op = (A >= 0.995) & inframe
+    dop = np.abs(_L(rgb) - _L(master_rgb))
+    print("  opaque interior (master alpha >= 0.995) vs the master's own colour:"
+          " %.2f mean / %.1f max over %d px; %d px depart by more than 12 levels"
+          % (dop[op].mean(), dop[op].max(), int(op.sum()), int((op & (dop > 12)).sum())))
+    ab = op.copy(); ab[top:] = False
+    if ab.any():
+        print("    of which the %d ABOVE row %d, where there is no photograph and no"
+              " backing: %.2f mean / %.1f max, brightest L %.1f (the master's is %.1f)"
+              % (int(ab.sum()), top, dop[ab].mean(), dop[ab].max(),
+                 _L(rgb[ab]).max(), _L(master_rgb[ab]).max()))
 
     # == 1. THE FRINGE AUDIT, on the straight-alpha intermediate ====================
     # The only representation in which "is there cyclorama left" has a clean answer.

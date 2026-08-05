@@ -38,8 +38,23 @@
  * levels on its own. Asking for better than the format can deliver is asking
  * for a red build that no correct asset could turn green.
  *
+ * AND THE INTERIOR, WHICH THIS GATE USED TO IGNORE. Everything above lives in
+ * the fringe, and a fringe gate cannot see a fully-opaque defect. It did not:
+ * the F-pinned solve took its foreground from the observed plate wherever it
+ * called a pixel opaque, and above row 12 there is no plate — the frame clips
+ * the top of John's head and the crown is Ole's reconstruction — so 45 opaque
+ * pixels of his scalp shipped as pure white on a green build. No coverage
+ * bucket, no tile and no reproduction sample contained one of them.
+ *
+ * So the interior is gated too, against the master, which is the one thing that
+ * knows what colour those pixels are. At full coverage nothing was mixed in, so
+ * the matting equation has nothing to say and the only honest foreground is the
+ * master's own. Same self-calibration: the encoder's worst case over the same
+ * pixels, plus the margin.
+ *
  * Fail-closed: a missing alpha channel, mismatched dimensions, or zero
- * comparable pixels are failures rather than passes.
+ * comparable pixels — including a master with no opaque pixel in it — are
+ * failures rather than passes.
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import sharp from 'sharp';
@@ -127,6 +142,17 @@ const TILE = 128;
 const TILE_MIN = 200;
 /** How far past the matte to carry the reference, for the colour-bleed check. */
 const BLEED_RINGS = 4;
+/**
+ * Above this 8-bit alpha the master calls a pixel FULLY opaque, and the asset's
+ * colour there has to be the master's own.
+ *
+ * 254, not `FRINGE_HI + 1`: 250-253 is the last sliver of the ramp, where the
+ * solve is legitimately still working and the master legitimately still carries
+ * backing — measured on the asset that ships, the two differ by up to 99 levels
+ * in that sliver and by 8.3 at 254 and above. This is the threshold
+ * `scripts/build-cutouts.py` pins F at, expressed in the asset's own units.
+ */
+const OPAQUE_LO = 254;
 /** The crop's own antialiasing, at the edges of the frame he runs off. */
 const FRAME_EDGE = 3;
 /**
@@ -181,7 +207,7 @@ const lum = (d: Buffer, o: number) => 0.2126 * d[o] + 0.7152 * d[o + 1] + 0.0722
  * pushed back through the pipeline's settings (`scripts/build-cutouts.py`:
  * quality 92, alpha quality 100, effort 6) and compared with themselves.
  */
-async function encodeFloor(): Promise<{ mean: number; max: number }> {
+async function encodeFloor(): Promise<{ mean: number; max: number; opaqueMax: number }> {
   const round = await sharp(asset.data, { raw: { width: w, height: h, channels: c as 4 } })
     .webp({ quality: 92, alphaQuality: 100, effort: 6 })
     .toBuffer();
@@ -192,17 +218,22 @@ async function encodeFloor(): Promise<{ mean: number; max: number }> {
   let n = 0;
   let sum = 0;
   let max = 0;
+  // The same round trip over the OPAQUE interior, which is what the opaque check
+  // below is measured against. It is a different number from the fringe's: the
+  // fringe is where 4:2:0 hurts most, and a flat interior encodes better.
+  let opaqueMax = 0;
   for (let i = 0; i < info.width * info.height; i++) {
     const o = i * info.channels;
     const a = asset.data[i * c + 3];
-    if (a <= FRINGE_LO || a > FRINGE_HI) continue;
     const d = Math.abs(lum(back, o) - lum(asset.data, i * c));
+    if (a >= OPAQUE_LO && d > opaqueMax) opaqueMax = d;
+    if (a <= FRINGE_LO || a > FRINGE_HI) continue;
     n++;
     sum += d;
     if (d > max) max = d;
   }
   if (n === 0) throw new Error('the encode floor compared zero pixels');
-  return { mean: sum / n, max };
+  return { mean: sum / n, max, opaqueMax };
 }
 
 const floor = await encodeFloor();
@@ -517,6 +548,48 @@ if (typeof from === 'string') {
       failures++;
     }
   }
+}
+
+// == THE OPAQUE INTERIOR IS THE MASTER'S, NOT A SOLVED ESTIMATE ==============
+// Every other check in this file lives in the FRINGE, and that is how a solve
+// that turned a patch of John's scalp pure white shipped past a green build.
+// The 45 pixels were fully opaque, so no coverage bucket, no tile and no
+// reproduction sample ever looked at them.
+//
+// An opaque pixel has no backing contribution to remove: whatever the solve
+// went on to compute, its colour is the master's own. That is a bound with no
+// free parameters in it, and it needs no reference for "John's colour" because
+// the master IS John's colour. The limit is self-calibrated like the rest — the
+// encoder's own worst case over the same pixels, plus the usual margin.
+//
+// Measured: the asset that ships departs by 0.21 mean and 8.3 max; the broken
+// one departed by 176.8 at (916, 10), with 237 pixels past this limit.
+const opaqueLimit = floor.opaqueMax + MARGIN;
+let opaqueN = 0;
+let opaqueSum = 0;
+let opaqueOver = 0;
+let opaqueWorst = { d: 0, x: -1, y: -1 };
+for (let i = 0; i < w * h; i++) {
+  if (master.data[i * c + 3] < OPAQUE_LO) continue;
+  const d = Math.abs(lum(asset.data, i * c) - lum(master.data, i * c));
+  opaqueN++;
+  opaqueSum += d;
+  if (d > opaqueLimit) opaqueOver++;
+  if (d > opaqueWorst.d) opaqueWorst = { d, x: i % w, y: Math.floor(i / w) };
+}
+console.log(
+  `\nthe opaque interior against the master's own colour, over ${opaqueN.toLocaleString()} px the master calls solid:\n  ${(opaqueSum / Math.max(opaqueN, 1)).toFixed(2)} mean, worst ${opaqueWorst.d.toFixed(1)} at (${opaqueWorst.x}, ${opaqueWorst.y}); allowed ${opaqueLimit.toFixed(1)} (the encoder's own ${floor.opaqueMax.toFixed(1)} over the same pixels, plus ${MARGIN})`
+);
+if (opaqueN === 0) {
+  console.error(
+    '\nFAIL  the master calls no pixel fully opaque, so there is nothing to hold the interior to. That is a broken master, not a clean pass.'
+  );
+  failures++;
+} else if (opaqueOver > 0) {
+  console.error(
+    `\nFAIL  ${opaqueOver} fully-opaque px depart from the master's own colour by more than ${opaqueLimit.toFixed(1)} levels, the worst by ${opaqueWorst.d.toFixed(1)} at (${opaqueWorst.x}, ${opaqueWorst.y}). At full coverage nothing is mixed into the pixel, so the matting equation has nothing to say about it and the only honest foreground is the master's. A departure here means the solve estimated a colour where it should have copied one — and because it is opaque, it is drawn at full strength on every ground.`
+  );
+  failures++;
 }
 
 const brightLimit = floor.max + MARGIN;
