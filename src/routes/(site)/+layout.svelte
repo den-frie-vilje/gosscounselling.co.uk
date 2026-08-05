@@ -5,7 +5,6 @@
 <script lang="ts">
   import SiteHeader from '$lib/components/SiteHeader.svelte';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
-  import StudioPanel from '$lib/dev/StudioPanel.svelte';
 
   let { children } = $props();
 
@@ -15,11 +14,6 @@
   // pointer hit-testing; trapping focus by script would fix neither. The
   // header and the panel are siblings of these, so they stay live.
   let menuOpen = $state(false);
-
-  // `import.meta.env.DEV` is a compile-time constant, so the panel and its
-  // import are removed from the production bundle entirely rather than being
-  // shipped behind a runtime check.
-  const dev = import.meta.env.DEV;
 </script>
 
 <a href="#main" class="skip">Skip to content</a>
@@ -33,10 +27,6 @@
     <SiteFooter />
   </div>
 </div>
-
-{#if dev}
-  <StudioPanel />
-{/if}
 
 <style>
   /* The page must not scroll behind the panel. */
