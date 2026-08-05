@@ -96,3 +96,54 @@ Brand, nav links and CTA are all `white-space: nowrap`; the nav reveals one link
 820, 940 and 1080px; the CTA label shortens below 430px; the brand's second line drops below 420px.
 Verified by measuring 15 widths from 320 to 1440 on every direction: single-row header throughout,
 no wrapped CTA, and zero horizontal overflow.
+
+## 16. The design is the two directions John chose, combined
+His feedback picked two of the four. From Clear Water: the blue ("it's blue! I can't help
+it!"), the bold dark opening band he called "the header", and the way sections are divided
+rather than boxed ("in Quiet Practice, sections are put into boxes; in Clear Water, I like how
+the sections are divided differently"). From Quiet Practice: the lightness, which he named
+twice, "fresh/modern" and "easy to read, and scroll through".
+
+So: Clear Water's structure and palette, lightened with Quiet Practice's warm ground, serif
+display and rhythm. Nothing on the page is a card. Sections are told apart by a change of
+ground and a hairline, and that rule is enforced by a `Section` component rather than left to
+each page. The four prototypes move to `docs/design-directions/`; they have done their job.
+
+## 17. A second accent, in a pair
+Lime straw, `oklch(0.91 0.2 110)`. Structural marks only: the rules that lead the kickers, the
+hero aside, the connector between the steps, and selected text. Never body text, never a large
+field.
+
+It ships as a pair. The light value measures 12.03:1 on the deep band and about 1:1 against
+the sand ground, so a single token would have made the same mark sing in the hero and vanish
+in the qualifications section. `--color-accent-ink` is the darker sibling for light grounds,
+held above the 3:1 that WCAG 1.4.11 sets for a graphic mark. `scripts/check-contrast.ts` knows
+the difference between a text floor and a graphic one and gates both.
+
+## 18. Alignment is a rule, not a nudge
+Text in a bullet, disc or other frame sits on the baseline of the title it belongs to when the
+two are the same size, and is centred on that title's x-height band when it is not. Both halves
+are one shift, because with the baselines aligned the two x-height centres differ by exactly
+half the difference of the x-heights; at equal sizes that is zero and the rule collapses to
+plain baseline alignment. Implemented as `.mark-row` and `--mark-ratio` in `src/app.css`,
+where two failed attempts are also recorded so they are not tried again.
+
+## 19. Every visitor-facing string is traced to a source
+An audit of the copy found the site making promises John never made: a free, no-obligation
+first conversation; a callback; that supervision hours would count towards a supervisee's
+requirements; that he would be the one answering the phone. Six of them entered in a single
+commit, the pass that rewrote the copy for its audience.
+
+Rewriting for audience and for search is wanted. Acquiring promises, stances and facts the
+client never gave is not, and it does not look invented, which is why it survived four rounds
+of review. `docs/copy-to-confirm.md` holds what we would still like to say and cannot yet;
+nothing in it is on the site.
+
+## 20. The build must survive leaving this image
+The site will also be hosted on ordinary third-party static file hosting. So the static output
+has to be deployable by plain file copy: every page prerenders to `<path>/index.html`, and
+nothing depends on nginx's `try_files` or on any header this image sets. A URL that only
+resolves because of `deploy/nginx.conf` is a URL that is broken on the other host.
+`.github/workflows/deploy-static-host.yml` is the second deployment, manual-only and inert
+until its secrets exist. What does not survive the move is the Sveltia editor, which needs the
+GitHub OAuth broker that runs in the staging compose stack.
