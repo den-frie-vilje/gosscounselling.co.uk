@@ -143,7 +143,7 @@
             <img
               use:latchVisible
               class="heroCut cutMobile"
-              src="/img/john-cutout-dark.webp"
+              src="/img/john-cutout.webp"
               alt={home.hero.portraitAlt}
               width="900"
               height="900"
@@ -159,7 +159,7 @@
                  for.
 
                  It took three goes to get there. The plain knockout
-                 (john-cutout.webp, still the master everything is measured
+                 (assets/portrait/john-knockout.webp, still the master everything is measured
                  from) is matted against a white cyclorama and never de-spilled
                  in COLOUR, so its fringe carries the backdrop: at the drawn
                  size 31.9% of it composites BRIGHTER than the plate it sits
@@ -185,7 +185,7 @@
                  photograph is dark there too. -->
             <div class="layer layerIn">
               <img
-                src="/img/john-cutout-dark.webp"
+                src="/img/john-cutout.webp"
                 alt={home.hero.portraitAlt}
                 width="900"
                 height="900"
@@ -195,7 +195,7 @@
             <!-- Outside it: the same file. It is `aria-hidden` and alt-empty
                  because the layer above already names him. -->
             <div class="layer layerOut" aria-hidden="true">
-              <img src="/img/john-cutout-dark.webp" alt="" width="900" height="900" />
+              <img src="/img/john-cutout.webp" alt="" width="900" height="900" />
             </div>
           </div>
         </figure>

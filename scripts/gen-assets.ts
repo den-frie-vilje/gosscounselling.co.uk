@@ -15,7 +15,7 @@
  * keying the portrait (~17 s), rendering the OG cards through satori and resvg, and
  * measuring the cut-out for the page's geometry. None of their inputs change on an
  * ordinary copy edit, so an ordinary deploy was paying for all three every time. Worse,
- * `static/img/john-cutout*.webp` and `src/lib/generated/portrait-geometry.json` are
+ * the portrait assets and `src/lib/generated/portrait-geometry.json` are
  * COMMITTED, so an unconditional rebuild put a fresh binary in every deploy's diff whether
  * or not the picture had changed.
  *
@@ -31,11 +31,12 @@
  * debugged.
  *
  * THE PORTRAIT ASSETS ARE MATCHED, NOT NAMED. `PORTRAIT_ASSETS` is a pattern over the top
- * level of `static/img/`, and the gate records whatever it finds. The delivered cut-out is
- * being reworked from a light/dark pair into a single straight-alpha asset as this is
- * written: a gate that hard-coded `john-cutout.webp` and `john-cutout-dark.webp` would be
- * wrong the moment that lands, and wrong SILENTLY, which is the failure mode a cache has
- * to be designed against.
+ * level of `static/img/`, and the gate records whatever it finds. That has already paid
+ * for itself twice: the delivered cut-out went from a light/dark pair to one straight-alpha
+ * asset, and then the files were renamed and the knockout moved out of `static/` — and this
+ * gate needed no edit for either. A gate that hard-coded filenames would have been wrong the
+ * moment each landed, and wrong SILENTLY, which is the failure mode a cache must be designed
+ * against.
  */
 import { spawnSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
@@ -59,6 +60,14 @@ const ONLY = onlyAt >= 0 && onlyAt + 1 < argv.length ? argv[onlyAt + 1].split(',
  * complete and rename-proof description of the set.
  */
 const PORTRAIT_ASSETS: Ref = { dir: 'static/img', match: /\.(webp|avif|png|jpe?g)$/i, label: 'the portrait assets' };
+
+/**
+ * The knockout the solve is measured against. It is an intermediate, not something a
+ * visitor ever fetches, so it does not live in `static/` — it shipped for months at 316 KB
+ * that nothing on the site referenced. It is still an output of the keying step and an
+ * input to everything downstream, so the gate has to see it wherever it lives.
+ */
+const PORTRAIT_MASTERS: Ref = { dir: 'assets/portrait', match: /\.(webp|png|jpe?g)$/i, label: 'the portrait masters' };
 
 /** What the CMS writes when John replaces his photograph. Absent until he does. */
 const PORTRAIT_SOURCE: Ref = { dir: 'static/img/portrait', match: /\.(jpe?g|png|webp|tiff?)$/i, label: 'his photograph' };
@@ -85,13 +94,18 @@ const STEPS: Step[] = [
     // ships everywhere except in the asset it was written for.
     inputs: ['scripts/keyer.ts', 'scripts/gen-cutouts.ts'],
     optional: [PORTRAIT_SOURCE],
-    outputs: [PORTRAIT_ASSETS],
+    outputs: [PORTRAIT_ASSETS, PORTRAIT_MASTERS],
     run: () => node('scripts/gen-cutouts.ts')
   },
   {
     name: 'portrait-geometry',
     describe: 'The page\'s hero geometry is solved from the cut-out\'s own alpha.',
-    inputs: ['scripts/check-portrait-fit.ts', 'src/lib/portrait.config.json', PORTRAIT_ASSETS],
+    inputs: [
+      'scripts/check-portrait-fit.ts',
+      'src/lib/portrait.config.json',
+      PORTRAIT_ASSETS,
+      PORTRAIT_MASTERS
+    ],
     outputs: ['src/lib/generated/portrait-geometry.json'],
     run: () => node('scripts/check-portrait-fit.ts')
   },

@@ -59,8 +59,8 @@ const PHOTO_EXT = /\.(jpe?g|png|webp|tiff?)$/i;
  *
  * See `src/routes/(site)/+page.svelte` for who paints which.
  */
-const OUT_MASTER = 'john-cutout.webp';
-const OUT_ASSET = 'john-cutout-dark.webp';
+const OUT_MASTER = 'john-knockout.webp';
+const OUT_ASSET = 'john-cutout.webp';
 
 const argv = process.argv.slice(2);
 const flag = (name: string) => argv.includes(name);
@@ -234,9 +234,9 @@ async function writeCutout(
 // photograph and reconstructs nothing. What the comparison is for is to say WHERE they
 // differ and by how much, in numbers, so that a swap is a decision and not a surprise.
 //
-// Both files are compared, and they answer different questions. On `john-cutout.webp`,
+// Both files are compared, and they answer different questions. On the knockout,
 // where both sides are the unsolved master, a difference is a difference in the MATTE.
-// On `john-cutout-dark.webp` it is the matte plus the solve, and since both sides now run
+// On the painted asset it is the matte plus the solve, and since both sides now run
 // the same solve, a difference there that is not in the first comparison is the solve
 // disagreeing about the same edge.
 // ---------------------------------------------------------------------------
