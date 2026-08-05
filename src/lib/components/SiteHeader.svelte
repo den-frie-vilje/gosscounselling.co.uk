@@ -110,20 +110,26 @@
   }
 
   /** Which section the reader is in: the last one whose top has crossed a
-   *  line two thirds of the way down the viewport.
+   *  line two thirds of the way UP from the bottom of the viewport, which is
+   *  a third of the way down from the top.
    *
    *  Tuned from both ends. The sticky header's own edge meant the bar only
-   *  moved once the previous section had left the screen entirely, and the nav
-   *  read as lagging behind the page. Three quarters down handed over as soon
-   *  as a section appeared at the bottom, before anyone was reading it. A
-   *  quarter down was late again: you had to scroll a section almost to the
-   *  top before the nav admitted you were in it. Two thirds is Ole's call, and
-   *  it means a section takes the bar once it is a third of the way onto the
-   *  screen.
+   *  moved once the previous section had left the screen entirely, and the
+   *  nav read as lagging behind the page. Three quarters down handed over as
+   *  soon as a section appeared at the bottom, before anyone was reading it.
+   *  A quarter down was late again: you had to scroll a section nearly to the
+   *  top before the nav admitted you were in it. Two thirds up from the
+   *  bottom is Ole's call, and it means a section takes the bar once two
+   *  thirds of the screen is showing it.
    *
-   *  Read from the sections themselves rather than from a scroll offset, so it
-   *  stays right whatever the content does. */
-  const HANDOVER = 0.66;
+   *  Measured from the bottom because that is how he described it, and
+   *  written as the fraction from the top because that is what the geometry
+   *  wants; the arithmetic is here rather than in anyone's head.
+   *
+   *  Read from the sections themselves rather than from a scroll offset, so
+   *  it stays right whatever the content does. */
+  const HANDOVER_UP_FROM_BOTTOM = 0.66;
+  const HANDOVER = 1 - HANDOVER_UP_FROM_BOTTOM;
 
   function readSection() {
     const line = (window.innerHeight || document.documentElement.clientHeight) * HANDOVER;
@@ -167,13 +173,17 @@
   });
 
   onMount(() => {
-    // After the sections have mounted and registered. In dev this is the only
-    // thing standing between a drifted nav and nobody noticing for a week.
-    warnUnregistered(items.map((i) => i.id).filter((id): id is string => Boolean(id)));
     fitCallLabel();
     readSection();
     place();
-    requestAnimationFrame(() => (barPlaced = true));
+    requestAnimationFrame(() => {
+      barPlaced = true;
+      // Deferred a frame: the header mounts before the sections below it have
+      // run their attachments, so checking here reported every section
+      // missing on every load. A warning that is always wrong is worse than
+      // no warning, because it teaches you to skip past the one that is not.
+      warnUnregistered(items.map((i) => i.id).filter((id): id is string => Boolean(id)));
+    });
 
     // Measured again once the real faces are in. Until then the row is laid
     // out in the fallback metrics, and Inter is wider than what the system
