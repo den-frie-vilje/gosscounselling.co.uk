@@ -551,18 +551,22 @@
       }
     }
   }
-  /* Below 880px the ground is the deep gradient whatever the plate is, so the
-     dark matte is always the right one there. */
-  .cut-light {
+  /* Which matte is correct follows the ground, and the ground changes at the
+     same breakpoint the plate appears at. Below 880px he is full-bleed on the
+     deep gradient and needs the keyed one; on the sand plate he needs the
+     plain knockout, because that keyer treatment reads as a dark fringe on a
+     light ground. */
+  /* Scoped through `.heroFig` on purpose: `.heroFig img` already declares
+     `display: block`, and at equal source order a bare `.cut-light` loses to
+     it on specificity, so BOTH mattes render and there are two of him. */
+  .heroFig .cut-light {
     display: none;
   }
   @media (min-width: 880px) {
-    :global(html[data-plate='sand']) .cut-dark,
-    :global(html[data-plate='drysand']) .cut-dark {
+    .heroFig .cut-dark {
       display: none;
     }
-    :global(html[data-plate='sand']) .cut-light,
-    :global(html[data-plate='drysand']) .cut-light {
+    .heroFig .cut-light {
       display: block;
     }
   }
@@ -576,8 +580,9 @@
     }
   }
 
-  /* From 880px he settles INTO the plate: a slow push-in of a few per cent
-     over a second and a half, once, ending where it ends.
+  /* From 880px he settles INTO the plate: a push-in of a few per cent over
+     three seconds, once, ending where it ends. Slow enough that it is not
+     really watchable, which is the point.
 
      It is small on purpose. The plate crops him, so a scale is the only move
      available that does not slide him against his own frame, and anything
@@ -591,8 +596,8 @@
   @media (min-width: 880px) and (prefers-reduced-motion: no-preference) {
     .heroCut {
       transform-origin: bottom center;
-      animation: hero-cut-settle 1500ms var(--ease-brand) both;
-      animation-delay: 200ms;
+      animation: hero-cut-settle 3200ms var(--ease-brand) both;
+      animation-delay: 220ms;
     }
   }
   @keyframes hero-cut-settle {
@@ -616,10 +621,22 @@
     .heroFig {
       aspect-ratio: 1;
       border-radius: 50%;
-      /* The plate cites the accent rather than repeating the band. Held as a
-         variable so the studio panel can swap it; the default is the teal it
-         has had, and `--plate-cut` says which matte belongs with it. */
-      background: var(--plate, #164b5d);
+      /* The plate cites the accent's own family rather than repeating the
+         band. Off-centre, so the light falls from the upper left where the
+         corner wash already pools, and the disc reads as lit rather than as
+         a flat swatch.
+
+         It is light on purpose, and the reason is measured: against the old
+         teal plate his near-black shirt separated at 1.82:1 and the
+         silhouette bled into its own ground. Against this it is 10.69:1 at
+         the pale end and 7.03:1 at the deep end, so he actually reads. */
+      background: radial-gradient(
+        118% 118% at 32% 22%,
+        #e8d795 0%,
+        #dfca7d 38%,
+        #cdb970 72%,
+        #b6a461 100%
+      );
       align-self: center;
     }
     .heroFig img {
