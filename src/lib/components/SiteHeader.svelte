@@ -76,6 +76,7 @@
   // Esc closes the panel and returns focus to the control that opened it
   // (WCAG 2.1.2 No Keyboard Trap, 2.4.3 Focus Order).
   function onKeydown(event: KeyboardEvent) {
+    if (SCROLL_KEYS.has(event.key)) releasePin();
     if (event.key === 'Escape' && open) {
       open = false;
       toggleBtn?.focus();
@@ -131,7 +132,44 @@
   const HANDOVER_UP_FROM_BOTTOM = 0.66;
   const HANDOVER = 1 - HANDOVER_UP_FROM_BOTTOM;
 
+  // ---- the pin ----
+  // A click hands the bar to the item that was clicked, and the page then
+  // scrolls smoothly to it. During that scroll the reader passes through
+  // every section in between, so tracking alone walked the bar backwards and
+  // then forwards again, which reads as the bar losing its place.
+  //
+  // So a click pins the bar where the click put it, and only a fresh gesture
+  // takes it back: a wheel, a touch, a scroll key, or another click. Not the
+  // arrival of the scroll, and not a timer — either would be guessing at when
+  // the reader is next in charge, and `scrollend` still fires in the middle of
+  // a fling on some browsers.
+  let pinned = $state(-1);
+
+  function pin(index: number) {
+    pinned = index;
+    active = index;
+  }
+
+  /** Any gesture that means the reader is driving again. */
+  function releasePin() {
+    if (pinned < 0) return;
+    pinned = -1;
+    readSection();
+  }
+
+  // Only keys that scroll. Tabbing through the page, or typing into the CMS
+  // behind it, is not the reader taking the wheel.
+  const SCROLL_KEYS = new Set([
+    'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ', 'Spacebar'
+  ]);
+
   function readSection() {
+    // Pinned: the bar stays where the click put it, whatever the scroll is
+    // doing on the way there.
+    if (pinned >= 0) {
+      active = pinned;
+      return;
+    }
     const line = (window.innerHeight || document.documentElement.clientHeight) * HANDOVER;
     let found = -1;
     for (let i = 0; i < items.length; i++) {
@@ -211,7 +249,13 @@
   });
 </script>
 
-<svelte:window onkeydown={onKeydown} onresize={onResize} onscroll={readSection} />
+<svelte:window
+  onkeydown={onKeydown}
+  onresize={onResize}
+  onscroll={readSection}
+  onwheel={releasePin}
+  ontouchstart={releasePin}
+/>
 
 <header
   class="border-line bg-paper sticky top-0 z-60 border-b"
@@ -247,6 +291,7 @@
               href={item.href}
               class="navlink"
               aria-current={active === i ? 'true' : undefined}
+              onclick={() => pin(i)}
               onmouseenter={() => (hovered = i)}
               onfocus={() => (hovered = i)}
               onblur={() => (hovered = -1)}
@@ -308,9 +353,15 @@
 >
   <div class="container-page">
     <ul class="m-0 list-none p-0">
-      {#each items as item (item.href)}
+      {#each items as item, i (item.href)}
         <li>
-          <a href={item.href} onclick={close}>{item.label}</a>
+          <a
+            href={item.href}
+            onclick={() => {
+              pin(i);
+              close();
+            }}>{item.label}</a
+          >
         </li>
       {/each}
     </ul>
