@@ -116,16 +116,75 @@ const restingClear = halfScale * imgH - 1 - matteDrop * imgH;
 
 // ---- where to put him ---------------------------------------------------
 // He is not centred in his own photograph, so centring the IMAGE in the circle
-// leaves his head off to one side. Measure where the head's centre actually
-// is, across the rows that sit above the plate, and solve the shift that
-// brings it to the middle. The shift is a percentage of the IMAGE's own width,
-// which is how a percentage in `translate` resolves.
-const aboveFrac = Math.max((imgH - 1) / imgH, 0.02);
-const headRows = rows.filter((r) => r.y <= aboveFrac);
-const headCentreFrac =
-  (Math.min(...headRows.map((r) => r.left)) + Math.max(...headRows.map((r) => r.right))) / 2;
-const headShift = imgW * (0.5 - headCentreFrac);
-const imgLeft = 0.5 - imgW / 2 + headShift;
+// leaves his head off to one side.
+//
+// The head has to be segmented from the shoulders first, or the measurement is
+// of the wrong thing: taking the centre from the sliver that rises above the
+// plate measures his CROWN, and taking it from the whole figure measures his
+// shoulders. The neck is the narrowest point between the two, so smooth the
+// per-row width, find the first local maximum (the head at its widest, about
+// the ears) and then the first local minimum below it.
+const widths = rows.map((r) => r.right - r.left);
+const SMOOTH = 12;
+const smooth = widths.map((_, i) => {
+  let sum = 0;
+  let n = 0;
+  for (let k = -SMOOTH; k <= SMOOTH; k++) {
+    const j = i + k;
+    if (j >= 0 && j < widths.length) {
+      sum += widths[j];
+      n++;
+    }
+  }
+  return sum / n;
+});
+let peak = -1;
+for (let i = SMOOTH; i < smooth.length - SMOOTH; i++) {
+  if (smooth[i] >= smooth[i - SMOOTH] && smooth[i] >= smooth[i + SMOOTH]) {
+    peak = i;
+    break;
+  }
+}
+let neck = -1;
+if (peak > 0) {
+  for (let i = peak + SMOOTH; i < smooth.length - SMOOTH; i++) {
+    if (smooth[i] <= smooth[i - SMOOTH] && smooth[i] <= smooth[i + SMOOTH]) {
+      neck = i;
+      break;
+    }
+  }
+}
+if (neck < 0) {
+  console.error(
+    `\nFAIL  could not find the neck in ${CUTOUT}: no local width minimum below the head's widest row. Centring his head is guesswork without it.`
+  );
+  process.exit(1);
+}
+const headBand = rows.slice(0, neck + 1);
+
+// The alpha-weighted centroid across that band, rather than the midpoint of
+// its extremes: a centroid is not thrown by one ear sticking out further than
+// the other, and the eye reads the mass, not the bounding box.
+let mass = 0;
+let moment = 0;
+for (const r of headBand) {
+  const y = Math.round(r.y * h);
+  for (let x = Math.round(r.left * w); x <= Math.round(r.right * w); x++) {
+    const a = alpha[y * w + x];
+    if (a > ALPHA_FLOOR) {
+      mass += a;
+      moment += a * x;
+    }
+  }
+}
+const headCentreFrac = moment / mass / w;
+
+// A percentage in `translate` resolves against the ELEMENT's own width, which
+// is the image, so the image's width cancels out of the solution and this is
+// simply how far off centre his head is. Multiplying by it, as an earlier
+// version did, over-shifted him by that factor: 3.11% instead of 2.43%.
+const headShift = 0.5 - headCentreFrac;
+const imgLeft = 0.5 - imgW / 2 + headShift * imgW;
 
 // ---- the mask geometry, in the layers' own coordinates ------------------
 // Both layers are the IMAGE's box, so neither has a rectangle edge anywhere
@@ -154,7 +213,12 @@ console.log(`cutout          ${w}x${h}, aspect ${(h / w).toFixed(4)}`);
 console.log(`soft rows       ${softRows} at the bottom, so he drops ${pct(matteDrop)}`);
 console.log(`drawn at        ${pct(imgW)} of the plate`);
 console.log(`crown settles   ${pct(restingClear)} above the plate (asked for ${pct(wantedClear)})`);
-console.log(`head shift      ${pct(headShift)} to centre his head, not his image`);
+console.log(
+  `head at widest  row ${Math.round(rows[peak].y * h)}, neck at row ${Math.round(rows[neck].y * h)}`
+);
+console.log(
+  `head centre     ${pct(headCentreFrac)} of the image, so it shifts ${pct(headShift)}`
+);
 console.log(`mask tile       ${pct(tileW)} ${pct(tileH)} at ${pct(posX)} ${pct(posY)}`);
 console.log(`layer padding   ${pct(layerPad)} for the push-in's overshoot`);
 console.log(`disc inset      ${config.discInset}px, so the mask overlaps the disc's edge`);

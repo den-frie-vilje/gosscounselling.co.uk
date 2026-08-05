@@ -757,22 +757,30 @@
       position: absolute;
       inset: var(--disc-inset);
       border-radius: 50%;
-      /* The plate cites the accent's own family rather than repeating the
-         band. Off-centre, so the light falls from the upper left where the
-         corner wash already pools, and the disc reads as lit rather than as
-         a flat swatch.
+      /* The plate is the hero Call button's own hue, taken sandy: the same
+         220.6 degrees, with the chroma dropped from 0.117 to about 0.05 and
+         the lightness lifted. So it reads as the same family as the button
+         rather than as a second, unrelated colour, and it stops the disc
+         being the yellow it had drifted to.
+
+         Off-centre, so the light falls from the upper left where the corner
+         wash already pools and the disc reads as lit rather than as a flat
+         swatch.
 
          It is light on purpose, and the reason is measured: against the old
          teal plate his near-black shirt separated at 1.82:1 and the
-         silhouette bled into its own ground. Against this it is 10.69:1 at
-         the pale end and 7.03:1 at the deep end, so he actually reads. */
-      background: radial-gradient(
-        118% 118% at 32% 22%,
-        #e8d795 0%,
-        #dfca7d 38%,
-        #cdb970 72%,
-        #b6a461 100%
-      );
+         silhouette bled into its own ground. Against this it is 12.28:1 at
+         the pale end and 10.21:1 at the deep end. */
+      /* Three layers rather than one ramp, so the disc has some play in it:
+         a small warm highlight up and left, where the hero's own corner wash
+         already pools; a cool counter-pool low and right, so the shading does
+         not read as a single direction; and the body of the colour underneath
+         them both. Each is soft and none is strong. The point is that the
+         surface is not flat, not that anyone notices a gradient. */
+      background:
+        radial-gradient(52% 46% at 26% 18%, #d7ecf4 0%, rgb(215 236 244 / 0) 100%),
+        radial-gradient(58% 54% at 78% 88%, #8dc7db 0%, rgb(141 199 219 / 0) 100%),
+        radial-gradient(118% 118% at 32% 22%, #bfe2ee 0%, #b0dbea 42%, #9fd2e4 100%);
     }
 
     /* The shared parent. The push-in lives here, so both layers move as one. */
