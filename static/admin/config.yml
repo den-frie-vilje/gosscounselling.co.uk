@@ -99,6 +99,25 @@ collections:
                   hint: 'Write {phone} where the number should appear and it is filled in from Contact details. Typing the number out instead is how the button ends up reading one number and dialling another.'
                 }
               - { name: ctaSecondary, label: Second button, widget: string }
+              # The upload that drives the whole portrait pipeline. A photograph
+              # dropped here is keyed, cut out and composited by the build; see
+              # scripts/keyer.ts, which measures the backdrop rather than
+              # assuming one and REFUSES a photograph it cannot key cleanly
+              # rather than publishing a bad cut-out.
+              #
+              # Its own folder, not `static/img`, because the pipeline watches
+              # that folder and everything else in `static/img` is something it
+              # produced. Optional, so leaving it empty keeps the portrait that
+              # is already there.
+              - {
+                  name: portrait,
+                  label: Your photograph,
+                  widget: image,
+                  required: false,
+                  media_folder: '/static/img/portrait',
+                  public_folder: '/img/portrait',
+                  hint: 'Upload a new photo of yourself and the site cuts it out and places it for you. It needs an evenly lit plain background — if it is too patchy to cut out cleanly the build will say so and keep the photo you have. Leave this empty to keep the current one.'
+                }
               - {
                   name: portraitAlt,
                   label: Photo description,

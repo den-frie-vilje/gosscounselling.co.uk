@@ -55,6 +55,7 @@ function declaredPaths(fields: Field[] | undefined, prefix = ''): string[] {
     if (!f.name) continue;
     const path = prefix ? `${prefix}.${f.name}` : f.name;
     out.push(path);
+    if (f.required === false) OPTIONAL.add(path);
     if (f.widget === 'list') {
       // A list is either `fields:` (objects) or a single `field:` (scalars).
       const itemFields = f.fields ?? (f.field ? [f.field] : undefined);
@@ -65,6 +66,23 @@ function declaredPaths(fields: Field[] | undefined, prefix = ''): string[] {
   }
   return out;
 }
+
+/**
+ * Paths the config marks `required: false`.
+ *
+ * They are allowed to be absent from the JSON, and until now they were not:
+ * every declared path had to have a key behind it, so `required: false` was a
+ * label with no meaning and the only safe optional fields were the ones nested
+ * in a list, which store `null` rather than vanishing. Sveltia may omit a
+ * cleared top-level key entirely, and a build that fails because John emptied
+ * a field the config calls optional is a build that lied to him about which
+ * fields he had to fill in.
+ *
+ * The rule it does NOT relax: a path in the JSON that the config does not
+ * declare is still reported, because the editor deletes those on its next save.
+ * Optional means "may be absent", never "may be unknown".
+ */
+const OPTIONAL = new Set<string>();
 
 /** Every key path actually present in a JSON value, in the same notation. */
 function actualPaths(value: unknown, prefix = ''): string[] {
@@ -162,6 +180,7 @@ function audit(configText: string, read: (p: string) => string): {
         }
       }
       for (const path of declared) {
+        if (OPTIONAL.has(path)) continue;
         const parent = path.replace(/[.[][^.[]*$/, '');
         if (!actual.has(path) && (parent === path || actual.has(parent))) {
           problems.push({
@@ -231,6 +250,21 @@ function selfTest(): boolean {
   );
   console.log(`self-test: config field with no key ${caughtMissing ? 'CAUGHT' : 'MISSED'}`);
   ok &&= caughtMissing;
+
+  // Fault 2b: the same field, declared OPTIONAL. It must NOT be reported —
+  // otherwise `required: false` is a label with no meaning and every optional
+  // field is a build waiting to break the first time John clears it. Run
+  // second, so fault 2 has already proved the rule still fires when it should.
+  const optionalField = configText.replace(
+    '          - { name: tagline, label: Tagline, widget: string }',
+    '          - { name: tagline, label: Tagline, widget: string }\n          - { name: fieldWithNoKey, label: Nothing behind it, widget: string, required: false }'
+  );
+  const optional = audit(optionalField, realRead);
+  const toleratedOptional = !optional.problems.some((p) => p.detail.includes('fieldWithNoKey'));
+  console.log(
+    `self-test: optional config field with no key ${toleratedOptional ? 'TOLERATED' : 'WRONGLY REPORTED'}`
+  );
+  ok &&= toleratedOptional;
 
   // Fault 3: the can't-read path. A checker that loops over fetched input and
   // starts from an optimistic default reports PASS when the fetch returns

@@ -31,3 +31,9 @@ deploy/*.env
 
 # Responsive photo variants — built by scripts/gen-photos.ts in prebuild
 /static/img/photos/_gen/
+
+# The keyer's audit record. Written only when a photograph is actually keyed,
+# and it names the file it keyed — so a committed one would describe a run that
+# a fresh checkout has not made. scripts/check-mattes.ts stands its
+# reproduction check down when it is absent, and says so.
+/src/lib/generated/cutout-audit.json
