@@ -32,7 +32,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import sharp from 'sharp';
 
-const CUTOUT = 'static/img/john-cutout.webp';
+const CUTOUT = 'assets/portrait/john-knockout.webp';
 const CONFIG = 'src/lib/portrait.config.json';
 const OUT = 'src/lib/generated/portrait-geometry.json';
 

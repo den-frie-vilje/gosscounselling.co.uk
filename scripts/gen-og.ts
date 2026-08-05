@@ -131,7 +131,7 @@ async function discDataUri(): Promise<string | null> {
     // alpha climbs 0.02 to 0.35 — which is a bright rim traced around him.
     // The keyed matte falls monotonically instead: 184.2, 183.4, 181.7,
     // 177.6. See the note on .layerIn in src/routes/(site)/+page.svelte.
-    const cutout = await sharp(read('static/img/john-cutout-dark.webp'))
+    const cutout = await sharp(read('static/img/john-cutout.webp'))
       .resize({ width: imgW, kernel: 'lanczos3' })
       .toBuffer();
     const { height: cutH = DISC } = await sharp(cutout).metadata();

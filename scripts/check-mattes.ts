@@ -57,9 +57,9 @@ const arg = (name: string, fallback: string) => {
   const i = argv.indexOf(name);
   return i >= 0 && i + 1 < argv.length ? argv[i + 1] : fallback;
 };
-const ASSET = arg('--asset', 'static/img/john-cutout-dark.webp');
+const ASSET = arg('--asset', 'static/img/john-cutout.webp');
 /** The unsolved master: the same matte over untouched pixels. Nothing paints it. */
-const MASTER = arg('--master', 'static/img/john-cutout.webp');
+const MASTER = arg('--master', 'assets/portrait/john-knockout.webp');
 /**
  * The photograph the HAND pass cut from, and the alignment and backing it used:
  * `scripts/build-cutouts.py` puts the matte over this plate bottom-aligned, and

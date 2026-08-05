@@ -1,7 +1,7 @@
 """Build John's portrait assets.
 
   python3 scripts/build-cutouts.py                # rebuild everything from the source files
-  python3 scripts/build-cutouts.py --from-master  # keep design/assets/john-cutout.webp exactly
+  python3 scripts/build-cutouts.py --from-master  # keep assets/portrait/john-knockout.webp exactly
                                                   # as it is (e.g. after a hand retouch of the
                                                   # crown) and only re-derive what depends on it
 
@@ -9,19 +9,22 @@ TO RETOUCH THE CROWN: edit `docs/source-assets/john-light-decontaminated.png` â€
 background already removed and decontaminated against the white backdrop. The source frame clips
 the top of his head, so the canvas has to grow upward; the version in the repo has been retouched
 by hand and now stands 1800x1460. Run this script with no arguments and everything downstream is
-rebuilt from it. (To work on the WebP directly instead, edit `design/assets/john-cutout.webp` and
+rebuilt from it. (To work on the WebP directly instead, edit `assets/portrait/john-knockout.webp` and
 run with --from-master.)
 
 Three assets come out in design/assets/:
 
-  john-cutout.webp        the light studio frame, knocked out. His shoulders run off the edges of
+  assets/portrait/john-knockout.webp
+                          the light studio frame, knocked out. An intermediate: nothing on
+                          the site fetches it, so it is not in static/. His shoulders run off the edges of
                           the original photograph, so in layout it always sits in a frame
                           narrower than the image: the crop is made by the frame or the viewport,
                           never by a line floating mid-section. NOTHING ON THE PAGE PAINTS THIS.
                           It is the master the geometry is measured from and the input the solve
                           below reads; its fringe still carries the white cyclorama.
 
-  john-cutout-dark.webp   THE ONE ASSET THE PAGE PAINTS, on every ground it uses. Straight
+  static/img/john-cutout.webp
+                          THE ONE ASSET THE PAGE PAINTS, on every ground it uses. Straight
                           (unassociated) alpha whose foreground colour is John's own at
                           every coverage, so `F*a + ground*(1-a)` is right over the light
                           plate inside the hero's circle and over the deep band outside it
@@ -48,6 +51,10 @@ from scipy.interpolate import PchipInterpolator
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
 OUT = f"{REPO}/static/img"
+# The knockout is an INTERMEDIATE, not something a visitor ever fetches, so it
+# lives outside the directory adapter-static copies into the build. It shipped
+# for months at 316 KB that nothing on the site referenced.
+MASTERS = f"{REPO}/assets/portrait"
 SRC = f"{REPO}/docs/source-assets"
 FROM_MASTER = "--from-master" in sys.argv
 
@@ -62,7 +69,7 @@ def knockout():
         sys.exit(f"missing {src}")
     im = Image.open(src).convert("RGBA")
     im = im.crop(im.getbbox())
-    im.save(f"{OUT}/john-cutout.webp", "WEBP", quality=92, alpha_quality=100, exact=True, method=6)
+    im.save(f"{MASTERS}/john-knockout.webp", "WEBP", quality=92, alpha_quality=100, exact=True, method=6)
     print(f"  knockout: {im.size[0]}x{im.size[1]}")
 
 
@@ -229,7 +236,7 @@ def solid_matte():
     is why it is used only as the LOW-coverage prior and the closed-form solve carries
     everything above 0.20.
     """
-    m = np.array(Image.open(f"{OUT}/john-cutout.webp").convert("RGBA")).astype(np.float64)
+    m = np.array(Image.open(f"{MASTERS}/john-knockout.webp").convert("RGBA")).astype(np.float64)
     A = np.clip(m[..., 3] / 255.0, 0, 1)
     H, W = A.shape
     master_rgb = m[..., :3]
@@ -301,7 +308,7 @@ def solid_matte():
     Fd[An <= 0.0] = Fprior[An <= 0.0]
 
     Image.fromarray(np.dstack([Fd, An * 255.0]).round().astype(np.uint8), "RGBA") \
-         .save(f"{OUT}/john-cutout-dark.webp", "WEBP",
+         .save(f"{OUT}/john-cutout.webp", "WEBP",
                quality=92, alpha_quality=100, exact=True, method=6)
     _verify_solid_matte(master_rgb, A, An, Fd, Fprior, I, top, np.vstack([xs, ys]), conf)
 
@@ -313,7 +320,7 @@ def _verify_solid_matte(master_rgb, A, An, Fd, Fprior, I, top, curve, conf):
     master this was solved from â€” plus, where it is still present, the previously
     published keyed matte, so the comparison is against what was actually shipped.
     """
-    d = np.array(Image.open(f"{OUT}/john-cutout-dark.webp").convert("RGBA")).astype(np.float64)
+    d = np.array(Image.open(f"{OUT}/john-cutout.webp").convert("RGBA")).astype(np.float64)
     aa, rgb = d[..., 3] / 255.0, d[..., :3]
     H, W = aa.shape
     Ilin = _srgb_to_linear(I)
@@ -525,10 +532,12 @@ def round_portrait():
 
 
 if FROM_MASTER:
-    print("  keeping design/assets/john-cutout.webp as it stands")
+    print("  keeping assets/portrait/john-knockout.webp as it stands")
 else:
     knockout()
 solid_matte()
 round_portrait()
-for f in ("john-cutout.webp", "john-cutout-dark.webp", "john-portrait-round.webp"):
-    print("  %-26s %6.0f KB" % (f, os.path.getsize(f"{OUT}/{f}") / 1024))
+for d, f in ((MASTERS, "john-knockout.webp"),
+             (OUT, "john-cutout.webp"),
+             (OUT, "john-portrait-round.webp")):
+    print("  %-26s %6.0f KB" % (f, os.path.getsize(f"{d}/{f}") / 1024))

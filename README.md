@@ -119,8 +119,10 @@ python3 scripts/build-cutouts.py 0.5
   chord. A circle fitted to the local edge slope on both sides of the gap restores the arc, at
   half its fitted height, with edge fuzz matched to the measured statistics of his real
   silhouette (ramp 6.4px vs 6.5px real, roughness 0.41px vs 0.42px real).
-- **One asset is painted, on every ground** (`john-cutout-dark.webp`, a name kept only because
-  the scripts write to it). There used to be a light/dark pair, each with its own edge treatment
+- **One asset is painted, on every ground** — `static/img/john-cutout.webp`, and it is the only
+  cut-out in the directory the build copies from. The knockout it is measured against lives in
+  `assets/portrait/`, because a visitor never fetches it and it shipped for months at 316 KB that
+  nothing on the site referenced. There used to be a light/dark pair, each with its own edge treatment
   — colour edge-extend, matte choke, negative light wrap — and that is gone from both the hand
   pass and the general keyer. Instead the foreground is pinned to John's own colour, carried
   across the fringe geodesically from the opaque interior, and coverage is solved against the
