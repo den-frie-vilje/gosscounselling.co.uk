@@ -99,6 +99,8 @@ export interface Home {
     eyebrow: string;
     title: string;
     lead: string;
+    /** His own sentence, from the old site. */
+    aside: string;
     /** Inline markdown. */
     reassure: string;
     ctaPrimary: string;

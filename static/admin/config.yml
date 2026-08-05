@@ -187,6 +187,12 @@ collections:
               - { name: title, label: Headline, widget: string }
               - { name: lead, label: Lead, widget: text }
               - {
+                  name: aside,
+                  label: Aside,
+                  widget: text,
+                  hint: 'The quieter line hung off a rule under the lead. Currently your own sentence from the old site.'
+                }
+              - {
                   name: reassure,
                   label: Line under the buttons,
                   widget: markdown,

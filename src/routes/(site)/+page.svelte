@@ -45,6 +45,11 @@
         <h1 class="t-display text-white">{home.hero.title}</h1>
         <p class="lede t-lead">{home.hero.lead}</p>
 
+        <!-- His own sentence, from the old site. Set apart from the lead
+             above it, in the display face and hung off a quiet rule, so it
+             reads as an aside rather than as a second sentence of the pitch. -->
+        <p class="aside">{home.hero.aside}</p>
+
         <div class="actions">
           <a href={contact.phoneHref} class="btn btn-bright">
             <Icon name="phone" size={19} />
@@ -305,11 +310,14 @@
     .lede {
       animation-delay: 260ms;
     }
+    .aside {
+      animation-delay: 340ms;
+    }
     .actions {
-      animation-delay: 360ms;
+      animation-delay: 430ms;
     }
     .reassure {
-      animation-delay: 440ms;
+      animation-delay: 510ms;
     }
     /* He arrives last and barely moves: a cutout of a person sliding into
        place would be the thing we are trying not to do. */
@@ -371,6 +379,17 @@
   .lede {
     margin: 22px 0 0;
     max-width: 44ch;
+    color: var(--color-on-deep-muted);
+  }
+  .aside {
+    margin: 24px 0 0;
+    max-width: 40ch;
+    padding-left: 16px;
+    border-left: 2px solid rgb(130 201 220 / 0.45);
+    font-family: var(--font-display);
+    font-size: 16.5px;
+    font-style: italic;
+    line-height: 1.6;
     color: var(--color-on-deep-muted);
   }
   .actions {
