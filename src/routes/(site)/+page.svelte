@@ -437,10 +437,19 @@
   }
 
   /* The two pools drift, and that is all they do.
-     No pulsing, no scaling, no change of colour or opacity: a light that
-     breathes in and out is a television studio, and this is a page about
-     bereavement and erections. What is left is positional, on two periods
-     that do not share a factor so the pair never visibly repeats.
+     No change of colour or opacity: a light that flashes is a television
+     studio, and this is a page about bereavement and erections. Movement and
+     size, and nothing else.
+
+     Size is Ole's, with his floor: never smaller than they were, so the swell
+     only ever opens outward from the composition that was signed off. It is
+     on its OWN period, not the drift's, because a pool that grows exactly
+     when it moves is a heartbeat and a pool that grows on its own schedule is
+     weather. That is why `translate` and `scale` are separate properties
+     here rather than one `transform`: two properties take two animations, and
+     two animations can disagree about time. All four periods are prime — 53,
+     79, 67, 89 — so nothing in the pair lines up twice within any session
+     anyone will sit through.
 
      Ole asked for more life, and the answer was mostly the PATH rather than
      the distance. Each pool used to shuttle between two points, and a
@@ -451,10 +460,16 @@
      2.4% to about 4% and the cycles from 71s/97s to 53s/79s, which is still
      around 0.1% of the viewport a second — slower than a minute hand.
 
-     `linear`, not `ease-in-out`: eased segments decelerate into every stop,
-     and five little arrivals a cycle is the pulsing this is meant to avoid.
-     At this speed the corners between segments are far below what anyone can
-     see.
+     The drift is `linear`, not `ease-in-out`: eased segments decelerate into
+     every stop, and five little arrivals a cycle is the ticking this is meant
+     to avoid. At this speed the corners between segments are far below what
+     anyone can see. The swell IS eased, because it has one turn per cycle
+     rather than five, and over a minute and a bit that turn is invisible.
+
+     Contrast is unaffected by either. The worst case was computed at the
+     pools' PEAK alpha, at the centre of the gradient; moving a pool cannot
+     exceed that and neither can stretching one, because scaling changes where
+     the falloff sits, never how dark the middle is.
 
      The pools carry more weight than they did, which was the point of the
      change, and the cost is computed rather than assumed. Compositing the
@@ -465,45 +480,68 @@
      it. */
   @media (prefers-reduced-motion: no-preference) {
     .wash {
-      animation: drift-a 53s linear infinite;
+      animation:
+        drift-a 53s linear infinite,
+        swell-a 67s ease-in-out infinite;
     }
     .wash2 {
-      animation: drift-b 79s linear infinite;
+      animation:
+        drift-b 79s linear infinite,
+        swell-b 89s ease-in-out infinite;
+    }
+  }
+  /* 1 is the floor, never a step below it. */
+  @keyframes swell-a {
+    0%,
+    100% {
+      scale: 1;
+    }
+    50% {
+      scale: 1.09;
+    }
+  }
+  @keyframes swell-b {
+    0%,
+    100% {
+      scale: 1;
+    }
+    50% {
+      scale: 1.12;
     }
   }
   /* Clockwise, up and right first. */
   @keyframes drift-a {
     0%,
     100% {
-      transform: translate3d(0, 0, 0);
+      translate: 0 0;
     }
     20% {
-      transform: translate3d(2.1%, -1.4%, 0);
+      translate: 2.1% -1.4%;
     }
     40% {
-      transform: translate3d(4%, -0.5%, 0);
+      translate: 4% -0.5%;
     }
     60% {
-      transform: translate3d(3.2%, 1.7%, 0);
+      translate: 3.2% 1.7%;
     }
     80% {
-      transform: translate3d(1.3%, 1.5%, 0);
+      translate: 1.3% 1.5%;
     }
   }
   /* Anticlockwise, down and left, so at no point are both going the same way. */
   @keyframes drift-b {
     0%,
     100% {
-      transform: translate3d(0, 0, 0);
+      translate: 0 0;
     }
     25% {
-      transform: translate3d(-2.7%, 1.3%, 0);
+      translate: -2.7% 1.3%;
     }
     50% {
-      transform: translate3d(-4%, 3.4%, 0);
+      translate: -4% 3.4%;
     }
     75% {
-      transform: translate3d(-1.5%, 3.8%, 0);
+      translate: -1.5% 3.8%;
     }
   }
 
