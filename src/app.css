@@ -254,31 +254,6 @@ h4 {
   margin: 0;
 }
 
-/* A short rule that leads a kicker, in the accent, at the same weight as the
-   connector between the steps. It is what establishes the colour before the
-   line uses it, so the line reads as part of the system rather than as the
-   one green thing on the page. */
-.t-kicker.led::before {
-  content: '';
-  display: inline-block;
-  width: 22px;
-  height: 4px;
-  margin-right: 12px;
-  vertical-align: middle;
-  /* The darker sibling by default, because most of the scroll is light
-     ground; the dark bands opt into the bright one below. */
-  background: var(--color-accent-ink);
-  /* Optically on the cap band of the small caps beside it, rather than on the
-     line box centre, which sits low against uppercase letterforms. */
-  transform: translateY(-1px);
-}
-
-/* On a dark band the bright value is the readable one. */
-.bg-deep .t-kicker.led::before,
-.on-deep.t-kicker.led::before {
-  background: var(--color-accent);
-}
-
 /* ---- Typographic scale ---- */
 .t-display {
   font-size: clamp(35px, 5.2vw, 57px);

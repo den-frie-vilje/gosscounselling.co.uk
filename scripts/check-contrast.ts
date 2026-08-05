@@ -67,9 +67,9 @@ const PAIRS: [string, string, string][] = [
   // exactly what a light lime does against the sand at 1.05:1.
   ['accent', 'deep', 'accent rule on the dark bands'],
   ['deep', 'accent', 'selected text on the accent'],
-  ['accent-ink', 'paper', 'accent rule on the page ground'],
-  ['accent-ink', 'mist', 'accent rule on the band'],
-  ['accent-ink', 'sand', 'accent rule on the warm strip']
+  ['accent-ink', 'paper', 'accent mark on the page ground'],
+  ['accent-ink', 'mist', 'the step connector, on the band'],
+  ['accent-ink', 'sand', 'accent mark on the warm strip']
 ];
 
 /** Pairings that are graphic marks rather than text, where WCAG 1.4.11 sets
@@ -77,7 +77,8 @@ const PAIRS: [string, string, string][] = [
 const GRAPHIC = new Set([
   'accent-ink on paper',
   'accent-ink on mist',
-  'accent-ink on sand'
+  'accent-ink on sand',
+  'accent on deep'
 ]);
 
 let failures = 0;

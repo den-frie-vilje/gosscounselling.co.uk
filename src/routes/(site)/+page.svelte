@@ -671,7 +671,10 @@
       top: 34px;
       bottom: -28px;
       width: 4px;
-      background: var(--color-accent);
+      /* The ink sibling: this section's ground is the light mist, where the
+         bright value measures barely 1.1:1 and the line would simply not be
+         there. The bright one is for the dark bands. */
+      background: var(--color-accent-ink);
       transform-origin: top center;
     }
     /* Each segment owns its own half of the travel, so the line reads 1 to 3
