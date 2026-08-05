@@ -1,11 +1,9 @@
 {
-  "heading": "Get in touch",
-  "email": "info@gosscounselling.co.uk",
   "phone": "07776 153 426",
-  "location": "Bletchley, Milton Keynes MK3",
-  "locationNote": "In person in Bletchley, Milton Keynes, or online.",
   "phoneNote": "If it is easier to talk than to write.",
-  "emailNote": "Anything you would rather write down than say.",
   "whatsappNote": "If writing is easier than talking.",
-  "menuHeading": "Get in touch"
+  "email": "info@gosscounselling.co.uk",
+  "emailNote": "Anything you would rather write down than say.",
+  "location": "Bletchley, Milton Keynes MK3",
+  "locationNote": "In person in Bletchley, Milton Keynes, or online."
 }
