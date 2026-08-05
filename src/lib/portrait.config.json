@@ -2,5 +2,6 @@
   "note": "The only portrait numbers anyone chooses. Everything else is derived from the cutout by scripts/check-portrait-fit.ts and written to src/lib/generated/portrait-geometry.json, so the treatment survives John replacing his photograph through the CMS.",
   "crownClear": 7,
   "pushInScale": 1.045,
-  "discInset": 0.75
+  "discInset": 0.75,
+  "discSettle": 1.035
 }

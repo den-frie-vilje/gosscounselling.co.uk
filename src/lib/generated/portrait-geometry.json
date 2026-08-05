@@ -13,5 +13,6 @@
   "layerPad": "2.36%",
   "matteDrop": "0.34%",
   "discInset": "0.75px",
+  "discSettle": 1.035,
   "softRows": 4
 }

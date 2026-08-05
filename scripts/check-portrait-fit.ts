@@ -81,6 +81,7 @@ const config = JSON.parse(readFileSync(CONFIG, 'utf8')) as {
   crownClear: number;
   pushInScale: number;
   discInset: number;
+  discSettle: number;
 };
 const wantedClear = config.crownClear / 100;
 const pushScale = config.pushInScale;
@@ -222,6 +223,7 @@ console.log(
 console.log(`mask tile       ${pct(tileW)} ${pct(tileH)} at ${pct(posX)} ${pct(posY)}`);
 console.log(`layer padding   ${pct(layerPad)} for the push-in's overshoot`);
 console.log(`disc inset      ${config.discInset}px, so the mask overlaps the disc's edge`);
+console.log(`disc settles    from ${config.discSettle} on the reveal`);
 
 let failures = 0;
 
@@ -272,6 +274,7 @@ writeFileSync(
       layerPad: pct(layerPad),
       matteDrop: pct(matteDrop),
       discInset: `${config.discInset}px`,
+      discSettle: config.discSettle,
       softRows
     },
     null,
