@@ -209,8 +209,12 @@ const matteDrop = (softRows + 1) / h;
 // The matte drop pushes him down, so it comes straight off the clearance.
 // Solving for the width has to account for it, or `--crown-clear` names a
 // number the page does not actually show.
-const restingClear = pushScale * imgH - 1 - matteDrop * imgH;
-const widthForWantedClear = ((1 + wantedClear) / (pushScale - matteDrop) / (h / w)) * 100;
+// The push-in scales about the image's CENTRE, so only half the overshoot
+// goes upward; the other half goes below the plate's bottom, where the circle
+// has already ended and nothing is painted.
+const halfScale = (pushScale + 1) / 2;
+const restingClear = halfScale * imgH - 1 - matteDrop * imgH;
+const widthForWantedClear = ((1 + wantedClear) / (halfScale - matteDrop) / (h / w)) * 100;
 
 // ---- 4. the mask geometry, in the layers' own coordinates --------------
 // Both layers are the IMAGE's box, so neither has a rectangle edge anywhere
@@ -227,7 +231,9 @@ const widthForWantedClear = ((1 + wantedClear) / (pushScale - matteDrop) / (h / 
 // the containing block's inline size and the layer's containing block is the
 // plate, not the layer itself. Getting that reference wrong left the padding
 // 4.41px short and the crown still clipped by exactly that much.
-const overshoot = (pushScale - 1) * imgH; // in plate units
+// Half, because the scale is about the centre: only half of the growth
+// reaches above the box.
+const overshoot = ((pushScale - 1) / 2) * imgH; // in plate units
 const layerPad = overshoot; // plate units == a fraction of the containing block
 const boxH = imgH + overshoot; // = pushScale * imgH
 
