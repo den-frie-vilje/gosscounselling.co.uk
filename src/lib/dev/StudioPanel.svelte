@@ -19,6 +19,9 @@
     oklch: string;
     /** What sRGB falls back to. */
     hex: string;
+    /** The darker sibling for light grounds, and its sRGB fallback. */
+    inkOklch: string;
+    inkHex: string;
     /** Computed WCAG ratio against the deep ground. */
     onDeep: string;
     note: string;
@@ -29,44 +32,64 @@
   // so the deep ground is the pairing that has to hold.
   const ACCENTS: Accent[] = [
     {
-      id: 'neon-green',
-      name: 'Neon green',
-      oklch: 'oklch(0.87 0.25 143)',
-      hex: '#53fb53',
-      onDeep: '11.21:1',
-      note: 'Adjacent to the teal, so it reads as the same family turned up.'
-    },
-    {
       id: 'acid-lime',
+      inkOklch: 'oklch(0.55 0.14 100)',
+      inkHex: '#857100',
       name: 'Acid lime',
       oklch: 'oklch(0.92 0.22 122)',
       hex: '#cdfa16',
       onDeep: '12.67:1',
-      note: 'Yellower and brighter. The loudest of the five.'
+      note: 'The current pick. Yellow-green, and the brightest of the family.'
     },
     {
-      id: 'spring-mint',
-      name: 'Spring mint',
-      oklch: 'oklch(0.88 0.17 165)',
-      hex: '#41fabb',
-      onDeep: '11.45:1',
-      note: 'Closest to the existing teal. Quietest, and the easiest to lose.'
+      id: 'lime-straw',
+      inkOklch: 'oklch(0.54 0.14 98)',
+      inkHex: '#826e00',
+      name: 'Lime straw',
+      oklch: 'oklch(0.91 0.2 110)',
+      hex: '#ebeb00',
+      onDeep: '12.03:1',
+      note: 'A step warmer. Reads as a true yellow rather than a green.'
     },
     {
-      id: 'magenta',
-      name: 'Electric magenta',
-      oklch: 'oklch(0.72 0.29 349)',
-      hex: '#ff21c1',
-      onDeep: '4.57:1',
-      note: 'Opposite the teal on the wheel. Maximum pop, least therapy.'
+      id: 'lime-sand',
+      inkOklch: 'oklch(0.53 0.13 96)',
+      inkHex: '#7e6b05',
+      name: 'Lime sand',
+      oklch: 'oklch(0.9 0.17 102)',
+      hex: '#f5e141',
+      onDeep: '11.53:1',
+      note: 'Sandier again, and the chroma starts coming down with it.'
     },
     {
-      id: 'uv-violet',
-      name: 'UV violet',
-      oklch: 'oklch(0.66 0.27 296)',
-      hex: '#a759ff',
-      onDeep: '4.04:1',
-      note: 'Warmer against the blue than the greens, and calmer than magenta.'
+      id: 'sand-lime',
+      inkOklch: 'oklch(0.52 0.12 94)',
+      inkHex: '#7a670f',
+      name: 'Sand lime',
+      oklch: 'oklch(0.88 0.14 96)',
+      hex: '#f3d761',
+      onDeep: '10.78:1',
+      note: 'Closest to the sand ground. Warm, and no longer acid.'
+    },
+    {
+      id: 'dry-sand',
+      inkOklch: 'oklch(0.51 0.1 90)',
+      inkHex: '#75641d',
+      name: 'Dry sand',
+      oklch: 'oklch(0.86 0.11 92)',
+      hex: '#ebcf7a',
+      onDeep: '10.07:1',
+      note: 'The sandiest that still registers as an accent at all.'
+    },
+    {
+      id: 'neon-green',
+      inkOklch: 'oklch(0.52 0.15 145)',
+      inkHex: '#0f7527',
+      name: 'Neon green',
+      oklch: 'oklch(0.87 0.25 143)',
+      hex: '#53fb53',
+      onDeep: '11.21:1',
+      note: 'The green end, kept for comparison.'
     }
   ];
 
@@ -77,7 +100,7 @@
     { id: 'none', name: 'None', note: 'Only the two pools behind him drift.' }
   ];
 
-  let accent = $state('neon-green');
+  let accent = $state('acid-lime');
   let hero = $state('stagger');
   let open = $state(true);
   let heroRun = $state(0);
@@ -91,6 +114,10 @@
     // hex where it cannot, so the panel previews what each screen would get.
     const supportsP3 = window.matchMedia('(color-gamut: p3)').matches;
     root.style.setProperty('--color-accent', supportsP3 ? chosen.oklch : chosen.hex);
+    // The pair moves together: the bright value only draws on the dark bands,
+    // the ink value only on the light ones, and swapping one without the other
+    // makes half the rules on the page vanish.
+    root.style.setProperty('--color-accent-ink', supportsP3 ? chosen.inkOklch : chosen.inkHex);
     localStorage.setItem('studio.accent', id);
   }
 
@@ -132,10 +159,11 @@
           <li>
             <button type="button" class:on={accent === a.id} onclick={() => applyAccent(a.id)}>
               <span class="sw" style="background: {a.oklch}"></span>
+              <span class="sw sw-ink" style="background: {a.inkOklch}"></span>
               <span class="txt">
                 <span class="nm">{a.name}</span>
                 <span class="nt">{a.note}</span>
-                <span class="nt">{a.hex} · {a.onDeep} on the deep ground</span>
+                <span class="nt">{a.hex} on dark · {a.inkHex} on light · {a.onDeep}</span>
               </span>
             </button>
           </li>
@@ -243,6 +271,11 @@
     height: 26px;
     border-radius: 5px;
     box-shadow: 0 0 0 1px rgb(255 255 255 / 0.25);
+  }
+  .sw-ink {
+    width: 14px;
+    height: 26px;
+    margin-left: -6px;
   }
   .txt {
     min-width: 0;

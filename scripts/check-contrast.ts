@@ -59,8 +59,26 @@ const PAIRS: [string, string, string][] = [
   ['on-deep-muted', 'deep', 'secondary text on the dark bands'],
   ['on-deep-kicker', 'deep', 'kickers on the dark bands'],
   ['teal-bright', 'deep', 'bright accent on the dark bands'],
-  ['deep', 'teal-bright', 'label on the bright button']
+  ['deep', 'teal-bright', 'label on the bright button'],
+  // The second accent is a pair: the bright value only ever draws on a dark
+  // ground, the ink value only on a light one. Both are structural marks, not
+  // text, so 3:1 is the bar that matters (WCAG 1.4.11); they are listed here
+  // so a change of accent cannot quietly make a rule invisible, which is
+  // exactly what a light lime does against the sand at 1.05:1.
+  ['accent', 'deep', 'accent rule on the dark bands'],
+  ['deep', 'accent', 'selected text on the accent'],
+  ['accent-ink', 'paper', 'accent rule on the page ground'],
+  ['accent-ink', 'mist', 'accent rule on the band'],
+  ['accent-ink', 'sand', 'accent rule on the warm strip']
 ];
+
+/** Pairings that are graphic marks rather than text, where WCAG 1.4.11 sets
+ *  the bar at 3:1 instead of 4.5:1. */
+const GRAPHIC = new Set([
+  'accent-ink on paper',
+  'accent-ink on mist',
+  'accent-ink on sand'
+]);
 
 let failures = 0;
 let missing = 0;
@@ -76,13 +94,15 @@ for (const [fg, bg, what] of PAIRS) {
     continue;
   }
   const r = ratio(f, b);
-  const verdict = r >= 4.5 ? 'AA' : r >= 3 ? 'AA-large' : 'FAIL';
-  if (r < 4.5) failures++;
-  console.log(`${r.toFixed(2).padStart(6)}  ${verdict.padEnd(9)} ${fg} on ${bg} — ${what}`);
+  const graphic = GRAPHIC.has(`${fg} on ${bg}`);
+  const floor = graphic ? 3 : 4.5;
+  const verdict = r >= floor ? (graphic ? 'AA-graphic' : 'AA') : 'FAIL';
+  if (r < floor) failures++;
+  console.log(`${r.toFixed(2).padStart(6)}  ${verdict.padEnd(11)} ${fg} on ${bg} — ${what}`);
 }
 
 if (missing || failures) {
-  console.error(`\n${failures} pairing(s) below AA, ${missing} unresolved token(s).`);
+  console.error(`\n${failures} pairing(s) below their floor, ${missing} unresolved token(s).`);
   process.exit(1);
 }
-console.log(`\nAll ${PAIRS.length} pairings clear AA for small text.`);
+console.log(`\nAll ${PAIRS.length} pairings clear their floor: 4.5:1 for text, 3:1 for graphic marks.`);
