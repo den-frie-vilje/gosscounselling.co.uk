@@ -50,7 +50,13 @@ export interface Contact {
   whatsappHref: string;
   location: string;
   locationNote: string;
-  hoursNote: string;
+  /* The three notes under the contact rows. Kept deliberately free of any
+     claim about how John's practice runs at his end: an earlier draft said
+     visitors would not reach a receptionist and would get a call back, and
+     neither is anywhere in what he told us. See docs/content-coverage.md. */
+  phoneNote: string;
+  emailNote: string;
+  whatsappNote: string;
 }
 
 export interface Step {

@@ -29,7 +29,7 @@
           <span class="txt">
             <span class="k">Phone</span>
             <span class="v">{contact.phone}</span>
-            <span class="h">{contact.hoursNote}</span>
+            <span class="h">{contact.phoneNote}</span>
           </span>
         </a>
       </li>
@@ -39,7 +39,7 @@
           <span class="txt">
             <span class="k">Email</span>
             <span class="v">{contact.email}</span>
-            <span class="h">I read everything myself.</span>
+            <span class="h">{contact.emailNote}</span>
           </span>
         </a>
       </li>
@@ -49,7 +49,7 @@
           <span class="txt">
             <span class="k">WhatsApp</span>
             <span class="v">{contact.phone}</span>
-            <span class="h">Often the easiest, if you would rather write than talk.</span>
+            <span class="h">{contact.whatsappNote}</span>
           </span>
         </a>
       </li>

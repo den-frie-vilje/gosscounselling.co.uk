@@ -51,6 +51,24 @@ invented an answer:
 - **Whether he has a waiting list, and how quickly he answers.** People ringing about a sexual
   difficulty or a bereavement are often deciding between three therapists on availability alone.
 
+## Three claims written into the prototypes that he never made
+
+Caught 2026-08-05 while combining the two directions he chose. Each reads as ordinary practice
+detail, which is exactly why it survived four rounds of review: nothing about it looks invented.
+All three are now out of the site, and none goes back in without his words.
+
+- **"You'll be speaking to me, not to a receptionist."** Written in the register pass
+  (`bbddd76`), from the brief's "he wants people to phone or email him" plus the assumption that
+  a sole practitioner has no one answering for him. Probably true; still not something he said.
+- **"It comes straight to me. If I can't answer, leave a message and I'll ring you back."** Same
+  origin, and worse: he warned that he is away at weekends and that replies may be slow, so the
+  page was promising a responsiveness he had explicitly qualified.
+- **"I read everything myself."** Written during the rebuild, same shape of error.
+
+What to ask him, in his own words: whether contact reaches him directly, whether he wants to say
+anything about how quickly he answers, and whether he has a waiting list. Until then the contact
+rows describe what the visitor can do, not what happens at his end.
+
 ## Recommendation
 
 Launch with the scroll plus `/counselling/psychosexual-therapy`, `/fees` and `/contact`, drop the
