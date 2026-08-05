@@ -575,6 +575,34 @@
       opacity: 1;
     }
   }
+
+  /* From 880px he settles INTO the plate: a slow push-in of a few per cent
+     over a second and a half, once, ending where it ends.
+
+     It is small on purpose. The plate crops him, so a scale is the only move
+     available that does not slide him against his own frame, and anything
+     faster or larger reads as a camera rather than as someone settling. The
+     origin is the bottom centre, so he grows up and outward from where he
+     stands rather than drifting off his own feet.
+
+     The base `translateX(-50%)` is repeated in both keyframes because a
+     transform is one property: a keyframe that sets only `scale()` would drop
+     the centring and throw him half a width to the right. */
+  @media (min-width: 880px) and (prefers-reduced-motion: no-preference) {
+    .heroCut {
+      transform-origin: bottom center;
+      animation: hero-cut-settle 1500ms var(--ease-brand) both;
+      animation-delay: 200ms;
+    }
+  }
+  @keyframes hero-cut-settle {
+    from {
+      transform: translateX(-50%) scale(1);
+    }
+    to {
+      transform: translateX(-50%) scale(1.045);
+    }
+  }
   /* Above 880px he is no longer leaning on the viewport, so a circular plate
      makes the crop instead. It is lighter than the band, not deeper: a darker
      plate sat barely 1.1:1 from the ground and did not register at all. */
