@@ -17,8 +17,24 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { contact, nav, site } from '$lib/content';
+  import { blogNavItem, contact, livePosts, nav, site } from '$lib/content';
+  import { publishClock } from '$lib/publish-clock.svelte';
   import Icon from './Icon.svelte';
+
+  // The blog is in the bar only while there is something to read on it, and
+  // it arrives on the same clock the listings use, so a post published for a
+  // future date brings its link with it rather than waiting for a rebuild.
+  const clock = publishClock();
+  const items = $derived(
+    livePosts(clock.value).length ? [...nav, blogNavItem] : nav
+  );
+
+  /** The element a nav href points at, or '' for a link to another page.
+   *  The hrefs are `/#section` so they work from a post or a service page,
+   *  which is why this is not just `href.slice(1)`. */
+  function anchorId(href: string): string {
+    return href.includes('#') ? href.slice(href.indexOf('#') + 1) : '';
+  }
 
   interface Props {
     /** Bound out so the layout can `inert` the page behind an open menu. */
@@ -83,8 +99,10 @@
   function readSection() {
     const line = (window.innerHeight || document.documentElement.clientHeight) * HANDOVER;
     let found = -1;
-    for (let i = 0; i < nav.length; i++) {
-      const el = document.getElementById(nav[i].href.slice(1));
+    for (let i = 0; i < items.length; i++) {
+      const id = anchorId(items[i].href);
+      if (!id) continue;
+      const el = document.getElementById(id);
       if (el && el.getBoundingClientRect().top <= line) found = i;
     }
     active = found;
@@ -142,7 +160,7 @@
   class:menu-open={open}
 >
   <div class="container-page flex min-h-[72px] flex-nowrap items-center gap-5">
-    <a href="#top" class="brand" onclick={close}>
+    <a href="/#top" class="brand" onclick={close}>
       {site.name}
       <span>{site.tagline}</span>
     </a>
@@ -161,7 +179,7 @@
           style="--bar-x: {barX}px; --bar-w: {barW}px"
           aria-hidden="true"
         ></span>
-        {#each nav as item, i (item.href)}
+        {#each items as item, i (item.href)}
           <li>
             <a
               use:linkRef={i}
@@ -228,7 +246,7 @@
 >
   <div class="container-page">
     <ul class="m-0 list-none p-0">
-      {#each nav as item (item.href)}
+      {#each items as item (item.href)}
         <li>
           <a href={item.href} onclick={close}>{item.label}</a>
         </li>

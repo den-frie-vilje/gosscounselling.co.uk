@@ -183,23 +183,30 @@
     }
   }
 
-  /* The display face at reading size, on a short measure, with the weight
-     left at 400: a quotation carries by being set well rather than by being
-     made bold. */
+  /* The display face, at reading size rather than display size. It was
+     clamping to 38px, against the section heading's own 42px, which put a
+     quotation almost level with the h2 it sits under and made the section
+     shout. It now tops out a little above the lead, which is where a quote
+     belongs: larger than body copy, plainly smaller than the heading.
+
+     The measure widens as the size comes down, so the line count stays
+     roughly where it was rather than the quote becoming a narrow column.
+     Weight stays at 400: a quotation carries by being set well rather than by
+     being made bold. */
   blockquote {
     margin: 0 auto;
-    max-width: 26ch;
+    max-width: 34ch;
     font-family: var(--font-display);
-    font-size: clamp(24px, 3.4vw, 38px);
+    font-size: clamp(19px, 2.1vw, 26px);
     font-weight: 400;
-    line-height: 1.28;
-    letter-spacing: -0.015em;
+    line-height: 1.42;
+    letter-spacing: -0.01em;
     color: var(--color-ink);
     text-wrap: balance;
   }
   figcaption {
-    margin-top: 24px;
-    font-size: 14px;
+    margin-top: 20px;
+    font-size: 13px;
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
