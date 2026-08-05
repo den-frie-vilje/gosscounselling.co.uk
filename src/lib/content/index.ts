@@ -165,7 +165,10 @@ export interface Home {
   faq: { kicker: string; heading: string; items: FaqItem[] };
   contact: { kicker: string; heading: string; intro: string };
   seo: { title: string; description: string };
-  og: { eyebrow: string; title: string; subtitle: string; cta: string };
+  /** The share card. Only the title is John's to write here: the card also
+   *  carries his name and the hero's own eyebrow, and it reads those from
+   *  where he already wrote them rather than asking twice. */
+  og: { title: string };
 }
 
 export interface Testimonial {
@@ -399,19 +402,38 @@ export function sectionHref(id: string): string {
   return `/#${id}`;
 }
 
+/**
+ * The bar, in the order the home page puts these sections.
+ *
+ * Authored, not sorted at runtime. Sorting by where the sections really are
+ * was the obvious fix for the bar and the page disagreeing, and it worked on
+ * the home page and nowhere else: on a post or the blog index none of these
+ * sections exist, so there was nothing to sort by and the order fell back to
+ * however the array happened to read. Blog changed places on navigation.
+ *
+ * An order that depends on which page you are looking at is not an order. So
+ * it is written down once, here, and `checkNavOrder` in nav-sections.svelte.ts
+ * shouts in dev if the home page ever disagrees with it. Same shape as every
+ * other invariant in this repo: state it, then gate it.
+ */
 export const nav: NavItem[] = [
   { id: 'help', href: sectionHref('help'), label: 'How I can help' },
   { id: 'about', href: sectionHref('about'), label: 'About me' },
   { id: 'fees', href: sectionHref('fees'), label: 'Fees' },
   { id: 'faq', href: sectionHref('faq'), label: 'Questions' },
+  // Its href is a page of its own; its id is the teaser section on the home
+  // page, which is both what gets highlighted and what puts it here rather
+  // than after Get in touch. See NavItem.id.
+  { id: 'blog', href: BLOG_PATH, label: 'Blog' },
   { id: 'contact', href: sectionHref('contact'), label: 'Get in touch' }
 ];
 
-/** Appended by the header only while there is something to read. The id is
- *  the teaser section on the home page, not a target for the href — see
- *  NavItem.id. On the blog's own pages that section does not exist, so the
- *  item simply has nothing to track and nothing to sort against. */
-export const blogNavItem: NavItem = { id: 'blog', href: BLOG_PATH, label: 'Blog' };
+/** The bar minus the blog, for the days before John has published anything.
+ *  A filter rather than an append: appending would have to know where to put
+ *  it back, which is the thing that went wrong. */
+export function navFor(hasPosts: boolean): NavItem[] {
+  return hasPosts ? nav : nav.filter((item) => item.id !== 'blog');
+}
 
 /** Footer note with the `{year}` placeholder resolved. */
 export function footerNote(year: number): string {

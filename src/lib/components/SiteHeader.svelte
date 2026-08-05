@@ -20,8 +20,8 @@
 -->
 <script lang="ts">
   import { flushSync, onMount } from 'svelte';
-  import { inPageOrder, sectionEl, warnUnregistered } from '$lib/nav-sections.svelte';
-  import { blogNavItem, contact, livePosts, nav, site } from '$lib/content';
+  import { sectionEl, warnUnregistered } from '$lib/nav-sections.svelte';
+  import { contact, livePosts, navFor, site } from '$lib/content';
   import { publishClock } from '$lib/publish-clock.svelte';
   import Icon from './Icon.svelte';
 
@@ -29,12 +29,12 @@
   // it arrives on the same clock the listings use, so a post published for a
   // future date brings its link with it rather than waiting for a rebuild.
   const clock = publishClock();
-  const listed = $derived(livePosts(clock.value).length ? [...nav, blogNavItem] : nav);
-  // In the order the page puts them, not the order they were typed in. The
-  // blog sat last in the bar while its section sits above the contact band;
-  // sorting by the real document positions means that particular mistake is
-  // no longer available. See nav-sections.svelte.ts.
-  const items = $derived(inPageOrder(listed));
+  // The bar's order is written down in `nav`, in the order the home page puts
+  // these sections, and gated against the markup at build time by
+  // scripts/check-nav.ts. The blog is filtered out rather than appended,
+  // because appending would have to know where to put it back — which is
+  // exactly what went wrong when the order was computed at runtime instead.
+  const items = $derived(navFor(livePosts(clock.value).length > 0));
 
   interface Props {
     /** Bound out so the layout can `inert` the page behind an open menu. */
