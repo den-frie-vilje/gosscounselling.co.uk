@@ -439,9 +439,22 @@
   /* The two pools drift, and that is all they do.
      No pulsing, no scaling, no change of colour or opacity: a light that
      breathes in and out is a television studio, and this is a page about
-     bereavement and erections. What is left is positional, under 2.5% of the
-     viewport, over a minute a cycle, on two periods that do not share a
-     factor so the pair never visibly repeats.
+     bereavement and erections. What is left is positional, on two periods
+     that do not share a factor so the pair never visibly repeats.
+
+     Ole asked for more life, and the answer was mostly the PATH rather than
+     the distance. Each pool used to shuttle between two points, and a
+     straight line retraced at a constant rate reads as machinery no matter
+     how slowly it is taken. They now wander a closed loop of five and four
+     stops, in opposite directions, so the pair is never doing the same thing
+     twice in a row and the eye cannot predict either one. Amplitude went from
+     2.4% to about 4% and the cycles from 71s/97s to 53s/79s, which is still
+     around 0.1% of the viewport a second — slower than a minute hand.
+
+     `linear`, not `ease-in-out`: eased segments decelerate into every stop,
+     and five little arrivals a cycle is the pulsing this is meant to avoid.
+     At this speed the corners between segments are far below what anyone can
+     see.
 
      The pools carry more weight than they did, which was the point of the
      change, and the cost is computed rather than assumed. Compositing the
@@ -452,28 +465,45 @@
      it. */
   @media (prefers-reduced-motion: no-preference) {
     .wash {
-      animation: drift-a 71s ease-in-out infinite;
+      animation: drift-a 53s linear infinite;
     }
     .wash2 {
-      animation: drift-b 97s ease-in-out infinite;
+      animation: drift-b 79s linear infinite;
     }
   }
+  /* Clockwise, up and right first. */
   @keyframes drift-a {
     0%,
     100% {
       transform: translate3d(0, 0, 0);
     }
-    50% {
-      transform: translate3d(2.4%, -1.7%, 0);
+    20% {
+      transform: translate3d(2.1%, -1.4%, 0);
+    }
+    40% {
+      transform: translate3d(4%, -0.5%, 0);
+    }
+    60% {
+      transform: translate3d(3.2%, 1.7%, 0);
+    }
+    80% {
+      transform: translate3d(1.3%, 1.5%, 0);
     }
   }
+  /* Anticlockwise, down and left, so at no point are both going the same way. */
   @keyframes drift-b {
     0%,
     100% {
       transform: translate3d(0, 0, 0);
     }
+    25% {
+      transform: translate3d(-2.7%, 1.3%, 0);
+    }
     50% {
-      transform: translate3d(-2%, 2.3%, 0);
+      transform: translate3d(-4%, 3.4%, 0);
+    }
+    75% {
+      transform: translate3d(-1.5%, 3.8%, 0);
     }
   }
 
