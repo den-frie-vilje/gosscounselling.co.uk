@@ -19,7 +19,7 @@
   <section id="testimonials" class="section-y bg-mist text-ink">
     <div class="container-page">
       <div class="section-head">
-        <p class="t-kicker m-0 mb-3.5">{testimonials.kicker}</p>
+        <p class="t-kicker led m-0 mb-3.5">{testimonials.kicker}</p>
         <h2 class="t-h2">{testimonials.heading}</h2>
         {#if testimonials.note}
           <p class="mt-4 mb-0 text-[18px] text-muted">{testimonials.note}</p>

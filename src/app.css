@@ -208,8 +208,12 @@ body {
   }
 }
 
+/* The accent's quietest appearance, and the one that turns up on any part of
+   the page rather than only the dark band. Deep ink on the accent measures
+   between 4.04:1 and 12.67:1 depending which accent is chosen, so selected
+   text stays readable in all five. */
 ::selection {
-  background: var(--color-teal-bright);
+  background: var(--color-accent);
   color: var(--color-deep);
 }
 
@@ -236,6 +240,23 @@ h4 {
   letter-spacing: -0.015em;
   text-wrap: balance;
   margin: 0;
+}
+
+/* A short rule that leads a kicker, in the accent, at the same weight as the
+   connector between the steps. It is what establishes the colour before the
+   line uses it, so the line reads as part of the system rather than as the
+   one green thing on the page. */
+.t-kicker.led::before {
+  content: '';
+  display: inline-block;
+  width: 22px;
+  height: 4px;
+  margin-right: 12px;
+  vertical-align: middle;
+  background: var(--color-accent);
+  /* Optically on the cap band of the small caps beside it, rather than on the
+     line box centre, which sits low against uppercase letterforms. */
+  transform: translateY(-1px);
 }
 
 /* ---- Typographic scale ---- */
