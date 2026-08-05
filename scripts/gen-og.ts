@@ -47,6 +47,10 @@ const FONTS = [
 // satori never sees the stylesheet.
 const DEEP = '#0a2833';
 const TEAL_BRIGHT = '#17a2c4';
+// The plate's own mid tone. The page draws it as three soft radial layers;
+// at 470px across, flattening to the middle of them is a few levels out and
+// satori would not take a gradient inside an image anyway.
+const PLATE = { r: 0x90, g: 0xc5, b: 0xd8, alpha: 1 };
 const ON_DEEP_MUTED = '#c2d7dd';
 const ON_DEEP_KICKER = '#82c9dc';
 const WHITE = '#ffffff';
@@ -64,98 +68,131 @@ function noOrphans(text: string): string {
   return `${words.join(' ')}${NBSP}${last}`;
 }
 
-// Card geometry. The text column gets the lion's share of the 1200px:
-// Fraunces at 62px is wide, and a narrower column pushes the title onto a
-// fourth and fifth line, which the 630px height cannot absorb.
-const COLUMN_W = 820;
-const PORTRAIT_W = 1200 - COLUMN_W; // 380
-const PORTRAIT_H = Math.round((PORTRAIT_W * 1452) / 1800); // the cutout's own aspect
+// Card geometry.
+//
+// The card carries the page's own composition: John on the circular disc,
+// and as little text as possible. At the size a card is actually shown, a
+// few hundred pixels wide in a chat preview or a search result, an eyebrow
+// at 22px and a subtitle at 26px are below the threshold of legibility, so
+// they were decoration that cost the title its room. The title and his name
+// are what survive being scaled down, so they are all that is left.
+const DISC = 470; // the disc's diameter on the card
+const DISC_X = 1200 - DISC - 72; // its left edge, with a right margin
+const DISC_Y = Math.round((630 - DISC) / 2);
+const COLUMN_W = DISC_X - 72 - 40;
 
 /**
- * The portrait as a base64 data URI, transcoded in memory first.
+ * The disc: the plate's own gradient with the cutout composited onto it, and
+ * a circular alpha, rendered by sharp and handed to satori as ONE image.
  *
- * satori has NO webp decoder and the cutouts in `static/img/` are webp, so
- * sharp has to transcode before we inline it (no file is written). A data
- * URI also means satori needs no network or filesystem fetch.
+ * Two reasons it is built here rather than in the card's markup. satori has
+ * no support for CSS masks, so the hero's two-layer construction cannot be
+ * expressed in it at all. And satori has no webp decoder, while the cutouts
+ * are webp, so sharp has to be in the path regardless.
  *
- * Two deliberate choices in that transcode:
- *  - Downscale to the rendered width first. Handing satori the full
- *    1800px master just makes it decode ~9× the pixels for the same card.
- *  - Emit JPEG, not PNG. satori decodes PNG in pure JS and takes ~10 s for
- *    this one image, against ~30 ms for JPEG. The cutout's alpha only ever
- *    sits on the solid card ground, so flattening onto DEEP first is
- *    visually identical — and saves ten seconds on every single build.
+ * The cutout is drawn at the same fraction of the disc as on the page, and
+ * bottom-anchored the same way, so the card reads as the site rather than as
+ * a different treatment of the same photograph.
  *
- * Returns null rather than throwing: a missing or unreadable portrait
- * should cost us the photo, not the whole prebuild.
+ * Returns null rather than throwing: a missing or unreadable portrait should
+ * cost us the photo, not the whole prebuild.
  */
-async function portraitDataUri(publicPath: string): Promise<string | null> {
+async function discDataUri(): Promise<string | null> {
   try {
-    const rel = publicPath.replace(/^\//, 'static/');
-    const jpeg = await sharp(read(rel))
-      .resize({ width: PORTRAIT_W, kernel: 'lanczos3' })
-      .flatten({ background: DEEP })
-      .jpeg({ quality: 88, mozjpeg: true })
+    const geom = JSON.parse(read('src/lib/generated/portrait-geometry.json').toString()) as {
+      plateImgWidth: string;
+      headShift: string;
+    };
+    const imgW = Math.round((parseFloat(geom.plateImgWidth) / 100) * DISC);
+    const shift = Math.round((parseFloat(geom.headShift) / 100) * imgW);
+
+    const cutout = await sharp(read('static/img/john-cutout.webp'))
+      .resize({ width: imgW, kernel: 'lanczos3' })
       .toBuffer();
-    return `data:image/jpeg;base64,${jpeg.toString('base64')}`;
+    const { height: cutH = DISC } = await sharp(cutout).metadata();
+
+    // Build on a canvas the size of the CUTOUT and extract the disc's window
+    // from it, rather than compositing onto a disc-sized canvas: he is drawn
+    // wider than the plate, and sharp refuses to composite an image larger
+    // than what it is going onto.
+    //
+    // The window is placed exactly as the page places it. He is centred on
+    // the plate and then shifted so his HEAD rather than his image is in the
+    // middle, so the disc sits that much the other way within him; and his
+    // feet are on the plate's bottom, so the window's bottom is the cutout's.
+    const windowLeft = Math.max(0, Math.round((imgW - DISC) / 2 - shift));
+    const windowTop = Math.max(0, cutH - DISC);
+
+    const plate = await sharp({
+      create: { width: imgW, height: cutH, channels: 4, background: PLATE }
+    })
+      .composite([{ input: cutout, left: 0, top: 0 }])
+      .png()
+      .toBuffer();
+
+    // Circular alpha, drawn as an SVG and applied with `dest-in`.
+    const circle = Buffer.from(
+      `<svg width="${DISC}" height="${DISC}"><circle cx="${DISC / 2}" cy="${DISC / 2}" r="${DISC / 2}" fill="#fff"/></svg>`
+    );
+    const disc = await sharp(plate)
+      .extract({
+        left: Math.min(windowLeft, Math.max(0, imgW - DISC)),
+        top: Math.min(windowTop, Math.max(0, cutH - DISC)),
+        width: Math.min(DISC, imgW),
+        height: Math.min(DISC, cutH)
+      })
+      .composite([{ input: circle, blend: 'dest-in' }])
+      .png()
+      .toBuffer();
+
+    // PNG here, not JPEG, because the alpha outside the circle is the point.
+    // It is one 470px image, so the pure-JS decode is affordable where the
+    // full-size master was not.
+    return `data:image/png;base64,${disc.toString('base64')}`;
   } catch (e) {
-    console.warn(`og: portrait ${publicPath} unusable (${(e as Error).message.split('\n')[0]}); rendering without it`);
+    console.warn(
+      `og: disc unusable (${(e as Error).message.split('\n')[0]}); rendering without it`
+    );
     return null;
   }
 }
 
 interface Card {
   slug: string;
-  eyebrow: string;
   title: string;
-  subtitle: string;
-  cta: string;
 }
 
-// Card copy comes from each page's `og` block in the content JSON
-// (CMS-editable). The name + tagline lockup is added by the layout below,
-// from site.json. `?? ''` throughout: a stale CMS save can strip a field,
-// and an empty line on the card beats a crashed build.
+// Card copy. Only the title now: at the size a card is actually shown, the
+// eyebrow, subtitle and CTA pill were text nobody could read taking room the
+// title needed. `?? ''` because a stale CMS save can strip a field, and an
+// empty line beats a crashed build.
 const CARDS: Card[] = [
   {
     slug: 'home',
-    eyebrow: home.og?.eyebrow ?? '',
-    title: home.og?.title ?? home.seo?.title ?? '',
-    subtitle: home.og?.subtitle ?? '',
-    cta: home.og?.cta ?? ''
+    title: home.og?.title ?? home.seo?.title ?? ''
   }
 ];
 
-const PORTRAIT = '/img/john-cutout-dark.webp';
-
-function markup(card: Card, portrait: string | null): string {
-  // The portrait is bottom-right anchored and absolutely positioned so it
-  // can sit against the card edge without dragging the text column around.
-  const portraitImg = portrait
-    ? `<img src="${portrait}" width="${PORTRAIT_W}" height="${PORTRAIT_H}" style="position:absolute;right:0;bottom:0;width:${PORTRAIT_W}px;height:${PORTRAIT_H}px;" />`
+function markup(card: Card, disc: string | null): string {
+  // The disc is absolutely positioned so it can sit against the card's right
+  // without dragging the text column around.
+  const discImg = disc
+    ? `<img src="${disc}" width="${DISC}" height="${DISC}" style="position:absolute;left:${DISC_X}px;top:${DISC_Y}px;width:${DISC}px;height:${DISC}px;" />`
     : '';
-  // The column is three space-between groups (copy / CTA / lockup) rather
-  // than a centred stack with an absolutely-placed lockup: that way a
-  // longer title pushes its neighbours instead of overprinting them.
+  // Two things in the column, pushed apart: the title, and his name. A
+  // longer title pushes the name down rather than overprinting it.
   return `
   <div style="display:flex;position:relative;width:1200px;height:630px;background:${DEEP};font-family:'Inter';">
-    ${portraitImg}
-    <div style="display:flex;flex-direction:column;justify-content:space-between;width:${COLUMN_W}px;height:100%;padding:52px 60px;">
-      <div style="display:flex;flex-direction:column;">
-        <div style="display:flex;color:${ON_DEEP_KICKER};font-size:22px;font-weight:600;letter-spacing:3.5px;text-transform:uppercase;">${card.eyebrow}</div>
-        <div style="display:flex;color:${WHITE};font-family:'Fraunces';font-size:62px;font-weight:600;line-height:1.08;margin-top:20px;">${noOrphans(card.title)}</div>
-        <div style="display:flex;color:${ON_DEEP_MUTED};font-size:26px;font-weight:400;line-height:1.35;margin-top:22px;">${noOrphans(card.subtitle)}</div>
-      </div>
-      <div style="display:flex;">
-        <div style="display:flex;align-items:center;background:${TEAL_BRIGHT};color:${DEEP};font-size:24px;font-weight:600;padding:14px 28px;border-radius:6px;">${noOrphans(card.cta)}</div>
-      </div>
-      <div style="display:flex;color:${ON_DEEP_MUTED};font-size:22px;font-weight:600;">${NAME} · ${TAGLINE}</div>
+    ${discImg}
+    <div style="display:flex;flex-direction:column;justify-content:space-between;width:${COLUMN_W}px;height:100%;padding:64px 0 64px 72px;">
+      <div style="display:flex;color:${WHITE};font-family:'Fraunces';font-size:68px;font-weight:600;line-height:1.06;">${noOrphans(card.title)}</div>
+      <div style="display:flex;color:${ON_DEEP_MUTED};font-size:26px;font-weight:600;">${NAME} · ${TAGLINE}</div>
     </div>
   </div>`;
 }
 
-async function renderCard(card: Card, portrait: string | null): Promise<void> {
-  const svg = await satori(html(markup(card, portrait)) as Parameters<typeof satori>[0], {
+async function renderCard(card: Card, disc: string | null): Promise<void> {
+  const svg = await satori(html(markup(card, disc)) as Parameters<typeof satori>[0], {
     width: 1200,
     height: 630,
     fonts: FONTS
@@ -167,7 +204,7 @@ async function renderCard(card: Card, portrait: string | null): Promise<void> {
 }
 
 mkdirSync(resolve(root, 'static/img/og'), { recursive: true });
-const portrait = await portraitDataUri(PORTRAIT);
+const disc = await discDataUri();
 for (const card of CARDS) {
-  await renderCard(card, portrait);
+  await renderCard(card, disc);
 }

@@ -148,26 +148,32 @@ resolves because of `deploy/nginx.conf` is a URL that is broken on the other hos
 until its secrets exist. What does not survive the move is the Sveltia editor, which needs the
 GitHub OAuth broker that runs in the staging compose stack.
 
-## 21. Scheduled publishing is decided at build time, and needs a daily build
-The site is prerendered to static HTML, so "publish this on Tuesday" has exactly two possible
-implementations and only one of them is acceptable.
+## 21. Drafts are private at build time; scheduling is a client-side gate
+Two different things were being run together, and they want different answers.
 
-Filtering in the browser would mean the post is IN the served HTML from the moment it is saved,
-hidden by a script. Anyone who opens the source, or any crawler, reads it. This is a
-counsellor's writing about his own practice; a post held back is held back for a reason.
-
-So the filter is at build time: a post is live when its status is `published` and its
-`publishAt` has passed **as of the build**. An unpublished post is not in `build/` at all, has no
+A **draft** is private. It is excluded at build time, so it is not in `build/` at all, has no
 page, and is not in the sitemap. `scripts/check-posts.ts` greps the build output for the text of
-unpublished posts and fails if it finds any, so the guarantee is enforced rather than intended.
+every draft and fails if it finds any, so the guarantee is enforced rather than intended.
 
-The consequence is that a future-dated post needs a build on or after its date, which is what
-`.github/workflows/scheduled-rebuild.yml` is for. It also means "publish now" is genuinely
-immediate: saving in the CMS is a commit, a commit is a build, and the post is live within
-minutes.
+A **scheduled** post is not private, it is merely not shown yet. It ships in the HTML and a
+client-side gate reveals it once its `publishAt` has passed. The cost is that its text is in the
+source before it is on the page; the benefit is that it appears at the minute it is due without
+waiting for a build. Ole's call, made after the tradeoff was put to him in those words.
+
+The gate renders server-side as not-yet-published and reveals on mount, so there is no hydration
+mismatch and no post that flashes up and disappears. "Publish now" needs nothing special: saving
+in the CMS is a commit, a commit is a build, and a past date is live immediately.
 
 ## 22. Detail pages and the blog exist only when there is something to put in them
-Both are built as capabilities rather than as pages. A service renders a "More about" link and
+Both are built as capabilities rather than as pages, and neither asks John to type a URL or to
+keep two pieces of copy in step.
+
+The address of a service page is derived in code from its slug; he never sees it. And the summary
+on the front page is the SAME field the detail page opens with, so there is nothing to keep in
+sync: he writes the short version once, and anything he adds in the longer field appears
+underneath it on that service's own page.
+
+ A service renders a "More about" link and
 gets a route only when its `page` field has content; the blog section, the `/blog` index, the nav
 entry and the sitemap entries all appear only once a post is published.
 
