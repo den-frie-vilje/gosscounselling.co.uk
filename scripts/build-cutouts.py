@@ -21,7 +21,7 @@ Three assets come out in design/assets/:
 
   john-cutout-dark.webp   the same figure, same silhouette, with the white cyclorama taken
                           back out of BOTH his colour and his matte, so `F*a + ground*(1-a)`
-                          is right on any ground. Five published steps, all in solid_matte()
+                          is right on any ground. Six published steps, all in solid_matte()
                           below: a known-backing re-solve of alpha in the fringe (Wang &
                           Cohen 2007 eq. 2 with B measured rather than sampled, under the
                           sparsity prior of Rhemann et al. 2008); fast multi-level foreground
@@ -34,7 +34,11 @@ Three assets come out in design/assets/:
                           INTERFACE term (Shafer 1985), illuminant-coloured and additive, so
                           it comes out as a measured per-pixel SUBTRACTION. Using the gain on
                           the tee was what made the shoulders read as desaturated rather than
-                          darkened. No choke and no dilate: the matte's support, its
+                          darkened. Both de-lighting operators are then confined to an EDGE
+                          BAND — a core/edge split through a C2 transition window, off by
+                          20px — so the interior is the plain knockout's own pixels and the
+                          sand plate's circle can cross him anywhere without a tonal step.
+                          No choke and no dilate: the matte's support, its
                           per-column top edge and the retouched crown's shape are
                           bit-identical to the master, and partial coverage stays at 1.872%.
                           Needs `python3 -m pip install pymatting`.
@@ -283,6 +287,71 @@ def solid_matte():
        opaque. This is the only place the matte's opaque set is touched, and the script
        prints the blob list so it can be checked or vetoed.
 
+    6. THE EDGE BAND — how far in (2) and (4b) are allowed to reach. Both of them are
+       de-lighting operators, and the rim light they undo is genuinely wide: the m_s
+       table in 4b still reads 26 x1e-3 at 40px and 11 at 75px. So the fitted psi and
+       the fitted subtraction were carried to DREF = 55px, and the asset's interior
+       differed from the plain knockout's out to about 40px — measured over the
+       1,376,739 pixels opaque in both, mean |channel difference| ran 11.9 at 0-2px in
+       from the opaque boundary, 7.5 at 5-10, 5.3 at 10-20 and 2.7 at 20-40.
+
+       That is fine while the asset is used alone, and it is what the mobile hero does:
+       below 880px he goes full-bleed on the deep gradient and the wide de-light is
+       simply correct. From 880px up he is composited BOTH ways at once — the plain
+       knockout inside the sand plate's circle, this matte outside it, two masked
+       layers of the same photograph at the same size. Wherever the circle's edge
+       crosses his body the two must agree pixel for pixel, and a grade that reaches
+       40px inside put a tonal step across him.
+
+       The fix is the oldest device in the keyer's book: a CORE / EDGE split. A
+       three-pass key builds an edge matte that carries the soft, treated pixels and a
+       core matte that is left alone, joins them through a transition mask, and adjusts
+       "erodes and blurs ... to get the right falloff between core matte and edge
+       matte". The de-lighting belongs to the edge matte. Foundry's own LightWrap says
+       the same thing in one parameter: the wrap's reach IS its blur radius, and the
+       background is blurred precisely so that only light, and not background detail,
+       reaches the figure. Nothing about the operator entitles it to the core.
+
+       So psi and the dichromatic subtraction are both multiplied by a transition
+       window on D, the distance into the master's own silhouette: 1 out to EDGE_IN,
+       smootherstep down, exactly 0 from EDGE_OUT inward. Perlin's C2 quintic rather
+       than the C1 smoothstep the DREF ramp used, because a C1 window leaves a slope
+       discontinuity at a fixed distance from the silhouette and that is what the eye
+       reads as a ring; with C2 both value and slope match at the handover.
+
+       EDGE_IN = 2, EDGE_OUT = 20 were SWEPT, not chosen. The evidence is the path the
+       circle's edge actually takes across him — 2,276 opaque pixels, from
+       scripts/check-portrait-fit.ts's geometry — of which 97% lie 10px or more inside
+       the opaque boundary and 93% lie 20px or more. So the treatment has to be gone by
+       ~10px in that metric, which is ~20px in this one (the opaque set sits about 5px
+       inside the alpha > 0.5 silhouette the window is measured from). Widths swept at
+       EDGE_IN = 2, against three numbers: what survives of the edge grade (mean |dch|
+       at 0-2px, was 11.68), what is left on the join at 10px or deeper (mean/max
+       luminance step, was 0.65/34.4), and the residual halo on the near shoulder over
+       #0a2833 (peak minus interior, 7.0 treated, 43.1 untreated):
+
+           EDGE_OUT      8     10     14     16     20     22     24     30
+           0-2px grade  3.6    6.3    9.3   10.0   10.8   11.0   11.1   11.4
+           join step   .35/4  .35/4  .35/5  .33/5  .35/4  .35/7  .35/11 .35/17
+           halo       37.4   32.7   24.1   21.4   16.6   14.5   13.0    9.7
+
+       20 is the knee. It is the widest window that still holds the join's worst step
+       at 4.5 levels — past it the step doubles and then trebles while the halo only
+       creeps down — and it recovers two thirds of the edge grade that 10 threw away.
+       EDGE_IN was swept too: 0 costs a point of grade for nothing, 6 buys another
+       point and a monotone shoulder but takes the join's worst step from 4.5 to 10.
+       The join is the defect being fixed, so 2 it is.
+
+       What this does NOT do, and it should be looked at rather than taken on trust:
+       the wide, low-frequency half of the cyc's rim light now STAYS on the near
+       shoulder, because the plain knockout has it and the two must agree. Composited
+       over #0a2833 the shoulder's luminance rises out of the outline monotonically as
+       before, but it now crests at 62.5 against a 45.9 interior instead of 52.9 — a
+       +16.6 shoulder sheen where the old asset had +7.0 and the raw knockout has
+       +43.1. It reads as modelling rather than as a glow, and it is the same sheen the
+       plain knockout shows inside the plate three pixels away, which is the whole
+       point; but it is a picture judgement and the numbers cannot make it.
+
     The silhouette is NOT touched: no choke, no dilate; the outer support of the matte
     and its per-column top edge are bit-identical to the client's master, including the
     hand-painted crown, whose shape is unchanged (its alpha VALUES take the same global
@@ -307,22 +376,17 @@ def solid_matte():
     D = distance_transform_edt(core)
     DREF, SIG_NEAR, SIG_WIDE, SIG_FIT, PSI_MAX = 55.0, 6.0, 30.0, 40.0, 3.0
 
-    # -- 6. THE TRANSITION MASK: where the de-lighting is allowed to act ---------------
-    # A CORE/EDGE split, the three-pass keyer's own device: an edge matte carries the
-    # treatment, a core matte is left alone, and a transition mask with an eroded,
-    # feathered falloff decides where one becomes the other. See the docstring's §6.
-    # EDGE_OUT is the erode; EDGE_IN..EDGE_OUT is the feather. Beyond EDGE_OUT the
-    # window is EXACTLY zero, so the interior is the master's own pixels, bit for bit,
-    # and the sand plate's edge can cross him there without a step.
-    #
-    # smootherstep (Perlin's C2 quintic) rather than the C1 smoothstep used before:
-    # the window's derivative is zero at BOTH ends, so the treated band hands over to
-    # the untreated interior with matching slope as well as matching value. A slope
-    # discontinuity at a fixed distance from the silhouette is exactly what draws a
-    # ring, and C2 is what removes it. Overridable only so the falloff can be swept
-    # and measured; the committed values are the ones the sweep chose.
-    EDGE_IN = float(os.environ.get("EDGE_IN", 2.0))
-    EDGE_OUT = float(os.environ.get("EDGE_OUT", 10.0))
+    # -- 6. THE TRANSITION MASK: how far in the de-lighting is allowed to reach --------
+    # See §6 of the docstring. A core/edge split: the edge band carries the treatment,
+    # the core is left exactly as the master has it, and this window is the transition
+    # between them. EDGE_OUT is the erode, EDGE_IN..EDGE_OUT the feather; beyond
+    # EDGE_OUT the window is EXACTLY zero, so the plate's edge can cross him there
+    # without a step. smootherstep (Perlin's C2 quintic), not the C1 smoothstep that
+    # was here before: its derivative is zero at BOTH ends, so the treated band hands
+    # over to the untreated core with matching slope as well as matching value, and
+    # there is no slope discontinuity at a fixed distance from the silhouette for the
+    # eye to read as a ring.
+    EDGE_IN, EDGE_OUT = 2.0, 20.0
     te = np.clip((EDGE_OUT - D) / (EDGE_OUT - EDGE_IN), 0.0, 1.0)
     ts = te * te * te * (10.0 + te * (te * 6.0 - 15.0))
     # The client's file is the authority wherever the backdrop cannot have reached: on
@@ -449,10 +513,11 @@ def solid_matte():
          .save(f"{OUT}/john-cutout-dark.webp", "WEBP",
                quality=92, alpha_quality=100, exact=True, method=6)
     _verify_solid_matte(master_rgb, A, An, Fd, Fd0, Fdp, psi, D, core, top,
-                        np.vstack([xs, ys]), hold, I, GW)
+                        np.vstack([xs, ys]), hold, I, GW, (EDGE_IN, EDGE_OUT))
 
 
-def _verify_solid_matte(master_rgb, A, An, Fd, Fd0, Fdp, psi, D, core, top, curve, hold, I, GW):
+def _verify_solid_matte(master_rgb, A, An, Fd, Fd0, Fdp, psi, D, core, top, curve, hold, I, GW,
+                        edge):
     """Every number the brief asks for, measured on the file that was just written.
 
     `before` throughout is a PREVIOUS published method recomputed from scratch on the
