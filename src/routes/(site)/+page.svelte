@@ -14,7 +14,7 @@
   import { contact, home, site } from '$lib/content';
   import { buildPageSeo, faqNode, reviewNodes } from '$lib/seo/structured-data';
   import { renderInline } from '$lib/markdown';
-  import { reveal } from '$lib/actions/reveal';
+  import { scrollDraw } from '$lib/actions/scroll-draw';
   import SeoHead from '$lib/components/SeoHead.svelte';
   import Section from '$lib/components/Section.svelte';
   import Prose from '$lib/components/Prose.svelte';
@@ -85,11 +85,12 @@
 >
   <!-- The only thing on the page that waits to be scrolled to. The line is
        the sequence: it runs 1 to 3, down the discs where the steps stack and
-       across them where they sit in a row, and it draws once. -->
-  <ol class="stepList" use:reveal>
+       across them where they sit in a row, drawn by the scroll rather than by
+       a timer, and it never retracts. -->
+  <ol class="stepList mark-row" use:scrollDraw={{ start: 0.55, end: 0.28 }}>
     {#each home.steps.items as step, i (step.title)}
-      <li>
-        <span class="disc" aria-hidden="true">{i + 1}</span>
+      <li class="mark-row">
+        <span class="disc mark-disc" aria-hidden="true">{i + 1}</span>
         <div>
           <h3 class="t-h3">{step.title}</h3>
           <p class="text-muted m-0 text-[16.5px]">{step.body}</p>
@@ -109,7 +110,7 @@
 >
   <div class="border-line mt-13 border-t">
     {#each home.services.items as service, i (service.slug)}
-      <article class="row">
+      <article class="row mark-row">
         <p class="num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</p>
         <div class="min-w-0">
           <h3 class="t-h3">{service.title}</h3>
@@ -173,25 +174,38 @@
 
     <div class="bodies">
       <h3 class="t-h3 !text-[19px]">{home.quals.bodies.title}</h3>
-      <Prose md={home.quals.bodies.body} class="mt-3.5 !text-[16px]" />
-      <!-- Other people's marks, monochrome until hovered, so they read as
-           credentials rather than as brands competing with John's own.
+
+      <!-- Each mark sits beside the words it stands for, rather than the text
+           in one block and a rail of marks under it: separated, the reader has
+           to work out which flower belongs to which sentence.
+
+           The plates are white and all the same size. Every one of these marks
+           is drawn for a white ground, and the Professional Standards
+           Authority's licence asks for its own colour and will not take the
+           monochrome-until-hover treatment the others could. A plate per mark
+           keeps them the same weight without recolouring any of them, and the
+           PSA gets the clear space its licence asks for, at least the height
+           of its own head, inside its plate.
 
            His old site carried two NCPS files: the society lockup, and a
-           second one pairing the NCPS mark with the Professional Standards
-           Authority's. They are two different claims, not two versions of
-           one, so the PSA mark is shown on its own rather than printing the
-           NCPS flower twice. It is the one that matters most here:
+           second one pairing NCPS with the PSA. Those are two claims, not two
+           versions of one, so the PSA stands on its own here rather than
+           printing the NCPS flower twice. It is the claim that matters most:
            "counsellor" is not a protected title in the UK, so being on a
            PSA-accredited register is the real gate. -->
-      <div class="logos">
-        <img src="/img/logos/NCPS_RGB.png" alt="National Counselling & Psychotherapy Society" />
-        <img src="/img/logos/cosrt.png" alt="College of Sex & Relationship Therapists" />
-        <img
-          src="/img/logos/professional-standards-authority.png"
-          alt="Professional Standards Authority accredited register"
-        />
-      </div>
+      <ul class="bodylist">
+        {#each site.memberships as body (body.abbr + body.name)}
+          <li class="mark-row">
+            <span class="plate">
+              <img src={body.logo} alt="" />
+            </span>
+            <span class="min-w-0">
+              <span class="bname">{body.name}</span>
+              {#if body.note}<span class="bnote">{body.note}</span>{/if}
+            </span>
+          </li>
+        {/each}
+      </ul>
     </div>
   </div>
 </Section>
@@ -289,42 +303,84 @@
   }
 
   /* ---- the hero arriving ----
-     Each part comes up a little after the one above it, once, on first paint.
-     The whole sequence is done inside a second.
+     Four treatments, so they can be compared side by side before one is
+     chosen. The dev studio panel writes `data-hero` on the root element; with
+     no attribute at all the default is the stagger, which is what ships if
+     nobody chooses.
 
-     Wrapped in `no-preference` so the resting state is the FINISHED state:
-     with reduced motion, or if the stylesheet's animations never run, every
-     element is simply present. `both` fill holds the opening state through
-     the delay, so nothing flashes in before its turn. */
+     Every one of them is wrapped in `no-preference`, so the resting state is
+     the FINISHED state: with reduced motion, or if these rules never apply,
+     every element is simply present. `both` fill holds the opening state
+     through the delay, so nothing flashes in before its turn. */
   @media (prefers-reduced-motion: no-preference) {
-    .heroCopy > *,
-    .heroFig {
+    /* A — stagger. Each part comes up a little after the one above it, in
+       reading order, and John himself last and barely: a cutout of a person
+       sliding into place is the thing we are trying not to do. */
+    :global(html:not([data-hero])) .heroCopy > *,
+    :global(html[data-hero='stagger']) .heroCopy > *,
+    :global(html:not([data-hero])) .heroFig,
+    :global(html[data-hero='stagger']) .heroFig {
       animation: rise 620ms var(--ease-brand) both;
     }
-    .eyebrow {
+    :global(html:not([data-hero])) .eyebrow,
+    :global(html[data-hero='stagger']) .eyebrow {
       animation-delay: 60ms;
     }
-    .heroCopy h1 {
+    :global(html:not([data-hero])) .heroCopy h1,
+    :global(html[data-hero='stagger']) .heroCopy h1 {
       animation-delay: 140ms;
     }
-    .lede {
+    :global(html:not([data-hero])) .lede,
+    :global(html[data-hero='stagger']) .lede {
       animation-delay: 260ms;
     }
-    .aside {
+    :global(html:not([data-hero])) .aside,
+    :global(html[data-hero='stagger']) .aside {
       animation-delay: 340ms;
     }
-    .actions {
+    :global(html:not([data-hero])) .actions,
+    :global(html[data-hero='stagger']) .actions {
       animation-delay: 430ms;
     }
-    .reassure {
+    :global(html:not([data-hero])) .reassure,
+    :global(html[data-hero='stagger']) .reassure {
       animation-delay: 510ms;
     }
-    /* He arrives last and barely moves: a cutout of a person sliding into
-       place would be the thing we are trying not to do. */
-    .heroFig {
+    :global(html:not([data-hero])) .heroFig,
+    :global(html[data-hero='stagger']) .heroFig {
       animation-name: settle;
       animation-duration: 900ms;
       animation-delay: 200ms;
+    }
+
+    /* B — one block. The column arrives as a single thing and he follows a
+       beat behind. Quieter, and it does not draw a line under each sentence
+       in turn the way the stagger does. */
+    :global(html[data-hero='block']) .heroCopy {
+      animation: rise 700ms var(--ease-brand) both;
+      animation-delay: 80ms;
+    }
+    :global(html[data-hero='block']) .heroFig {
+      animation: settle 900ms var(--ease-brand) both;
+      animation-delay: 260ms;
+    }
+
+    /* C — uncover. Nothing moves at all: the band's own edge travels down and
+       the hero is revealed in place. It is the same idiom as the full-page
+       menu, which also wipes rather than slides, so the site would be using
+       one gesture for "something arrives" throughout. */
+    :global(html[data-hero='uncover']) .heroGrid {
+      animation: uncover 820ms cubic-bezier(0.4, 0, 0.2, 1) both;
+    }
+
+    /* D — none. Only the two pools behind him drift. */
+  }
+  @keyframes uncover {
+    from {
+      clip-path: inset(0 0 100% 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
     }
   }
   @keyframes rise {
@@ -465,26 +521,23 @@
       gap: 36px;
     }
   }
+  /* No `align-items` here: the row is a `.mark-row`, and setting it would
+     out-specify the principle and quietly top-align the disc again. */
   .stepList li {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 18px;
-    align-items: start;
     min-width: 0;
     position: relative;
   }
+  /* Size, colour and stacking only: `.mark-disc` in app.css owns the shape
+     and, more importantly, the baseline. */
   .disc {
     font-family: var(--font-display);
     font-weight: 600;
     font-size: 15px;
     color: #fff;
     background: var(--color-teal);
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    font-variant-numeric: tabular-nums;
     position: relative;
     z-index: 1;
   }
@@ -496,55 +549,53 @@
      where they sit in a row. One segment per gap, so it needs no knowledge of
      how tall any step's text is.
 
-     Its resting state is DRAWN. `js-anim`, which only the reveal action adds,
-     is what collapses it to nothing, so no JavaScript, an old browser or a
-     reduced-motion preference all leave the line simply present.
+     4px, because a hairline beside a serif heading reads as a mistake. That
+     is the measured width of the thickest stem in the heading's own type
+     (cap H and I, Fraunces 600 at 20px), which is the floor Ole set: the
+     connector should be at least as heavy as the letterforms it runs beside.
 
-     Both runtime classes are wrapped in :global(). Svelte's scoper only sees
-     classes written in the markup, so it prunes any rule keyed off a class
-     added by an action at runtime, and the animation silently does nothing
-     while the stylesheet reads as correct. */
+     Its resting state is DRAWN. `js-anim`, which only the scroll-draw action
+     adds, is what collapses it, so no JavaScript, an old browser or a
+     reduced-motion preference all leave the line simply present. Both runtime
+     hooks are wrapped in :global(): Svelte's scoper only sees classes written
+     in the markup, so it prunes any rule keyed off one an action adds, and the
+     animation silently does nothing while the stylesheet reads as correct. */
   .stepList li:not(:last-child)::before {
     content: '';
     position: absolute;
-    left: 16px;
+    left: 15px;
     top: 34px;
     bottom: -28px;
-    width: 2px;
-    background: var(--color-teal);
-    opacity: 0.32;
+    width: 4px;
+    background: var(--color-accent);
     transform-origin: top center;
   }
   @media (min-width: 860px) {
     .stepList li:not(:last-child)::before {
       left: 34px;
       right: -36px;
-      top: 16px;
+      top: 15px;
       bottom: auto;
       width: auto;
-      height: 2px;
+      height: 4px;
       transform-origin: left center;
     }
   }
+  /* Each segment owns its own half of the travel, so the line reads 1 to 3
+     rather than both halves growing at once. */
   .stepList:global(.js-anim) li:not(:last-child)::before {
-    transform: scaleY(0);
+    transform: scaleY(var(--seg, 0));
   }
-  .stepList:global(.js-anim.is-revealed) li:not(:last-child)::before {
-    transform: scaleY(1);
-    transition: transform 520ms var(--ease-brand);
+  .stepList:global(.js-anim) li:nth-child(1)::before {
+    --seg: clamp(0, calc(var(--draw-progress, 0) * 2), 1);
+  }
+  .stepList:global(.js-anim) li:nth-child(2)::before {
+    --seg: clamp(0, calc((var(--draw-progress, 0) - 0.5) * 2), 1);
   }
   @media (min-width: 860px) {
     .stepList:global(.js-anim) li:not(:last-child)::before {
-      transform: scaleX(0);
+      transform: scaleX(var(--seg, 0));
     }
-    .stepList:global(.js-anim.is-revealed) li:not(:last-child)::before {
-      transform: scaleX(1);
-    }
-  }
-  /* The second segment waits for the first, so the line reads 1 to 3 rather
-     than arriving all at once. */
-  .stepList:global(.js-anim.is-revealed) li:nth-child(2)::before {
-    transition-delay: 380ms;
   }
 
   /* ---- services as numbered rows ---- */
@@ -558,12 +609,10 @@
   @media (min-width: 820px) {
     .row {
       grid-template-columns: auto 1fr 1.5fr;
-      align-items: start;
     }
   }
   .num {
     margin: 0;
-    padding-top: 6px;
     font-family: var(--font-display);
     font-weight: 600;
     font-size: 15px;
@@ -718,20 +767,52 @@
     border-top: 3px solid var(--color-teal);
     padding-top: 24px;
   }
-  .logos {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-    margin-top: 22px;
-    flex-wrap: wrap;
+  .bodylist {
+    list-style: none;
+    margin: 22px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 16px;
   }
-  .logos img {
-    height: 46px;
+  .bodylist li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 18px;
+  }
+  /* One size for every plate, so three marks drawn at three different aspect
+     ratios carry the same visual weight. `contain` is what makes that work:
+     the mark fits its own way inside a fixed box instead of being stretched
+     to it. */
+  .plate {
+    flex: none;
+    width: 104px;
+    height: 68px;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 0 0 1px rgb(15 50 64 / 0.07);
+    display: grid;
+    place-items: center;
+    padding: 12px 14px;
+  }
+  .plate img {
+    max-width: 100%;
+    max-height: 100%;
     width: auto;
-    filter: grayscale(1) contrast(0.85) opacity(0.72);
-    transition: filter var(--dur-fast) ease;
+    height: auto;
+    object-fit: contain;
+    display: block;
   }
-  .logos img:hover {
-    filter: none;
+  .bname {
+    display: block;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--color-ink);
+    text-wrap: balance;
+  }
+  .bnote {
+    display: block;
+    margin-top: 3px;
+    font-size: 14.5px;
+    color: var(--color-muted);
   }
 </style>

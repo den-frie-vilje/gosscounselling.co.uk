@@ -1,0 +1,182 @@
+# The second deployment: copy the built site to a third-party static host.
+#
+# The site is going to live on ordinary static file hosting as well as on the
+# NAS image, so this workflow does the only thing such a host offers — put the
+# files there. It builds exactly the same `build/` directory the Dockerfile's
+# builder stage produces, so the two deployments cannot diverge.
+#
+# It is MANUAL ONLY and INERT until configured. There is no push trigger,
+# because a workflow that silently starts publishing to a host nobody has
+# named yet is worse than no workflow. The first step checks the secrets and
+# stops with an explanation rather than half-copying a site.
+#
+# Two transports, because static hosts offer one or the other and rarely both:
+#   rsync over SSH — preferred: incremental, atomic-ish, and can delete
+#   FTPS           — for hosts that only speak FTP; explicit TLS, never plain
+#
+# WHAT DOES NOT SURVIVE THE MOVE, and must be checked before the switch:
+#   • /admin — the Sveltia editor needs the GitHub OAuth broker that runs in
+#     the staging compose stack. On a dumb static host there is nowhere for it
+#     to run, so either the editor stays on staging (fine: it writes to git,
+#     and this workflow deploys from git) or the broker moves somewhere with a
+#     runtime. Do not assume it works there.
+#   • The cache and security headers in deploy/nginx.conf. Whatever the host
+#     offers instead is what the site gets.
+#   • URL rewriting. Nothing here relies on it: every page prerenders to
+#     `<path>/index.html` (see src/routes/+layout.ts), so a plain file server
+#     resolves every URL on its own.
+
+name: Deploy to the static host
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Which build mode to publish'
+        type: choice
+        options: [production, staging]
+        default: production
+      transport:
+        description: 'How to reach the host'
+        type: choice
+        options: [rsync, ftps]
+        default: rsync
+      delete:
+        description: 'Remove files on the host that are no longer in the build'
+        type: boolean
+        default: false
+
+concurrency:
+  group: static-host-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: static-host-${{ inputs.environment }}
+    steps:
+      - name: Refuse to run half-configured
+        env:
+          HOST: ${{ secrets.STATIC_HOST }}
+          USER_NAME: ${{ secrets.STATIC_HOST_USER }}
+          REMOTE_PATH: ${{ secrets.STATIC_HOST_PATH }}
+          SSH_KEY: ${{ secrets.STATIC_HOST_SSH_KEY }}
+          FTP_PASSWORD: ${{ secrets.STATIC_HOST_PASSWORD }}
+        run: |
+          missing=()
+          [ -n "$HOST" ]        || missing+=(STATIC_HOST)
+          [ -n "$USER_NAME" ]   || missing+=(STATIC_HOST_USER)
+          [ -n "$REMOTE_PATH" ] || missing+=(STATIC_HOST_PATH)
+          if [ "${{ inputs.transport }}" = "rsync" ]; then
+            [ -n "$SSH_KEY" ] || missing+=(STATIC_HOST_SSH_KEY)
+          else
+            [ -n "$FTP_PASSWORD" ] || missing+=(STATIC_HOST_PASSWORD)
+          fi
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "This workflow is not configured yet. Missing secrets: ${missing[*]}"
+            echo "Set them on the 'static-host-${{ inputs.environment }}' environment."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v5
+
+      - name: Install pkgx
+        run: curl -Ssf https://pkgx.sh | sh
+
+      # `pkgx dev` is what reads pkgx.yml; ad-hoc `pkgx <cmd>` defaults to
+      # "latest" and will happily hand this build a major Node it has never
+      # been tested on.
+      - name: Build
+        env:
+          PUBLIC_GIT_SHA: ${{ github.sha }}
+          PUBLIC_BUILD_TIME: ${{ github.event.repository.pushed_at }}
+          PUBLIC_GITHUB_REPO: ${{ github.repository }}
+        run: |
+          eval "$(pkgx dev --shellcode)" && dev on
+          pnpm install --frozen-lockfile
+          pnpm check
+          pnpm build --mode ${{ inputs.environment }}
+
+      # A build that produced nothing must not be allowed to delete a live
+      # site. Cheap, and the one failure this workflow could not undo.
+      - name: Refuse to publish an empty build
+        run: |
+          test -f build/index.html || { echo "build/index.html is missing — refusing to publish."; exit 1; }
+          count=$(find build -type f | wc -l)
+          echo "build/ holds $count files."
+          [ "$count" -ge 10 ] || { echo "Only $count files — that is not a built site. Refusing."; exit 1; }
+
+      - name: Publish over rsync
+        if: ${{ inputs.transport == 'rsync' }}
+        env:
+          SSH_KEY: ${{ secrets.STATIC_HOST_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.STATIC_HOST_KNOWN_HOSTS }}
+          HOST: ${{ secrets.STATIC_HOST }}
+          USER_NAME: ${{ secrets.STATIC_HOST_USER }}
+          REMOTE_PATH: ${{ secrets.STATIC_HOST_PATH }}
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+          if [ -n "$KNOWN_HOSTS" ]; then
+            printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            # Trust on first use, recorded in the log so the fingerprint can be
+            # checked afterwards and pinned in STATIC_HOST_KNOWN_HOSTS.
+            ssh-keyscan -H "$HOST" | tee ~/.ssh/known_hosts
+          fi
+          chmod 600 ~/.ssh/known_hosts
+          # Assets first and HTML last, so a visitor mid-deploy never gets a
+          # page referencing a hashed bundle that has not arrived. The two
+          # passes are why this is not one rsync.
+          rsync -rlptDvz --checksum \
+            -e "ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes" \
+            --exclude='*.html' \
+            build/ "$USER_NAME@$HOST:$REMOTE_PATH/"
+          rsync -rlptDvz --checksum \
+            -e "ssh -i ~/.ssh/id_deploy -o StrictHostKeyChecking=yes" \
+            ${{ inputs.delete && '--delete' || '' }} \
+            build/ "$USER_NAME@$HOST:$REMOTE_PATH/"
+
+      - name: Publish over FTPS
+        if: ${{ inputs.transport == 'ftps' }}
+        env:
+          HOST: ${{ secrets.STATIC_HOST }}
+          USER_NAME: ${{ secrets.STATIC_HOST_USER }}
+          PASSWORD: ${{ secrets.STATIC_HOST_PASSWORD }}
+          REMOTE_PATH: ${{ secrets.STATIC_HOST_PATH }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+          # Explicit TLS, and the certificate is verified. A static host that
+          # cannot offer FTPS should not be given a password.
+          lftp -c "
+            set ftp:ssl-force true;
+            set ftp:ssl-protect-data true;
+            set ssl:verify-certificate true;
+            open -u '$USER_NAME','$PASSWORD' '$HOST';
+            mirror --reverse --parallel=4 --verbose \
+              ${{ inputs.delete && '--delete' || '' }} \
+              build/ '$REMOTE_PATH/';
+          "
+
+      # The same witness the pull-only CD uses: ask the live page which commit
+      # it is. Nothing else proves the copy landed.
+      - name: Verify the live page names this commit
+        env:
+          SITE_URL: ${{ vars.STATIC_HOST_SITE_URL }}
+        run: |
+          if [ -z "$SITE_URL" ]; then
+            echo "STATIC_HOST_SITE_URL is not set — cannot verify. Set it to skip nothing."
+            exit 1
+          fi
+          for attempt in $(seq 1 10); do
+            body=$(curl -fsS --max-time 20 "$SITE_URL" || true)
+            if printf '%s' "$body" | grep -q "${{ github.sha }}"; then
+              echo "Live at $SITE_URL — ${{ github.sha }}"
+              exit 0
+            fi
+            echo "attempt $attempt: not live yet"
+            sleep 15
+          done
+          echo "The page at $SITE_URL never named ${{ github.sha }}. The copy may not have landed,"
+          echo "or the host is serving a cached copy."
+          exit 1

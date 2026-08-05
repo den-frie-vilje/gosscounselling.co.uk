@@ -24,8 +24,7 @@
       "Vulvodynia",
       "Porn use",
       "Kink",
-      "Couples, throuples and poly dynamics",
-      "Harmful sexual behaviour"
+      "Couples, throuples and poly dynamics"
     ],
     "areaServed": [
       "Milton Keynes",
@@ -34,22 +33,28 @@
   },
   "memberships": [
     {
+      "abbr": "NCPS",
       "name": "National Counselling & Psychotherapy Society",
-      "abbr": "NCPS",
-      "note": "Accredited Member",
-      "href": null
+      "note": "Accredited Member, and on the Children & Young People's Register",
+      "logo": "/img/logos/NCPS_RGB.png",
+      "href": null,
+      "isMembership": true
     },
     {
-      "name": "Children & Young People's Register",
-      "abbr": "NCPS",
-      "note": null,
-      "href": null
-    },
-    {
-      "name": "College of Sex & Relationship Therapists",
       "abbr": "COSRT",
+      "name": "College of Sex & Relationship Therapists",
       "note": null,
-      "href": null
+      "logo": "/img/logos/cosrt.png",
+      "href": null,
+      "isMembership": true
+    },
+    {
+      "abbr": "PSA",
+      "name": "Professional Standards Authority",
+      "note": "The NCPS register John is on is accredited by the Authority",
+      "logo": "/img/logos/professional-standards-authority.svg",
+      "href": null,
+      "isMembership": false
     }
   ]
 }
