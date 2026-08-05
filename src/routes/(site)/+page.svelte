@@ -50,9 +50,7 @@
   <div class="container-page">
     <div class="heroGrid">
       <div class="heroCopy">
-        <p class="eyebrow t-kicker led !tracking-[0.16em] !text-on-deep-kicker">
-          {home.hero.eyebrow}
-        </p>
+        <p class="eyebrow">{home.hero.eyebrow}</p>
         <h1 class="t-display text-white">{home.hero.title}</h1>
         <p class="lede t-lead">{home.hero.lead}</p>
 
@@ -241,6 +239,9 @@
   .hero {
     background: var(--color-deep);
     color: var(--color-on-deep);
+    /* No bottom padding below 880px: he is a cutout going full-bleed there,
+       so he lands directly on the next band rather than floating above an
+       empty strip of it. */
     padding-block: clamp(48px, 8vw, 82px) 0;
     position: relative;
     isolation: isolate;
@@ -546,7 +547,13 @@
   /* Above 880px he is no longer leaning on the viewport, so a circular plate
      makes the crop instead. It is lighter than the band, not deeper: a darker
      plate sat barely 1.1:1 from the ground and did not register at all. */
+  /* From 880px he stands on the plate rather than on the edge of the band,
+     so the band needs floor under him: without it the plate sits on the join
+     and the whole hero reads as having been cropped. */
   @media (min-width: 880px) {
+    .hero {
+      padding-bottom: clamp(56px, 7vw, 92px);
+    }
     .heroFig {
       aspect-ratio: 1;
       border-radius: 50%;

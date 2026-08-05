@@ -53,18 +53,26 @@
   /* Warm accent — kickers and numerals, one at a time */
   --color-gold: #855508;
 
-  /* The second accent: light, saturated, and used at very low frequency.
-     Structural marks only, never text and never a large field. It is the one
-     colour on the page that is allowed to be loud, which only works if it is
-     almost never used.
+  /* The second accent: light, saturated, used at very low frequency, and
+     structural only. Never text, never a large field. It is the one colour on
+     the page allowed to be loud, which only works because it is almost never
+     used.
 
-     sRGB here; the wide-gamut value is set in the @supports block below, so
-     a P3 display gets the saturated one and everything else degrades to this
-     without a fallback chain in every rule.
+     It comes in a pair, and that is not a nicety. A light acid lime measures
+     12.67:1 on the deep ground and 1.05:1 against the sand: the same rule that
+     sings on the dark band is invisible in the qualifications section. So the
+     light value is for dark grounds and `--color-accent-ink` is its darker
+     sibling for light ones, same hue family, held above 3:1 against all three
+     light grounds so a rule drawn in it is a mark rather than a rumour.
 
-     Contrast, computed: 11.21:1 on the deep ground. On the light grounds it
-     is 1.32:1, which is why it may not carry text there. */
-  --color-accent: #53fb53;
+     sRGB here; the wide-gamut values are in the @supports block below, so a
+     P3 display gets the saturated ones and everything else degrades without a
+     fallback chain in every rule.
+
+     Contrast, computed: light on deep 12.67:1; ink on paper 4.62:1, on mist
+     4.27:1, on sand 3.77:1. */
+  --color-accent: #cdfa16;
+  --color-accent-ink: #857100;
 
   /* Text on the dark bands */
   --color-on-deep: #e9f2f4;
@@ -98,9 +106,10 @@
 /* Wide gamut. The OKLCH value pushes chroma past what sRGB can hold, so a P3
    display renders it properly saturated and an sRGB one falls back to the
    hex above rather than being handed a gamut-mapped mud. */
-@supports (color: oklch(0.87 0.25 143)) {
+@supports (color: oklch(0.92 0.22 122)) {
   :root {
-    --color-accent: oklch(0.87 0.25 143);
+    --color-accent: oklch(0.92 0.22 122);
+    --color-accent-ink: oklch(0.55 0.14 100);
   }
 }
 
@@ -253,10 +262,18 @@ h4 {
   height: 4px;
   margin-right: 12px;
   vertical-align: middle;
-  background: var(--color-accent);
+  /* The darker sibling by default, because most of the scroll is light
+     ground; the dark bands opt into the bright one below. */
+  background: var(--color-accent-ink);
   /* Optically on the cap band of the small caps beside it, rather than on the
      line box centre, which sits low against uppercase letterforms. */
   transform: translateY(-1px);
+}
+
+/* On a dark band the bright value is the readable one. */
+.bg-deep .t-kicker.led::before,
+.on-deep.t-kicker.led::before {
+  background: var(--color-accent);
 }
 
 /* ---- Typographic scale ---- */
