@@ -1,0 +1,332 @@
+@import 'tailwindcss';
+
+/* Self-hosted variable fonts. No Google Fonts <link>: the visitor's browser
+   never talks to a third party to read a therapy website. Fraunces carries
+   the display line, Inter the reading. */
+@import '@fontsource-variable/fraunces';
+@import '@fontsource-variable/inter';
+
+/*
+  Design tokens for gosscounselling.co.uk.
+
+  The direction is the two prototypes John chose, combined
+  (docs/design-directions/, DECISIONS.md §16): Clear Water's blue, its bold
+  dark opening band and its divided-not-boxed layout, lightened and given air
+  with Quiet Practice's warm ground, serif display and generous rhythm.
+
+  Palette intent: deep blue-slate carries structure and the opening band;
+  everything below it is light and warm so the scroll gets easier, not
+  heavier. Gold is the one warm accent, used for kickers and numerals, at low
+  frequency. There is no pure #fff or #000 anywhere.
+
+  Contrast (WCAG 2.1, computed — scripts/check-contrast.ts, not eyeballed):
+    ink on paper 12.98:1 · ink on mist 12.02:1 · ink on sand 10.60:1
+    muted on paper 6.42:1 · muted on mist 5.94:1 · muted on sand 5.24:1
+    teal on paper 5.84:1 · teal on mist 5.40:1 · teal on sand 4.77:1
+    gold on paper 6.10:1 · gold on mist 5.65:1 · gold on sand 4.98:1
+    white on teal 6.09:1 · deep on teal-bright 5.13:1
+    on-deep on deep 13.54:1 · on-deep-muted on deep 10.30:1
+    on-deep-kicker on deep 8.31:1 · teal-bright on deep 5.13:1
+  Every pairing clears AA for small text; the worst is 4.77:1.
+*/
+@theme {
+  /* Type — Fraunces for display and figures, Inter for reading. */
+  --font-display: 'Fraunces Variable', ui-serif, Georgia, serif;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+
+  /* Grounds — light and warm, so the scroll stays easy. */
+  --color-paper: #fbfaf8; /* page ground */
+  --color-mist: #eef2f3; /* alternating band, cool */
+  --color-sand: #ece2d8; /* the warm strip that breaks the run of blue */
+  --color-line: #ded9d1; /* hairline on paper and sand */
+  --color-line-cool: #d5dcde; /* hairline on mist */
+
+  /* Ink */
+  --color-ink: #0f3240; /* primary text */
+  --color-muted: #45606a; /* secondary text */
+
+  /* Blue — structure, the opening band, the contact band and the footer */
+  --color-deep: #0a2833;
+  --color-teal: #0d6b83; /* links, primary CTA ground */
+  --color-teal-bright: #17a2c4; /* dark grounds only — 3.0:1 on paper, never used there */
+
+  /* Warm accent — kickers and numerals, one at a time */
+  --color-gold: #855508;
+
+  /* Text on the dark bands */
+  --color-on-deep: #e9f2f4;
+  --color-on-deep-muted: #c2d7dd;
+  --color-on-deep-kicker: #82c9dc;
+
+  /* Layout rhythm */
+  --spacing-section: 96px;
+  --container-page: 1120px;
+
+  /* Motion */
+  --ease-brand: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+
+  /* Header breakpoints, each admitting the next thing:
+       navcall  (32.5rem/520px) — the call button joins the burger
+       navwide  (53.75rem/860px) — its label grows to the full number
+       navfull  (62.5rem/1000px) — the inline nav replaces the burger */
+  --breakpoint-navcall: 32.5rem;
+  --breakpoint-navwide: 53.75rem;
+  --breakpoint-navfull: 62.5rem;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  /* Kill the iOS Safari rubber-band white-flash on overscroll. */
+  overscroll-behavior-y: none;
+  background: var(--color-paper);
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  background: var(--color-paper);
+  font-size: 17px;
+  line-height: 1.72;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* Honour reduced-motion. 0.001ms rather than 0s so animations still fire
+   their end events and nothing waiting on one hangs. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+::selection {
+  background: var(--color-teal-bright);
+  color: var(--color-deep);
+}
+
+/* One focus ring, chosen to read on the light grounds and on the dark
+   bands alike. */
+:focus-visible {
+  outline: 3px solid var(--color-teal-bright);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* The sticky header is 72px; anchor targets clear it. */
+[id] {
+  scroll-margin-top: 92px;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.14;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  margin: 0;
+}
+
+/* ---- Typographic scale ---- */
+.t-display {
+  font-size: clamp(35px, 5.2vw, 57px);
+  line-height: 1.06;
+  letter-spacing: -0.022em;
+}
+.t-h2 {
+  font-size: clamp(28px, 3.7vw, 42px);
+}
+.t-h3 {
+  font-size: clamp(20px, 2vw, 24px);
+}
+.t-kicker {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+}
+.t-lead {
+  font-size: clamp(18px, 2vw, 21px);
+  line-height: 1.6;
+}
+
+/* ---- Layout primitives ---- */
+.container-page {
+  width: 100%;
+  max-width: var(--container-page);
+  margin-inline: auto;
+  padding-inline: clamp(20px, 5vw, 28px);
+}
+.section-y {
+  padding-block: clamp(56px, 8vw, var(--spacing-section));
+}
+/* Section heads read as prose, so they keep a prose measure. */
+.section-head {
+  max-width: 58ch;
+}
+
+/* ---- Buttons ----
+   Softly rounded rather than pill or square: the pill came from Quiet
+   Practice and the 4px square from Clear Water, and 6px sits between them
+   without either one's accent. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  font-weight: 600;
+  font-size: 16.5px;
+  line-height: 1.2;
+  padding: 0.85rem 1.5rem;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  text-decoration: none;
+  transition:
+    background-color var(--dur-base) var(--ease-brand),
+    border-color var(--dur-base) var(--ease-brand),
+    color var(--dur-base) var(--ease-brand);
+}
+/* On the dark opening band the bright teal is the primary; it carries the
+   dark ink label at 5.13:1. */
+.btn-bright {
+  background: var(--color-teal-bright);
+  color: var(--color-deep);
+}
+.btn-bright:hover {
+  background: #45b7d4;
+}
+/* On light grounds the primary is the deeper teal with a white label. */
+.btn-primary {
+  background: var(--color-teal);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--color-deep);
+}
+.btn-ghost {
+  border-color: #5f97a8;
+  color: var(--color-on-deep);
+}
+.btn-ghost:hover {
+  background: rgb(255 255 255 / 0.09);
+}
+.btn-outline {
+  border-color: var(--color-teal);
+  color: var(--color-teal);
+}
+.btn-outline:hover {
+  background: var(--color-teal);
+  color: #fff;
+}
+
+/* ---- Long-form prose (markdown bodies through Prose.svelte) ----
+   Unboxed on purpose. John read the boxed sections of the other prototype
+   as heavier to scroll; here a body is just well-set text on the ground it
+   sits on. */
+.prose-clear {
+  color: var(--color-muted);
+  font-size: 18px;
+  line-height: 1.72;
+  max-width: 66ch;
+}
+.prose-clear > :first-child {
+  margin-top: 0;
+}
+.prose-clear :where(p, ul, ol) {
+  margin-block: 0.95em;
+}
+.prose-clear :where(h2) {
+  font-size: clamp(24px, 2.6vw, 30px);
+  color: var(--color-ink);
+  margin-block: 1.6em 0.5em;
+}
+.prose-clear :where(h3) {
+  font-size: clamp(19px, 2vw, 22px);
+  color: var(--color-ink);
+  margin-block: 1.3em 0.4em;
+}
+.prose-clear :where(ul) {
+  list-style: disc;
+  padding-left: 1.25em;
+}
+.prose-clear :where(ol) {
+  list-style: decimal;
+  padding-left: 1.25em;
+}
+.prose-clear :where(li) {
+  margin-block: 0.35em;
+}
+.prose-clear strong {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+.prose-clear a {
+  color: var(--color-teal);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.prose-clear a:hover {
+  color: var(--color-deep);
+}
+/* The opening paragraph of a body carries the full ink, so the eye has
+   somewhere to land before the text settles to the muted tone. */
+.prose-lead > p:first-of-type {
+  color: var(--color-ink);
+}
+
+/* Prose on a dark band. */
+.prose-on-deep {
+  color: var(--color-on-deep-muted);
+}
+.prose-on-deep :where(h2, h3),
+.prose-on-deep strong {
+  color: #fff;
+}
+.prose-on-deep a {
+  color: var(--color-on-deep-kicker);
+}
+.prose-on-deep a:hover {
+  color: #fff;
+}
+
+/* ---- Dividers ----
+   The sections are separated by a change of ground or a hairline, never by
+   a box. This is the layout John preferred, and the rule that keeps it. */
+.rule {
+  border: 0;
+  border-top: 1px solid var(--color-line);
+  margin: 0;
+}
+.bg-mist .rule,
+.bg-deep .rule {
+  border-top-color: var(--color-line-cool);
+}
+
+/* ---- Screen-reader-only, for labels the eye does not need ---- */
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

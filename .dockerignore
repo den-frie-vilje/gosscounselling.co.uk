@@ -1,0 +1,12 @@
+# Keep the build context small and prevent host node_modules (native
+# binaries built for the dev machine) from clobbering the linux install
+# the builder stage produces via `COPY . .`.
+node_modules
+.git
+.github
+.svelte-kit
+build
+*.log
+.DS_Store
+scratchpad
+docs/design-directions

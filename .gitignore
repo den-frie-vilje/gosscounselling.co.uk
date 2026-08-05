@@ -8,7 +8,26 @@ node_modules
 .DS_Store
 Thumbs.db
 
-# Local-only env overrides
+# Local-only secrets / overrides. The per-mode .env.production,
+# .env.staging, .env.development files in this repo contain ONLY
+# `PUBLIC_`-prefixed values, which Vite bakes into the public client
+# bundle anyway (canonical site URL, GitHub repo name). They are NOT
+# secrets — commit them so CI builds have them too. `.env` (unscoped)
+# and `.env.*.local` stay ignored for developer-specific overrides.
 .env
 .env.local
 .env.*.local
+
+# Deploy env files — real values (OAuth client secrets etc.) live only
+# on the NAS. The committed *.env.example files show the shape.
+deploy/*.env
+!deploy/*.env.example
+
+# Sveltia CMS bundle — build artefact copied by scripts/copy-sveltia.ts
+/static/admin/sveltia-cms.js
+
+# Generated OG images — built by scripts/gen-og.ts in prebuild
+/static/img/og/
+
+# Responsive photo variants — built by scripts/gen-photos.ts in prebuild
+/static/img/photos/_gen/
