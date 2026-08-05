@@ -69,6 +69,22 @@ RUN eval "$(pkgx dev --shellcode 2>/dev/null)" && dev on && \
 RUN eval "$(pkgx dev --shellcode 2>/dev/null)" && dev on && \
     pnpm build --mode $VITE_MODE
 
+# The two checks that can only run AFTER the build, because they read what it
+# produced rather than what went into it. `pnpm check` runs before the build
+# and cannot do this.
+#
+#   check-posts — no draft post's text is anywhere in the output. A draft is
+#                 private and this repository is public, so a draft that
+#                 reached the build would be published twice over.
+#   check-mock  — none of the dev-only stand-in content in src/content/mock/
+#                 survived. It is removed by compile-time elimination, and a
+#                 mechanism that is supposed to remove something is worth
+#                 exactly as much as the check that it did.
+#
+# Both fail the image rather than production.
+RUN eval "$(pkgx dev --shellcode 2>/dev/null)" && dev on && \
+    pnpm check:build
+
 # ----- runtime --------------------------------------------------------------
 FROM nginxinc/nginx-unprivileged:1.29-alpine@sha256:f35982400455b4f359083ba9d1ef573fbbe4221a6a8a194dc7a14beb4e2cd3dc
 

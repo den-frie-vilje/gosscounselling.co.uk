@@ -28,6 +28,20 @@ image rather than production:
 Both checkers are self-tested against injected faults before their clean runs are believed:
 `pkgx pnpm check:cms:selftest`.
 
+Two more gates read the OUTPUT rather than the input, so they run AFTER the build rather than
+in `pnpm check`. The image build and the static-host workflow both run them:
+
+```sh
+pkgx pnpm check:build   # check-posts + check-mock, against build/
+```
+
+- `scripts/check-posts.ts` — no draft post's words are anywhere in `build/`. Drafts are
+  stripped on the JSON's way into the bundle (`vite.config.ts`); this is the proof. It proves
+  itself against a canary on every run, so "nothing found" can never mean "nothing examined".
+- `scripts/check-mock.ts` — none of the dev-only stand-in content in `src/content/mock/`
+  survived into `build/`. That content is what makes the blog and the service detail pages
+  visible in `pnpm dev` while John has written neither.
+
 ## The design directions
 
 The four prototypes John chose from are archived in

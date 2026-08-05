@@ -17,6 +17,10 @@
     "prebuild": "node scripts/copy-sveltia.ts && node scripts/gen-og.ts && node scripts/gen-photos.ts",
     "check:cms": "node scripts/check-cms.ts",
     "check:cms:selftest": "node scripts/check-cms.ts --self-test",
+    "check:build": "node scripts/check-posts.ts && node scripts/check-mock.ts",
+    "check:posts": "node scripts/check-posts.ts",
+    "check:posts:selftest": "node scripts/check-posts.ts --self-test",
+    "check:mock": "node scripts/check-mock.ts",
     "check:contrast": "node scripts/check-contrast.ts",
     "check:portrait": "node scripts/check-portrait-fit.ts",
     "check:mattes": "node scripts/check-mattes.ts"

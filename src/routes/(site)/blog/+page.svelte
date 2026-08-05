@@ -17,6 +17,7 @@
   import { dateAttr, formatDate } from '$lib/date';
   import SeoHead from '$lib/components/SeoHead.svelte';
   import Section from '$lib/components/Section.svelte';
+  import ContactBand from '$lib/components/ContactBand.svelte';
 
   const clock = publishClock();
   const posts = $derived(livePosts(clock.value));
@@ -35,17 +36,17 @@
 
 <SeoHead {seo} />
 
-{#if posts.length === 0}
-  <!-- An index with nothing live on it yet, which happens only while the
-       first post is still scheduled. It must not be indexed in that state,
-       and this literal is also what keeps `/blog/` out of the
-       filesystem-derived sitemap: $lib/seo/sitemap reads page sources for it,
-       and src/routes/sitemap.xml/+server.ts adds the URL back once there is
-       something live to advertise. -->
-  <svelte:head>
+<!-- An index with nothing live on it yet happens only while the first post is
+     still scheduled. It must not be indexed in that state, and this literal
+     is also what keeps `/blog/` out of the filesystem-derived sitemap:
+     $lib/seo/sitemap reads page sources looking for exactly this meta, and
+     src/routes/sitemap.xml/+server.ts adds the URL back once there is
+     something live to advertise. -->
+<svelte:head>
+  {#if posts.length === 0}
     <meta name="robots" content="noindex, nofollow" />
-  </svelte:head>
-{/if}
+  {/if}
+</svelte:head>
 
 <Section h1 heading="Blog">
   {#if posts.length}
@@ -66,6 +67,10 @@
     </div>
   {/if}
 </Section>
+
+<!-- The same close as every other page: a post is often the entry point to
+     the site, and so is the list of them. -->
+<ContactBand />
 
 <style>
   .row {

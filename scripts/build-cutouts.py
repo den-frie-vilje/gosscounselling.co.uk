@@ -36,7 +36,7 @@ Three assets come out in design/assets/:
                           the tee was what made the shoulders read as desaturated rather than
                           darkened. Both de-lighting operators are then confined to an EDGE
                           BAND — a core/edge split through a C2 transition window, off by
-                          20px — so the interior is the plain knockout's own pixels and the
+                          16px — so the interior is the plain knockout's own pixels and the
                           sand plate's circle can cross him anywhere without a tonal step.
                           No choke and no dilate: the matte's support, its
                           per-column top edge and the retouched crown's shape are
@@ -291,9 +291,10 @@ def solid_matte():
        de-lighting operators, and the rim light they undo is genuinely wide: the m_s
        table in 4b still reads 26 x1e-3 at 40px and 11 at 75px. So the fitted psi and
        the fitted subtraction were carried to DREF = 55px, and the asset's interior
-       differed from the plain knockout's out to about 40px — measured over the
-       1,376,739 pixels opaque in both, mean |channel difference| ran 11.9 at 0-2px in
-       from the opaque boundary, 7.5 at 5-10, 5.3 at 10-20 and 2.7 at 20-40.
+       differed from the plain knockout's out to about 40px — measured by
+       scripts/check-mattes.ts over the 1,376,739 pixels opaque in both, the mean worst
+       channel ran 13.00 at 0-2px in from the opaque boundary, 8.55 at 5-10, 6.42 at
+       10-20 and 3.63 at 20-40.
 
        That is fine while the asset is used alone, and it is what the mobile hero does:
        below 880px he goes full-bleed on the deep gradient and the wide de-light is
@@ -319,38 +320,53 @@ def solid_matte():
        discontinuity at a fixed distance from the silhouette and that is what the eye
        reads as a ring; with C2 both value and slope match at the handover.
 
-       EDGE_IN = 2, EDGE_OUT = 20 were SWEPT, not chosen. The evidence is the path the
-       circle's edge actually takes across him — 2,276 opaque pixels, from
-       scripts/check-portrait-fit.ts's geometry — of which 97% lie 10px or more inside
-       the opaque boundary and 93% lie 20px or more. So the treatment has to be gone by
-       ~10px in that metric, which is ~20px in this one (the opaque set sits about 5px
-       inside the alpha > 0.5 silhouette the window is measured from). Widths swept at
-       EDGE_IN = 2, against three numbers: what survives of the edge grade (mean |dch|
-       at 0-2px, was 11.68), what is left on the join at 10px or deeper (mean/max
-       luminance step, was 0.65/34.4), and the residual halo on the near shoulder over
-       #0a2833 (peak minus interior, 7.0 treated, 43.1 untreated):
+       EDGE_IN = 2, EDGE_OUT = 16 were SWEPT, not chosen. Widths swept at EDGE_IN = 2,
+       against three numbers: what survives of the edge grade (scripts/check-mattes.ts's
+       0-2px mean, 13.00 with the whole grade), what is left of the step on the
+       path the circle's edge actually takes across him (2,276 opaque pixels, from
+       scripts/check-portrait-fit.ts's geometry; mean/max luminance step over the 97% of
+       that path lying 10px or more inside, 0.65/34.4 before), and the residual halo on
+       the near shoulder over #0a2833 (crest minus interior; 7.0 with the whole grade,
+       43.1 with none). The fourth row is what check-mattes.ts gates on:
 
-           EDGE_OUT      8     10     14     16     20     22     24     30
-           0-2px grade  3.6    6.3    9.3   10.0   10.8   11.0   11.1   11.4
-           join step   .35/4  .35/4  .35/5  .33/5  .35/4  .35/7  .35/11 .35/17
-           halo       37.4   32.7   24.1   21.4   16.6   14.5   13.0    9.7
+           EDGE_OUT        8      10      14      16      18      20      24      30
+           0-2px grade   5.07    7.80   10.61   11.28   11.72   12.06   12.40   12.63
+           join step   .33/5.0 .33/5.0 .33/5.0 .33/5.0 .33/5.0 .35/4.5 .35/ 11 .40/ 19
+           halo         37.4    32.7    24.1    21.4    18.9    16.6    13.0     9.7
+           10-20px     .70/  7 .72/  7 .74/  7 .79/  7 .84/ 12 1.02/14 1.60/23 2.76/30
 
-       20 is the knee. It is the widest window that still holds the join's worst step
-       at 4.5 levels — past it the step doubles and then trebles while the halo only
-       creeps down — and it recovers two thirds of the edge grade that 10 threw away.
-       EDGE_IN was swept too: 0 costs a point of grade for nothing, 6 buys another
-       point and a monotone shoulder but takes the join's worst step from 4.5 to 10.
-       The join is the defect being fixed, so 2 it is.
+       (the old asset, for the same four rows: 13.00 — 0.65/34.4 — 7.0 — 6.42/48.)
+
+       16 is the knee, and the encoder picks it. The last row is the gate's own metric,
+       and its floor is not zero: re-encode the plain knockout's decoded pixels at these
+       WebP settings and compare them with themselves and you get mean 0.42 max 7 at
+       10-20px, 0.44 max 10 at 80px+. Lossy WebP is VP8, which is YUV 4:2:0 — the chroma
+       subsampling is an irreducible error that quality does not buy off (measured: q92
+       max 10, q95 max 10, q98 max 8, q100 max 9, lossless max 0, at 4.4x the bytes). So
+       MAX_LIMIT = 5 in that gate is below the floor and cannot be met by any lossy
+       dark matte, however perfect; the mean limit is real and is what these were chosen
+       against. 16 is the widest window whose worst case at 10-20px is still exactly the
+       encoder's own (7 and 7): from 10px in, this asset differs from the knockout by
+       nothing that is distinguishable from the encode. 18 and 20 buy 2 and 5 points of
+       halo but put measurable grade back in the interior, and 20 fails the mean limit
+       outright at 1.02. EDGE_IN was swept too: 0 costs a point of grade for nothing, 6
+       buys one and takes the join's worst step from 4.5 to 10, and the join is the
+       defect being fixed — so 2.
 
        What this does NOT do, and it should be looked at rather than taken on trust:
        the wide, low-frequency half of the cyc's rim light now STAYS on the near
        shoulder, because the plain knockout has it and the two must agree. Composited
-       over #0a2833 the shoulder's luminance rises out of the outline monotonically as
-       before, but it now crests at 62.5 against a 45.9 interior instead of 52.9 — a
-       +16.6 shoulder sheen where the old asset had +7.0 and the raw knockout has
-       +43.1. It reads as modelling rather than as a glow, and it is the same sheen the
-       plain knockout shows inside the plate three pixels away, which is the whole
-       point; but it is a picture judgement and the numbers cannot make it.
+       over #0a2833 the shoulder's luminance still rises out of the outline with no
+       halo of its own and no dark line, but it now crests at 67.3 against a 45.9
+       interior instead of 52.9 — a +21.4 shoulder sheen where the old asset had +7.0
+       and the raw knockout has +43.1. Past the crest it falls away over ~100px, which
+       is the photograph's own shoulder and not a ring: the knockout falls the same way
+       three pixels across the mask join, which is the whole point. Whether that sheen
+       reads as modelling or as a glow is a picture judgement and the numbers cannot
+       make it. If it reads as a glow, the honest fix is not a wider window — that
+       brings the step back — but a lossless dark matte, which would let the gate's max
+       limit be met and the window be widened; it costs 1.38 MB against 319 KB, on the
+       hero's LCP image.
 
     The silhouette is NOT touched: no choke, no dilate; the outer support of the matte
     and its per-column top edge are bit-identical to the client's master, including the
@@ -386,7 +402,7 @@ def solid_matte():
     # over to the untreated core with matching slope as well as matching value, and
     # there is no slope discontinuity at a fixed distance from the silhouette for the
     # eye to read as a ring.
-    EDGE_IN, EDGE_OUT = 2.0, 18.0
+    EDGE_IN, EDGE_OUT = 2.0, 16.0
     te = np.clip((EDGE_OUT - D) / (EDGE_OUT - EDGE_IN), 0.0, 1.0)
     ts = te * te * te * (10.0 + te * (te * 6.0 - 15.0))
     # The client's file is the authority wherever the backdrop cannot have reached: on

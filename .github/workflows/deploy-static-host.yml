@@ -96,6 +96,10 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm check
           pnpm build --mode ${{ inputs.environment }}
+          # Reads what the build produced, so it cannot live in `pnpm check`:
+          # no draft post's words and no dev-only mock content in the output.
+          # This host gets the same gate the image build gets.
+          pnpm check:build
 
       # A build that produced nothing must not be allowed to delete a live
       # site. Cheap, and the one failure this workflow could not undo.

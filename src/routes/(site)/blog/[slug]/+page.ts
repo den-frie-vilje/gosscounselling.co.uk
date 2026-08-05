@@ -15,6 +15,14 @@ import { error } from '@sveltejs/kit';
 import type { EntryGenerator, PageLoad } from './$types';
 import { builtPosts, postSlug } from '$lib/content';
 
+/* Computed, like the index's. `prerender.entries: ['*']` in svelte.config.js
+   marks every route with an `entries()` export as prerenderable, and a route
+   that is marked and then produces nothing is a hard error at the end of the
+   build. With no posts there is genuinely nothing here, so the route says so
+   rather than the config saying "ignore unseen routes", which would also
+   swallow a real one that failed to generate. */
+export const prerender = builtPosts.length > 0;
+
 export const entries: EntryGenerator = () => builtPosts.map((post) => ({ slug: postSlug(post) }));
 
 export const load: PageLoad = ({ params }) => {
