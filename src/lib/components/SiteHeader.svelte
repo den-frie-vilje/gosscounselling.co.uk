@@ -16,6 +16,7 @@
   go" are the same question.
 -->
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { contact, nav, site } from '$lib/content';
   import Icon from './Icon.svelte';
 
@@ -41,11 +42,79 @@
     }
   }
 
+  // ---- the morphing underline ----
+  // One bar, shared by every nav item, that slides and stretches from one to
+  // the next rather than each link owning its own. It follows the pointer
+  // while the pointer is in the nav, and otherwise follows the section the
+  // reader is actually in.
+  let navList = $state<HTMLElement | undefined>();
+  const links: HTMLAnchorElement[] = [];
+  let active = $state(-1);
+  let hovered = $state(-1);
+  let barX = $state(0);
+  let barW = $state(0);
+  let barOn = $state(false);
+  // Suppresses the slide on the very first placement, so the bar does not
+  // travel in from the left edge on load.
+  let barPlaced = $state(false);
+
+  function linkRef(node: HTMLAnchorElement, index: number) {
+    links[index] = node;
+    return {
+      destroy() {
+        delete links[index];
+      }
+    };
+  }
+
+  /** Which section the reader is in: the last one whose top has passed under
+   *  the sticky header. Read from the sections themselves rather than from a
+   *  scroll offset, so it stays right whatever the content does. */
+  function readSection() {
+    const line = 96;
+    let found = -1;
+    for (let i = 0; i < nav.length; i++) {
+      const el = document.getElementById(nav[i].href.slice(1));
+      if (el && el.getBoundingClientRect().top <= line) found = i;
+    }
+    active = found;
+  }
+
+  function place() {
+    const index = hovered >= 0 ? hovered : active;
+    const el = links[index];
+    if (!el || !navList) {
+      barOn = false;
+      return;
+    }
+    const a = el.getBoundingClientRect();
+    const b = navList.getBoundingClientRect();
+    barX = a.left - b.left;
+    barW = a.width;
+    barOn = true;
+  }
+
+  // Measuring the DOM after it has updated is the legitimate use of an
+  // effect; the first placement and the transition it must not animate are
+  // handled once, on mount, rather than by assigning state in here.
+  $effect(() => {
+    void hovered;
+    void active;
+    place();
+  });
+
+  onMount(() => {
+    readSection();
+    place();
+    requestAnimationFrame(() => (barPlaced = true));
+  });
+
   // The panel is `display: none` from navfull up, so a viewport that grows
   // past it while the menu is open would leave a stale `aria-expanded="true"`
   // on a control nobody can see.
   function onResize() {
     if (open && window.matchMedia('(min-width: 62.5rem)').matches) open = false;
+    place();
   }
 
   // When the panel opens, move focus into it so keyboard and screen-reader
@@ -55,7 +124,7 @@
   });
 </script>
 
-<svelte:window onkeydown={onKeydown} onresize={onResize} />
+<svelte:window onkeydown={onKeydown} onresize={onResize} onscroll={readSection} />
 
 <header
   class="border-line bg-paper sticky top-0 z-60 border-b"
@@ -69,10 +138,31 @@
 
     <!-- The inline bar, from 1000px up. -->
     <nav class="ml-auto hidden navfull:block" aria-label="Sections">
-      <ul class="flex list-none items-center gap-7 p-0">
-        {#each nav as item (item.href)}
+      <ul
+        bind:this={navList}
+        class="relative flex list-none items-center gap-7 p-0"
+        onmouseleave={() => (hovered = -1)}
+      >
+        <span
+          class="navbar-underline"
+          class:on={barOn}
+          class:placed={barPlaced}
+          style="--bar-x: {barX}px; --bar-w: {barW}px"
+          aria-hidden="true"
+        ></span>
+        {#each nav as item, i (item.href)}
           <li>
-            <a href={item.href} class="navlink">{item.label}</a>
+            <a
+              use:linkRef={i}
+              href={item.href}
+              class="navlink"
+              aria-current={active === i ? 'true' : undefined}
+              onmouseenter={() => (hovered = i)}
+              onfocus={() => (hovered = i)}
+              onblur={() => (hovered = -1)}
+            >
+              {item.label}
+            </a>
           </li>
         {/each}
         <li>
@@ -173,10 +263,6 @@
     }
   }
 
-  /* The rule under a nav link wipes in from the left rather than appearing
-     all at once, so the link reads as being underlined by the pointer. Drawn
-     as a pseudo-element and scaled, which the compositor can do on its own;
-     a transition on border-colour cannot express direction. */
   .navlink {
     position: relative;
     font-family: var(--font-sans);
@@ -187,22 +273,49 @@
     text-decoration: none;
     white-space: nowrap;
     padding-block: 10px;
+    transition: color var(--dur-base) var(--ease-brand);
   }
-  .navlink::after {
-    content: '';
+  .navlink[aria-current='true'] {
+    color: var(--color-teal);
+  }
+
+  /* One bar for the whole nav, rather than one per link, in the bright accent.
+
+     On this paper ground the bright value measures about 1:1, so the bar is
+     decoration and cannot be the signal: the active link also takes the deep
+     teal at 5.84:1 and carries `aria-current`, which is what actually conveys
+     the state. WCAG 1.4.11 binds an indicator that is required to understand
+     the state; it does not bind a second, redundant one.
+
+     `left`/`width` rather than a transform: the bar has to STRETCH between
+     items of different widths, and a translate alone cannot do that while a
+     scaleX would squash nothing (it is a plain rectangle) but would still need
+     the width baked in. Two animated properties on one 4px element is cheap,
+     and it is the shape of the movement that matters here. */
+  .navbar-underline {
     position: absolute;
+    /* Tucked up into the link's own block padding rather than hanging below
+       it: the padding is a touch target, not a gap the rule has to clear. */
+    bottom: 4px;
     left: 0;
-    right: 0;
-    bottom: 0;
-    height: 3px;
-    background: var(--color-teal);
-    transform: scaleX(0);
-    transform-origin: left center;
-    transition: transform var(--dur-base) var(--ease-brand);
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-accent);
+    opacity: 0;
+    transform: translate3d(var(--bar-x), 0, 0);
+    width: var(--bar-w);
+    pointer-events: none;
   }
-  .navlink:hover::after,
-  .navlink:focus-visible::after {
-    transform: scaleX(1);
+  .navbar-underline.on {
+    opacity: 1;
+  }
+  /* Only once it has a position: otherwise the first placement slides in from
+     the left edge of the nav. */
+  .navbar-underline.placed {
+    transition:
+      transform var(--dur-base) var(--ease-brand),
+      width var(--dur-base) var(--ease-brand),
+      opacity var(--dur-fast) linear;
   }
 
   .barcta {
@@ -231,6 +344,15 @@
   @media (min-width: 32.5rem) {
     .burgerbtn {
       margin-left: 0;
+    }
+  }
+  /* Hidden here rather than by the `navfull:hidden` utility on the element:
+     component styles are emitted after Tailwind's utilities, so at equal
+     specificity `display: inline-flex` above wins and the burger stayed
+     visible beside the full inline nav. */
+  @media (min-width: 62.5rem) {
+    .burgerbtn {
+      display: none;
     }
   }
   .burger {

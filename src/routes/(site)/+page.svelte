@@ -74,53 +74,50 @@
         <p class="reassure">{@html renderInline(home.hero.reassure)}</p>
       </div>
 
-      <!-- His shoulders are cut by the edges of the source photograph, so the
-           image is always wider than its frame: the visible cut is made by
-           the frame on desktop and by the viewport on a phone, never left
-           hanging mid-section.
+      <!-- From 880px his head breaks the top of the plate, and the way that is
+           set up is the whole trick.
 
-           From 880px his head breaks the top of the plate, and that is why
-           there are two mattes rather than one image styled twice. Above the
-           plate he is on the deep band, where the dark-ground cutout is
-           correct: it carries keyer edge treatment, a colour edge-extend, a
-           matte choke and a narrow negative light wrap, so the silhouette
-           does not glow. Inside the plate he is on sand, where that same
-           treatment reads as a dark fringe and the plain knockout is right.
+           Not a container and a second box behind it: that forces the outer
+           box to be a rectangle, whose edge cuts his shoulders on the circle's
+           tangent, and no amount of fading hides it. Instead, TWO IDENTICAL
+           LAYERS, each carrying the whole figure at exactly the same size and
+           position, with the circle as a MASK: one keeps what falls inside it,
+           the other keeps what falls outside.
 
-           The two are the same photograph at the same size and the same
-           origin, and they share one animation, so they stay registered and
-           the join falls exactly on the plate's edge. What differs across
-           that join is a sub-pixel of matte, not the silhouette.
+           Three things follow from that, and they are the three problems this
+           had before:
 
-           The head band can be a plain rectangle because at that height
-           nothing but his head is in the frame: there are no shoulders up
-           there for a straight edge to cut. -->
-      <!-- His shoulders are cut by the edges of the source photograph, so the
-           image is always wider than its frame: the visible cut is made by
-           the frame on desktop and by the viewport on a phone, never left
-           hanging mid-section.
+           The layers are disjoint. No pixel is painted by both, so a fade on
+           either one has nothing underneath to double with, and the seam that
+           showed when two semi-transparent copies of the same man overlapped
+           cannot occur.
 
-           There is no head-breaking-out-of-the-circle here, and that is a
-           computed result rather than a decision not to try. See
-           scripts/check-portrait-fit.ts: at EVERY scale from 100% to 160%,
-           either his crown fails to clear the plate or his shoulders have
-           already reached the plate's top edge, because they run off the
-           frame. A second layer behind the disc therefore always has a
-           visible edge, and the disc's own antialiased rim ends up drawn
-           across his face.
+           Their mask edges are complementary across the same one-pixel ramp,
+           so the two alphas sum to exactly 1 along the circle. There is no
+           join to see, and no sub-pixel rim drawn across his forehead.
 
-           A <picture>, so the browser fetches ONE matte rather than both and
-           throws half of it away: the preload scanner reads raw HTML before
-           any CSS applies, so `display: none` deprioritises a request without
-           preventing it. It also keeps the alt text on whichever image is
-           actually shown. -->
+           They move together, because the transform lives on their shared
+           parent rather than on each of them. Synchronous by construction
+           rather than by keeping two sets of keyframes in step.
+
+           He is outside the circle almost all the way down (99.92%, measured),
+           because he is drawn wider than the plate, so the outer layer also
+           carries a vertical fade. It ends where he is back inside the circle
+           and the layer paints nothing anyway, so that edge is invisible too.
+
+           All the numbers are in scripts/check-portrait-fit.ts, derived from
+           the cutout's own alpha channel, and the build fails if the tokens
+           below drift from them. -->
       <div class="portrait">
         <figure class="heroFig">
-          <picture>
-            <source media="(min-width: 880px)" srcset="/img/john-cutout.webp" type="image/webp" />
+          <div class="plateBg" aria-hidden="true"></div>
+
+          <div class="cuts">
+            <!-- Below 880px there is no plate: he goes full-bleed on the deep
+                 gradient, where the keyed matte is the correct one. -->
             <img
               use:latchVisible
-              class="heroCut"
+              class="heroCut cutMobile"
               src="/img/john-cutout-dark.webp"
               alt={home.hero.portraitAlt}
               width="900"
@@ -128,7 +125,19 @@
               fetchpriority="high"
               decoding="async"
             />
-          </picture>
+
+            <!-- Inside the circle: the plain knockout, because the ground
+                 there is sand. -->
+            <div class="layer layerIn">
+              <img src="/img/john-cutout.webp" alt={home.hero.portraitAlt} width="900" height="900" />
+            </div>
+
+            <!-- Outside it: the keyed matte, because the ground there is the
+                 deep band, and its edge treatment is built for that. -->
+            <div class="layer layerOut" aria-hidden="true">
+              <img src="/img/john-cutout-dark.webp" alt="" width="900" height="900" />
+            </div>
+          </div>
         </figure>
       </div>
     </div>
@@ -549,7 +558,10 @@
     display: block;
     position: relative;
   }
-  .heroFig img {
+  /* Scoped to the mobile matte. The two masked layers own their own images
+     now, and the absolute positioning these rules used to apply took those
+     images out of flow, which collapsed both layers to zero height. */
+  .cutMobile {
     width: 118%;
     max-width: none;
     margin-left: -9%;
@@ -560,12 +572,19 @@
     .portrait {
       align-self: end;
     }
+    .plateBg,
+    .layer {
+      display: none;
+    }
+    .cutMobile {
+      display: block;
+    }
     .heroFig {
       width: 100vw;
       margin-left: calc(50% - 50vw);
       margin-top: 20px;
     }
-    .heroFig img {
+    .cutMobile {
       width: 116vw;
       margin-left: -8vw;
     }
@@ -632,18 +651,25 @@
      one property: a keyframe that sets only `scale()` would drop the centring
      and the head shift with it, and throw him half a width to the right. */
   @media (min-width: 880px) and (prefers-reduced-motion: no-preference) {
-    .heroCut {
+    /* On the IMAGES, not on the layers. The mask that cuts the circle lives on
+       the layer, so scaling the layer scaled the circle with it and the disc's
+       edge drifted away from the plate. The two images sit in identical boxes
+       with identical transforms, so animating them separately is still exactly
+       synchronous. */
+    .layer img {
       transform-origin: bottom center;
       animation: hero-cut-settle 3200ms var(--ease-brand) both;
       animation-delay: 220ms;
     }
   }
+  /* A plain scale: the images carry no translate of their own, the layers do
+     the centring, and the masks stay put on the plate. */
   @keyframes hero-cut-settle {
     from {
-      transform: translateX(calc(-50% + var(--head-shift))) scale(1);
+      transform: scale(1);
     }
     to {
-      transform: translateX(calc(-50% + var(--head-shift))) scale(1.045);
+      transform: scale(var(--push-in-scale));
     }
   }
   /* Above 880px he is no longer leaning on the viewport, so a circular plate
@@ -676,8 +702,28 @@
                               any size
          Only two of them survive: the head-breaking-out layer that --pop and
          --pop-depth served is gone, for the reason in the markup above. */
-      --plate-img-width: 136%;
+      /* How far his crown clears the top of the plate once the push-in has
+         settled. This is the number anyone has an opinion about; the width
+         that produces it falls out of the cutout's aspect and the push-in's
+         own scale, and the script computes and gates it. */
+      --crown-clear: 7%;
+      --push-in-scale: 1.045;
+      --plate-img-width: 126.93%;
       --head-shift: -2.42%;
+
+      /* The circle, expressed as a mask tile inside the LAYER's box. The
+         layers are the image's box, not the plate's, so that no rectangle
+         edge falls anywhere near the figure; the tile is the plate, square in
+         pixels, which is why its size is a different percentage of the box's
+         width than of its height. Both derived by the script. */
+      --mask-size: 78.78% 97.67%;
+      --mask-position: 61.41% 100%;
+
+      /* Where the outer layer fades out. It starts below his crown and ends
+         where he is back inside the circle, so the outer layer is painting
+         nothing by the time the fade finishes and the edge cannot be seen. */
+      --out-fade-start: 7%;
+      --out-fade-end: 21%;
 
       /* Room above the plate for the head to occupy. It is also what keeps
          the grid row tall enough that the pop is not clipped by the hero's
@@ -685,6 +731,14 @@
     }
     .heroFig {
       aspect-ratio: 1;
+      /* No clipping and no background here: the plate is its own layer now,
+         so that the figure can paint outside the circle. */
+      overflow: visible;
+      align-self: center;
+    }
+    .plateBg {
+      position: absolute;
+      inset: 0;
       border-radius: 50%;
       /* The plate cites the accent's own family rather than repeating the
          band. Off-centre, so the light falls from the upper left where the
@@ -702,19 +756,53 @@
         #cdb970 72%,
         #b6a461 100%
       );
-      align-self: center;
     }
-    /* The cutout is wider than it is tall, so drawn at the plate's own width
-       his reconstructed crown sits BELOW the plate's top and there is nothing
-       to break out with. See --plate-img-width above. */
-    .heroFig img {
+
+    /* The shared parent. The push-in lives here, so both layers move as one. */
+    .cuts {
+      position: absolute;
+      inset: 0;
+    }
+    .cutMobile {
+      display: none;
+    }
+    .layer {
       position: absolute;
       left: 50%;
       bottom: 0;
       width: var(--plate-img-width);
-      margin-left: 0;
       transform: translateX(calc(-50% + var(--head-shift)));
+      mask-repeat: no-repeat;
     }
+    .layer img {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-width: none;
+    }
+    /* Keep what falls inside the circle. Outside the tile the mask is empty,
+       which `no-repeat` makes transparent, so nothing else is painted. */
+    .layerIn {
+      mask-image: radial-gradient(circle closest-side, #000 calc(100% - 1px), transparent 100%);
+      mask-size: var(--mask-size);
+      mask-position: var(--mask-position);
+    }
+    /* Keep what falls outside it: the whole box, faded out down the page,
+       minus the same circle. The circle's ramp is identical to the one above,
+       so the two alphas sum to 1 along the edge and there is no join. */
+    .layerOut {
+      mask-image:
+        linear-gradient(
+          to bottom,
+          #000 0 var(--out-fade-start),
+          rgb(0 0 0 / 0) var(--out-fade-end)
+        ),
+        radial-gradient(circle closest-side, #000 calc(100% - 1px), transparent 100%);
+      mask-size: 100% 100%, var(--mask-size);
+      mask-position: 0 0, var(--mask-position);
+      mask-composite: subtract;
+    }
+
   }
 
   /* ---- the three-step sequence ---- */
