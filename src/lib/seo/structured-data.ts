@@ -130,6 +130,37 @@ export function faqNode(): object {
 }
 
 /**
+ * A blog post, as a `BlogPosting` node.
+ *
+ * Every field is the post's own: headline, date and description come from
+ * what is on the page, and the author is the Person node already in the
+ * graph rather than a second copy of his name. Nothing is asserted here that
+ * a reader of the page could not check.
+ *
+ * There is no `dateModified`, because nothing records when a post was edited
+ * and a build stamp is not that date.
+ */
+export function blogPostingNode(input: {
+  path: string;
+  title: string;
+  description: string;
+  publishAt: string;
+}): object {
+  const url = absUrl(input.path);
+  return {
+    '@type': 'BlogPosting',
+    '@id': `${url}#post`,
+    mainEntityOfPage: url,
+    url,
+    headline: input.title,
+    description: input.description,
+    datePublished: input.publishAt,
+    author: { '@id': PERSON_ID },
+    publisher: { '@id': PRACTICE_ID }
+  };
+}
+
+/**
  * Testimonials as `Review` nodes on the practice.
  *
  * Emitted only when there are testimonials to emit, and deliberately without

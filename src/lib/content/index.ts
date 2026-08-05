@@ -10,10 +10,13 @@
  * matching an interface fails the build rather than production.
  */
 
+import { PUBLIC_BUILD_TIME } from '$env/static/public';
 import siteData from '../../content/site.json';
 import contactData from '../../content/contact.json';
 import homeData from '../../content/home.json';
 import testimonialsData from '../../content/testimonials.json';
+import postsData from '../../content/posts.json';
+import { mockPosts, mockServiceDetail, mockTestimonials } from './mock';
 
 export interface Membership {
   name: string;
@@ -73,12 +76,36 @@ export interface Step {
   body: string;
 }
 
+/**
+ * The extra material a service's own page carries, and nothing else.
+ *
+ * There is no `path` and no link field. John writes prose; the address of a
+ * page on his own site is the route tree's business, derived by
+ * `servicePath()` below from the `slug` that already exists. A URL he has to
+ * type is a URL he has to keep in step with the code.
+ *
+ * There is no second copy of the summary either. `Service.body` is the home
+ * page's words, and the detail page opens with exactly that string before
+ * this one, so the front page and the top of the detail page cannot drift.
+ */
+export interface ServiceDetail {
+  /** Markdown. Rendered UNDER `Service.body` on the service's own page. */
+  body: string;
+  /** Optional. Falls back to the service title and the site description. */
+  seo?: { title: string; description: string };
+}
+
 export interface Service {
+  /** Identifier, not copy: it is what the detail page's address is built
+   *  from, which is why it is not an editable field in the CMS. */
   slug: string;
   title: string;
   who: string;
-  /** Markdown. */
+  /** Markdown. The home-page summary, and the opening of the detail page. */
   body: string;
+  /** Present means this service has a page. Absent means it does not, and
+   *  the home row renders exactly as it always has, with no link. */
+  detail?: ServiceDetail;
 }
 
 export interface FeeLine {
@@ -156,18 +183,147 @@ export interface Testimonials {
   items: Testimonial[];
 }
 
+export interface Post {
+  /** Identifier, not copy: the post's address is built from it, so it is not
+   *  an editable field in the CMS. */
+  slug: string;
+  title: string;
+  /** ISO 8601. */
+  publishAt: string;
+  status: 'draft' | 'published';
+  /** Plain text. The home feed and the index show this and nothing else, so
+   *  there is no second, "featured" copy of a post to keep in step. */
+  excerpt: string;
+  /** Markdown. */
+  body: string;
+  /** Optional. Falls back to the title and the excerpt. */
+  seo?: { title: string; description: string };
+}
+
+export interface Posts {
+  posts: Post[];
+}
+
 export const site: Site = siteData;
 export const contact: Contact = contactData;
-export const home: Home = homeData;
-export const testimonials: Testimonials = testimonialsData;
+
+/* Mock content is merged in only where it exists, and it only exists in dev
+   (see ./mock.ts). Production reads exactly the JSON in src/content/. */
+export const testimonials: Testimonials = mockTestimonials ?? testimonialsData;
+
+export const home: Home = mockServiceDetail
+  ? {
+      ...homeData,
+      services: {
+        ...homeData.services,
+        items: homeData.services.items.map((item) =>
+          mockServiceDetail[item.slug] ? { ...item, detail: mockServiceDetail[item.slug] } : item
+        )
+      }
+    }
+  : homeData;
+
+/* ---------------------------------------------------------------------------
+   Addresses.
+
+   Every URL that points at this site is derived here, from the route tree and
+   from the identifiers the content already carries. None of them is typed by
+   an editor. External links (a register listing, a body he trained with, a
+   link out of a blog post) stay plain string fields in the content, because
+   those genuinely are his to write; an address on his own site is not.
+   --------------------------------------------------------------------------- */
+
+/**
+ * Where a service's detail page lives, per docs/information-architecture.md.
+ *
+ * Client work sits under `/counselling/`, because that is the word people
+ * search for and the URL is a clarity signal in a result. Supervision does
+ * not: it is a different audience, therapists rather than clients, and
+ * `/counselling/supervision` would read as a sub-service of client work.
+ * That is the whole rule, and it lives here rather than in the JSON so that
+ * nobody has to keep an address and a route in step by hand.
+ */
+export function servicePath(service: Service): string {
+  return service.slug === 'supervision'
+    ? '/supervision/'
+    : `/counselling/${service.slug}/`;
+}
+
+/** The services that have a page. Ships empty: no service has a `detail`. */
+export function detailServices(): Service[] {
+  return home.services.items.filter((s) => s.detail);
+}
+
+export const BLOG_PATH = '/blog/';
+
+export function postPath(post: Post): string {
+  return `${BLOG_PATH}${post.slug}/`;
+}
+
+/* ---------------------------------------------------------------------------
+   Publishing.
+
+   Two gates, because the two cases are different in kind.
+
+   A DRAFT is private. It is filtered out here, at build time, so it is not in
+   the HTML, has no page and is in no sitemap. The source of this site is
+   public, so anything else would publish it twice over.
+
+   A post PUBLISHED with a date in the future is not private, it is early. It
+   is in the build, and the listings hide it until its moment passes, in the
+   browser, so it appears on the day without waiting for a rebuild. Its text
+   is therefore in the HTML from the day it is written, and that is a decision
+   rather than an oversight: see DECISIONS.md §22.
+   --------------------------------------------------------------------------- */
+
+/**
+ * The moment this build was made.
+ *
+ * `$env/static/public`, not dynamic, for the reason set out at the top of
+ * $lib/seo/structured-data: static env is sourced from the committed
+ * `.env.[mode]` files and hard-fails on a missing declaration, so a build
+ * cannot silently fall back. CI passes the real value as a `--build-arg`
+ * (see deploy/Dockerfile); it is empty in local dev, where the current time
+ * is right and is baked at prerender rather than read in the browser.
+ */
+export const BUILD_TIME: number = Date.parse(PUBLIC_BUILD_TIME) || Date.now();
+
+const allPosts: Post[] = [
+  ...(postsData as Posts).posts,
+  ...(mockPosts ? mockPosts.posts : [])
+];
+
+/**
+ * Everything in the build, newest first. Drafts are gone by here.
+ *
+ * A post whose `publishAt` will not parse sorts last and is never live:
+ * `Date.parse` returns NaN and every comparison against it is false, so a
+ * malformed date hides a post rather than publishing it early.
+ */
+export const builtPosts: Post[] = allPosts
+  .filter((post) => post.status === 'published')
+  .sort((a, b) => Date.parse(b.publishAt) - Date.parse(a.publishAt));
+
+/** The posts that are live at a given moment. */
+export function livePosts(at: number): Post[] {
+  return builtPosts.filter((post) => Date.parse(post.publishAt) <= at);
+}
+
+/**
+ * Live as at the build. This is what the server renders, what the sitemap
+ * advertises and what the navigation is built from; the browser widens it to
+ * `Date.now()` on mount through $lib/publish-clock.
+ */
+export const publishedPosts: Post[] = livePosts(BUILD_TIME);
 
 /**
  * The in-page navigation. Generated from the sections the home page actually
  * renders, paired with the heading each one already carries, so there is no
  * second list to keep in sync.
  *
- * `collapse` names the breakpoint at which a link joins the inline bar; below
- * it, the link lives in the full-page menu only.
+ * The hrefs are `/#section`, not `#section`, because the header is on every
+ * page now: from a service page or a post, a bare fragment points at an
+ * anchor that is not there and the link does nothing at all.
  */
 export interface NavItem {
   href: string;
@@ -175,12 +331,15 @@ export interface NavItem {
 }
 
 export const nav: NavItem[] = [
-  { href: '#help', label: 'How I can help' },
-  { href: '#about', label: 'About me' },
-  { href: '#fees', label: 'Fees' },
-  { href: '#faq', label: 'Questions' },
-  { href: '#contact', label: 'Get in touch' }
+  { href: '/#help', label: 'How I can help' },
+  { href: '/#about', label: 'About me' },
+  { href: '/#fees', label: 'Fees' },
+  { href: '/#faq', label: 'Questions' },
+  { href: '/#contact', label: 'Get in touch' }
 ];
+
+/** Appended by the header only while there is something to read. */
+export const blogNavItem: NavItem = { href: BLOG_PATH, label: 'Blog' };
 
 /** Footer note with the `{year}` placeholder resolved. */
 export function footerNote(year: number): string {

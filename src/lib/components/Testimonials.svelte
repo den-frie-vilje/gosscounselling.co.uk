@@ -1,97 +1,280 @@
 <!--
-  Testimonials.
+  Testimonials, one at a time.
 
   Renders nothing at all when the list is empty, so the section can sit in the
   page from the start and simply appear the day John adds the first one. No
-  empty state, no "coming soon": a therapy site with a blank testimonial rail
-  looks worse than one without the rail.
+  empty state and no "coming soon": a therapy site with a blank testimonial
+  rail looks worse than one without the rail.
 
-  Deliberately unrated and unboxed. There are no stars, because nobody has
-  given John a score and inventing one would be a lie; and the quotes sit on
-  the ground with a rule between them rather than in cards, to match the rest
-  of the scroll.
+  Set as a quotation rather than as content in a box. No cards, because
+  nothing on this page is a card; no index numbers, because a quote is not an
+  item in a sequence; and no star ratings, because nobody has given John a
+  score and inventing one would be a lie. What is left is the sentence
+  someone said, centred, in the display face, at a size that says it is worth
+  reading.
+
+  With one testimonial there are no controls at all. They appear only when
+  there is somewhere to go, which is the same principle as the section itself.
 -->
 <script lang="ts">
   import { testimonials } from '$lib/content';
+
+  const items = testimonials.items;
+  const many = items.length > 1;
+  let index = $state(0);
+
+  function go(to: number) {
+    index = (to + items.length) % items.length;
+  }
+
+  // Left and right move between quotes while the focus is on any of the
+  // controls, which is what a keyboard user tries before hunting for a button.
+  function onKeydown(event: KeyboardEvent) {
+    if (!many) return;
+    if (event.key === 'ArrowLeft') {
+      go(index - 1);
+      event.preventDefault();
+    } else if (event.key === 'ArrowRight') {
+      go(index + 1);
+      event.preventDefault();
+    }
+  }
 </script>
 
-{#if testimonials.items.length > 0}
+{#if items.length > 0}
   <section id="testimonials" class="section-y bg-mist text-ink">
     <div class="container-page">
-      <div class="section-head">
+      <div class="head">
         <p class="t-kicker m-0 mb-3.5">{testimonials.kicker}</p>
         <h2 class="t-h2">{testimonials.heading}</h2>
         {#if testimonials.note}
-          <p class="mt-4 mb-0 text-[18px] text-muted">{testimonials.note}</p>
+          <p class="text-muted mt-4 mb-0 text-[18px]">{testimonials.note}</p>
         {/if}
       </div>
 
-      <ul class="border-line-cool mt-12 list-none border-t p-0">
-        {#each testimonials.items as item, i (item.quote)}
-          <li class="border-line-cool border-b">
-            <figure class="quotefig mark-row">
-              <p class="num mark" aria-hidden="true">{String(i + 1).padStart(2, '0')}</p>
-              <blockquote class="quote">{item.quote}</blockquote>
-              <figcaption class="cap">
-                {item.name}{#if item.detail} · {item.detail}{/if}
+      <!-- `aria-roledescription` names the pattern for screen readers, and the
+           live region announces the new quote when the controls move it.
+
+           The arrow-key handler is on the BUTTONS rather than on this group.
+           A group is not interactive, so a key listener on it is unreachable
+           for anyone who cannot put focus there, and the buttons are where a
+           keyboard user's focus already is. -->
+      <div
+        class="quotes"
+        role="group"
+        aria-roledescription="carousel"
+        aria-label={testimonials.heading}
+      >
+        <div class="viewport" aria-live="polite" aria-atomic="true">
+          {#each items as item, i (item.quote)}
+            <figure class="quote" class:is-current={i === index} aria-hidden={i !== index}>
+              <blockquote>{item.quote}</blockquote>
+              <figcaption>
+                {item.name}{#if item.detail}<span class="detail"> · {item.detail}</span>{/if}
               </figcaption>
             </figure>
-          </li>
-        {/each}
-      </ul>
+          {/each}
+        </div>
+
+        {#if many}
+          <div class="controls">
+            <button
+              type="button"
+              class="arrow"
+              aria-label="Previous"
+              onclick={() => go(index - 1)}
+              onkeydown={onKeydown}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path
+                  d="M15 5.5 8.5 12 15 18.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+
+            <ul class="dots">
+              {#each items as item, i (item.quote)}
+                <li>
+                  <button
+                    type="button"
+                    class="dot"
+                    class:on={i === index}
+                    aria-label={`Show quote ${i + 1} of ${items.length}`}
+                    aria-current={i === index ? 'true' : undefined}
+                    onclick={() => go(i)}
+                    onkeydown={onKeydown}
+                  ></button>
+                </li>
+              {/each}
+            </ul>
+
+            <button
+              type="button"
+              class="arrow"
+              aria-label="Next"
+              onclick={() => go(index + 1)}
+              onkeydown={onKeydown}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path
+                  d="M9 5.5 15.5 12 9 18.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+        {/if}
+      </div>
     </div>
   </section>
 {/if}
 
 <style>
-  /* The caption has to be an immediate child of the figure, so the number
-     and the quote are laid out by named areas rather than by wrapping the
-     quote and caption in a div. */
-  .quotefig {
-    margin: 0;
-    padding-block: 36px;
+  /* The head is centred with the quotes rather than ranged left like every
+     other section head on the page: a left-ranged head over a centred quote
+     reads as a mistake rather than as a decision. */
+  .head {
+    max-width: 58ch;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .quotes {
+    margin-top: 44px;
+  }
+
+  /* The quotes are stacked in one grid cell rather than laid side by side, so
+     the section is as tall as the LONGEST of them and does not jump as they
+     change. A slide would need a track and a translate; this shows one thing
+     at a time, and a cross-fade says that with no layout at all. */
+  .viewport {
     display: grid;
-    gap: 16px;
-    grid-template-areas:
-      'num'
-      'quote'
-      'cap';
-  }
-  @media (min-width: 53.75rem) {
-    .quotefig {
-      grid-template-columns: auto 1fr;
-      column-gap: 40px;
-      row-gap: 16px;
-      grid-template-areas:
-        'num quote'
-        '.   cap';
-    }
-  }
-  .num {
-    grid-area: num;
-    margin: 0;
-    font-family: var(--font-display);
-    font-weight: 600;
-    /* The quote runs clamp(20px, 2.4vw, 26px); the numeral is a fixed
-       fraction of it so the alignment ratio holds across the clamp. */
-    --mark-ratio: 1.6;
-    font-size: calc(clamp(20px, 2.4vw, 26px) / 1.6);
-    color: var(--color-gold);
-    font-variant-numeric: tabular-nums;
   }
   .quote {
-    grid-area: quote;
+    grid-area: 1 / 1;
     margin: 0;
-    min-width: 0;
-    font-family: var(--font-display);
-    font-size: clamp(20px, 2.4vw, 26px);
-    line-height: 1.35;
-    color: var(--color-ink);
-    max-width: 44ch;
+    text-align: center;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity var(--dur-base) var(--ease-brand),
+      visibility 0s linear var(--dur-base);
   }
-  .cap {
-    grid-area: cap;
-    font-size: 15px;
+  .quote.is-current {
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity var(--dur-base) var(--ease-brand),
+      visibility 0s;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .quote,
+    .quote.is-current {
+      transition: visibility 0s;
+    }
+  }
+
+  /* The display face at reading size, on a short measure, with the weight
+     left at 400: a quotation carries by being set well rather than by being
+     made bold. */
+  blockquote {
+    margin: 0 auto;
+    max-width: 26ch;
+    font-family: var(--font-display);
+    font-size: clamp(24px, 3.4vw, 38px);
+    font-weight: 400;
+    line-height: 1.28;
+    letter-spacing: -0.015em;
+    color: var(--color-ink);
+    text-wrap: balance;
+  }
+  figcaption {
+    margin-top: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
     color: var(--color-muted);
+  }
+  .detail {
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: none;
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-top: 36px;
+  }
+  /* 44px of touch target around a 20px glyph: the WCAG minimum, without
+     drawing a button anyone has to look at. */
+  .arrow {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--color-teal);
+    cursor: pointer;
+  }
+  .arrow svg {
+    width: 20px;
+    height: 20px;
+  }
+  .arrow:hover {
+    color: var(--color-deep);
+  }
+
+  .dots {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  /* The dot is 8px; the button around it is 24px so it can be hit, and the
+     gap keeps those 24px circles from touching, which is what the target-size
+     spacing exception asks for. */
+  .dot {
+    display: block;
+    width: 24px;
+    height: 24px;
+    padding: 8px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .dot::before {
+    content: '';
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-muted);
+    opacity: 0.4;
+    transition:
+      opacity var(--dur-fast) linear,
+      background-color var(--dur-fast) linear;
+  }
+  .dot:hover::before {
+    opacity: 0.7;
+  }
+  .dot.on::before {
+    background: var(--color-teal);
+    opacity: 1;
   }
 </style>

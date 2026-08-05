@@ -63,3 +63,29 @@ export function renderMarkdown(md: string): string {
 export function renderInline(md: string): string {
   return marked.parseInline((md ?? '').trim(), { async: false });
 }
+
+/**
+ * The first paragraph of a markdown body as plain text, for a meta
+ * description a page has not been given one for.
+ *
+ * Derived rather than written: a description is a visitor-facing string, and
+ * the rule on this site is that those come from John (DECISIONS.md §19). His
+ * own opening sentences are already the honest answer to "what is this page",
+ * so the fallback reuses them instead of inventing a summary of them.
+ */
+export function firstParagraph(md: string, max = 155): string {
+  const text = (md ?? '')
+    .trim()
+    .split(/\n\s*\n/)[0]
+    // Headings, emphasis, list markers and link syntax, kept simple because
+    // the input is this repo's own prose and not arbitrary markdown.
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^[-*+]\s+/gm, '')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  return `${cut.slice(0, cut.lastIndexOf(' ')).trimEnd()}…`;
+}

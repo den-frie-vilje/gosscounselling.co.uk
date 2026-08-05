@@ -390,8 +390,15 @@ def solid_matte():
     te = np.clip((EDGE_OUT - D) / (EDGE_OUT - EDGE_IN), 0.0, 1.0)
     ts = te * te * te * (10.0 + te * (te * 6.0 - 15.0))
     # The client's file is the authority wherever the backdrop cannot have reached: on
-    # solid pixels, deep inside the figure, and in the crown he painted above the plate.
-    settled = (A > 0.995) | (D >= DREF)
+    # solid pixels, past the edge band, and in the crown he painted above the plate.
+    # Past the band rather than past DREF, so that "outside the window the asset IS the
+    # knockout" is exact rather than nearly so. It moves 3,504 pixels, all of them in
+    # the cutout's last two rows, where he was cut off by the source frame and the
+    # matte ramps out to alpha 252-253 instead of ending: opaque enough to count, not
+    # opaque enough to have been settled, and 20px or more inside the silhouette
+    # sideways, so the foreground estimator rather than the master was speaking for
+    # them. Everywhere else in 20..DREF is already solid and already settled.
+    settled = (A > 0.995) | (D >= EDGE_OUT)
     settled[:top] |= A[:top] > 0.02
     I[settled] = master_rgb[settled]
 
@@ -552,6 +559,76 @@ def _verify_solid_matte(master_rgb, A, An, Fd, Fd0, Fdp, psi, D, core, top, curv
           % (hold.sum(), xs.min(), xs.max(), ys.min(), ys.max()) if hold.any()
           else "  holdout: no pixel qualified")
 
+    # == THE EDGE BAND: only the edge may differ from the plain knockout ==============
+    # From 880px up the hero paints BOTH mattes at once — the plain knockout inside the
+    # sand plate's circle, this one outside it — so wherever the circle's edge crosses
+    # his body the two have to agree pixel for pixel. Depth is measured from the OPAQUE
+    # boundary (alpha >= 250 in both files), which is the metric the comparison has
+    # always been quoted in; it sits about 5px inside the alpha > 0.5 silhouette that
+    # EDGE_OUT is measured from, so the grade should be gone by roughly EDGE_OUT - 5
+    # in this table. `pre` is the same difference BEFORE the WebP encode, where the
+    # claim is exact: outside the window the pixels are the master's, bit for bit.
+    EDGE_IN, EDGE_OUT = edge
+    buf0 = io.BytesIO()
+    Image.fromarray(np.dstack([master_rgb, A * 255.0]).round().astype(np.uint8), "RGBA") \
+         .save(buf0, "WEBP", quality=92, alpha_quality=100, exact=True, method=6)
+    floor_rgb = np.abs(np.array(Image.open(buf0).convert("RGBA"))
+                       .astype(np.float64)[..., :3] - master_rgb)
+    solid = (A >= 250 / 255.0) & (aa >= 250 / 255.0)
+    Dop = distance_transform_edt(solid)
+    post, pre = np.abs(rgb - master_rgb), np.abs(Fd - master_rgb)
+    print("  EDGE BAND: the de-lighting is windowed off between %.0f and %.0fpx into the"
+          " silhouette (smootherstep, C2)" % (EDGE_IN, EDGE_OUT))
+    print("    light vs dark over the %d px opaque in both, by depth from that boundary:"
+          % solid.sum())
+    print("      %-9s %9s | %8s %7s | %8s %7s | %8s %7s"
+          % ("depth", "n", "mean|d|", "max", "pre-enc", "max", "encode", "max"))
+    for lo, hi in [(0, 2), (2, 5), (5, 10), (10, 20), (20, 40), (40, 80), (80, 1e9)]:
+        s = solid & (Dop >= lo) & (Dop < hi)
+        if not s.any():
+            continue
+        print("      %-9s %9d | %8.2f %7.1f | %8.3f %7.1f | %8.3f %7.1f"
+              % ("%d-%dpx" % (lo, hi) if hi < 1e8 else "80px+", s.sum(),
+                 post[s].mean(), post[s].max(), pre[s].mean(), pre[s].max(),
+                 floor_rgb[s].mean(), floor_rgb[s].max()))
+    off = solid & (D >= EDGE_OUT)
+    print("    beyond the window (%d px): |dark - master| before the encode  max %.6f/255"
+          "  —  the interior IS the knockout" % (off.sum(), pre[off].max()))
+    print("    the residue past it is the WebP encode alone: q92 costs the master"
+          " %.3f mean (max %.1f) against itself" % (floor_rgb[solid].mean(),
+                                                    floor_rgb[solid].max()))
+
+    # -- and what that leaves at the outline: luminance inward, on the deep band ------
+    # Rising = no halo, and no drawn-on dark line either. The far column is the figure's
+    # own interior, so `peak - interior` is what is left of the cyc's rim light.
+    rr0 = np.arange(H)[:, None] + np.zeros((1, W), int)
+    cc0 = np.arange(W)[None, :] + np.zeros((H, 1), int)
+    Dc = distance_transform_edt(core)
+    DEPS = [(0, 2), (2, 4), (4, 6), (6, 8), (8, 10), (10, 14), (14, 20), (20, 28),
+            (28, 40), (40, 55), (55, 80), (80, 120)]
+    print("    composited on the deep band rgb(10,40,51) = #0a2833, luminance inward"
+          " from the outline:")
+    print("      %-24s %s" % ("", " ".join("%6s" % ("%d-%d" % b) for b in DEPS)))
+    for nm, sel in (("crown + hair  rows<420 ", core & (rr0 < 420)),
+                    ("face + beard  420-960  ", core & (rr0 >= 420) & (rr0 < 960)),
+                    ("NEAR shoulder r>1010   ", core & (rr0 > 1010) & (cc0 < 880)),
+                    ("FAR  shoulder r>1010   ", core & (rr0 > 1010) & (cc0 >= 880)),
+                    ("lower body    rows>1200", core & (rr0 > 1200))):
+        for lab, im, al in (("knockout", master_rgb, A), ("dark    ", rgb, aa)):
+            c = L(im * al[..., None] + np.array((10.0, 40.0, 51.0)) * (1 - al[..., None]))
+            p = np.array([c[sel & (Dc >= lo) & (Dc < hi)].mean()
+                          if (sel & (Dc >= lo) & (Dc < hi)).sum() > 30 else np.nan
+                          for lo, hi in DEPS])
+            note = ""
+            if lab.startswith("dark"):
+                q = p[:7][~np.isnan(p[:7])]
+                note = ("  rises to +%.1f over its interior; %s out to 20px"
+                        % (np.nanmax(p) - p[-1],
+                           "monotone" if (np.diff(q) > -0.5).all()
+                           else "dips %+.1f" % np.diff(q).min()))
+            print("      %-24s %s%s" % (nm + " " + lab,
+                  " ".join("     -" if np.isnan(v) else "%6.1f" % v for v in p), note))
+
     # -- THE HAIR BAND, specifically: composite luminance by depth, two dark grounds --
     Din, Dout = distance_transform_edt(core), distance_transform_edt(~core)
     sd = np.where(core, Din, -Dout)                   # signed depth, MASTER reference
@@ -681,11 +758,7 @@ def _verify_solid_matte(master_rgb, A, An, Fd, Fd0, Fdp, psi, D, core, top, curv
             print("    %s %s  %s   edge vs interior %+6.1f"
                   % (name, tag, " ".join("%5.1f" % v for v in p), p[0] - p[-1]))
     deep = shoulder & (dd > 80)
-    buf = io.BytesIO()
-    Image.fromarray(np.dstack([master_rgb, A * 255.0]).round().astype(np.uint8), "RGBA") \
-         .save(buf, "WEBP", quality=92, alpha_quality=100, exact=True, method=6)
-    floor = np.abs(np.array(Image.open(buf).convert("RGBA")).astype(np.float64)[..., :3]
-                   - master_rgb)[deep]
+    floor = floor_rgb[deep]
     print("  shirt interior (>80px in): %.3f/255 mean before the encode (max %.1f);"
           " re-encoding the master alone already costs %.3f (max %.1f)"
           % (np.abs(Fd - master_rgb)[deep].mean(), np.abs(Fd - master_rgb)[deep].max(),

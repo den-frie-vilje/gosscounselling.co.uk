@@ -11,7 +11,7 @@
   Practice's warm ground and air. Nothing on this page is a card.
 -->
 <script lang="ts">
-  import { contact, home, site } from '$lib/content';
+  import { contact, home, servicePath, site } from '$lib/content';
   import { buildPageSeo, faqNode, reviewNodes } from '$lib/seo/structured-data';
   import { renderInline } from '$lib/markdown';
   import { scrollDraw } from '$lib/actions/scroll-draw';
@@ -23,6 +23,7 @@
   import FaqAccordion from '$lib/components/FaqAccordion.svelte';
   import ContactBand from '$lib/components/ContactBand.svelte';
   import Testimonials from '$lib/components/Testimonials.svelte';
+  import BlogFeed from '$lib/components/BlogFeed.svelte';
   import Icon from '$lib/components/Icon.svelte';
 
   // Below 880px he goes full-bleed under the copy, so the fold cuts him at
@@ -210,7 +211,23 @@
           <h3 class="t-h3">{service.title}</h3>
           <p class="who">{service.who}</p>
         </div>
-        <Prose md={service.body} class="prose-lead min-w-0" />
+        <div class="min-w-0">
+          <Prose md={service.body} class="prose-lead" />
+
+          <!-- Only where the service has a page. A service with no `detail`
+               body renders exactly as it always has, with nothing to click:
+               a "More about" link to a page that has not been written is the
+               teaser stub docs/content-coverage.md says not to carry over.
+               The address is derived from the slug, never typed. -->
+          {#if service.detail}
+            <p class="moreabout">
+              <a href={servicePath(service)}>
+                More about {service.title.toLowerCase()}
+                <Icon name="arrow" size={17} />
+              </a>
+            </p>
+          {/if}
+        </div>
       </article>
     {/each}
   </div>
@@ -310,6 +327,10 @@
   <FaqAccordion items={home.faq.items} />
 </Section>
 
+<!-- Renders nothing at all until there is a post to show, so the scroll is
+     unchanged on the day the site launches without a blog. -->
+<BlogFeed />
+
 <ContactBand />
 
 <style>
@@ -345,10 +366,10 @@
     pointer-events: none;
     background: radial-gradient(
       closest-side,
-      rgb(2 14 19 / 0.9) 0%,
-      rgb(2 14 19 / 0.55) 45%,
-      rgb(2 14 19 / 0.18) 70%,
-      transparent 88%
+      rgb(2 14 19 / 0.95) 0%,
+      rgb(2 14 19 / 0.66) 45%,
+      rgb(2 14 19 / 0.26) 70%,
+      transparent 90%
     );
   }
   /* A second pool, low and right, so the light never settles into a horizon. */
@@ -359,19 +380,26 @@
     pointer-events: none;
     background: radial-gradient(
       closest-side,
-      rgb(29 92 112 / 0.42) 0%,
-      rgb(29 92 112 / 0.16) 55%,
-      transparent 82%
+      rgb(29 92 112 / 0.62) 0%,
+      rgb(29 92 112 / 0.28) 55%,
+      transparent 84%
     );
   }
 
   /* The two pools drift, and that is all they do.
      No pulsing, no scaling, no change of colour or opacity: a light that
      breathes in and out is a television studio, and this is a page about
-     bereavement and erections. What is left is positional, under 2% of the
+     bereavement and erections. What is left is positional, under 2.5% of the
      viewport, over a minute a cycle, on two periods that do not share a
-     factor so the pair never visibly repeats. Most visitors will not notice
-     it; that is the intended amount. */
+     factor so the pair never visibly repeats.
+
+     The pools carry more weight than they did, which was the point of the
+     change, and the cost is computed rather than assumed. Compositing the
+     lower pool at 0.62 over the flat band takes the muted hero copy from
+     7.72:1 to about 6.5:1 and the hero link to about 5.2:1, both still clear
+     of AA. Over the gradient's light end it goes the other way and IMPROVES
+     the ratio, because there the pool darkens the ground rather than lifting
+     it. */
   @media (prefers-reduced-motion: no-preference) {
     .wash {
       animation: drift-a 71s ease-in-out infinite;
@@ -386,7 +414,7 @@
       transform: translate3d(0, 0, 0);
     }
     50% {
-      transform: translate3d(1.6%, -1.1%, 0);
+      transform: translate3d(2.4%, -1.7%, 0);
     }
   }
   @keyframes drift-b {
@@ -395,7 +423,7 @@
       transform: translate3d(0, 0, 0);
     }
     50% {
-      transform: translate3d(-1.3%, 1.5%, 0);
+      transform: translate3d(-2%, 2.3%, 0);
     }
   }
 
