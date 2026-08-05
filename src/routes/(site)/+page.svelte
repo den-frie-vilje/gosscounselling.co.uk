@@ -92,9 +92,12 @@
            showed when two semi-transparent copies of the same man overlapped
            cannot occur.
 
-           Their mask edges are complementary across the same one-pixel ramp,
-           so the two alphas sum to exactly 1 along the circle. There is no
-           join to see, and no sub-pixel rim drawn across his forehead.
+           Their mask edges OVERLAP slightly rather than meeting exactly.
+           Complementary edges sum to 1 in arithmetic, but Safari rounds each
+           layer's coverage on its own and leaves a sub-pixel line of the
+           ground along the circle. The overlap costs nothing, because both
+           layers are fully opaque there and both are the same photograph in
+           the same place.
 
            They move together, because the transform lives on their shared
            parent rather than on each of them. Synchronous by construction
@@ -716,14 +719,34 @@
          edge falls anywhere near the figure; the tile is the plate, square in
          pixels, which is why its size is a different percentage of the box's
          width than of its height. Both derived by the script. */
-      --mask-size: 78.78% 97.67%;
+      --mask-size: 78.78% 93.46%;
       --mask-position: 61.41% 100%;
+
+      /* Room at the top of each layer for the push-in's overshoot. A transform
+         does not change layout, so the scaled image reaches above its own box;
+         the mask is sized to that box, so without this the crown falls outside
+         the mask and is cut clean off.
+
+         Against the PLATE, because a percentage padding resolves against the
+         containing block's inline size and this layer's containing block is
+         the plate, not the layer. Reading that reference wrong left it 4.41px
+         short and the crown still clipped by exactly that much. */
+      --layer-pad: 4.61%;
 
       /* Where the outer layer fades out. It starts below his crown and ends
          where he is back inside the circle, so the outer layer is painting
          nothing by the time the fade finishes and the edge cannot be seen. */
       --out-fade-start: 7%;
       --out-fade-end: 21%;
+
+      /* The two masks OVERLAP by this much rather than meeting exactly.
+         Complementary edges sum to 1 in arithmetic, but Safari rounds each
+         layer's coverage independently and leaves a sub-pixel line of the
+         ground showing along the circle. Overlapping costs nothing: in the
+         overlap band both layers are fully opaque and both are the same
+         photograph in the same place, so painting twice is identical to
+         painting once. */
+      --mask-overlap: 1.5px;
 
       /* Room above the plate for the head to occupy. It is also what keeps
          the grid row tall enough that the pop is not clipped by the hero's
@@ -771,8 +794,10 @@
       left: 50%;
       bottom: 0;
       width: var(--plate-img-width);
+      padding-top: var(--layer-pad);
       transform: translateX(calc(-50% + var(--head-shift)));
       mask-repeat: no-repeat;
+      box-sizing: content-box;
     }
     .layer img {
       display: block;
@@ -780,16 +805,18 @@
       height: auto;
       max-width: none;
     }
-    /* Keep what falls inside the circle. Outside the tile the mask is empty,
-       which `no-repeat` makes transparent, so nothing else is painted. */
+    /* Keep what falls inside the circle, right out to its edge. Outside the
+       tile the mask is empty, which `no-repeat` makes transparent, so nothing
+       else is painted. */
     .layerIn {
-      mask-image: radial-gradient(circle closest-side, #000 calc(100% - 1px), transparent 100%);
+      mask-image: radial-gradient(circle closest-side, #000 calc(100% - 0.25px), transparent 100%);
       mask-size: var(--mask-size);
       mask-position: var(--mask-position);
     }
     /* Keep what falls outside it: the whole box, faded out down the page,
-       minus the same circle. The circle's ramp is identical to the one above,
-       so the two alphas sum to 1 along the edge and there is no join. */
+       minus a circle a hair SMALLER than the one above. That difference is
+       --mask-overlap, and it is what stops the ground showing through as a
+       sub-pixel line along the join. */
     .layerOut {
       mask-image:
         linear-gradient(
@@ -797,7 +824,11 @@
           #000 0 var(--out-fade-start),
           rgb(0 0 0 / 0) var(--out-fade-end)
         ),
-        radial-gradient(circle closest-side, #000 calc(100% - 1px), transparent 100%);
+        radial-gradient(
+          circle closest-side,
+          #000 calc(100% - var(--mask-overlap)),
+          transparent calc(100% - var(--mask-overlap) + 0.75px)
+        );
       mask-size: 100% 100%, var(--mask-size);
       mask-position: 0 0, var(--mask-position);
       mask-composite: subtract;
