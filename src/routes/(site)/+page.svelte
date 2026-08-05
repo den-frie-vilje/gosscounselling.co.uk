@@ -659,9 +659,9 @@
     }
   }
 
-  /* From 880px he settles INTO the plate: a push-in of a few per cent over
-     three seconds, once, ending where it ends. Slow enough that it is not
-     really watchable, which is the point.
+  /* From 880px he settles INTO the plate, and the disc settles inward around
+     him at the same time, over the same duration, from the same delay. Once,
+     ending where it ends. Slow enough not to be watchable, which is the point.
 
      It is small on purpose. The plate crops him, so a scale is the only move
      available that does not slide him against his own frame, and anything
@@ -683,12 +683,12 @@
     .layer img {
       transform: translateY(var(--matte-drop));
       transform-origin: center;
-      animation: hero-cut-settle 3200ms var(--ease-brand) both;
-      animation-delay: 220ms;
+      animation: hero-cut-settle var(--settle-duration) var(--settle-ease) both;
+      animation-delay: var(--settle-delay);
     }
     .heroFig {
-      animation: disc-settle 1400ms var(--ease-brand) both;
-      animation-delay: 120ms;
+      animation: disc-settle var(--settle-duration) var(--settle-ease) both;
+      animation-delay: var(--settle-delay);
     }
   }
   /* A plain scale about the centre; the layers do the horizontal centring and
@@ -740,6 +740,23 @@
          photograph in the same place, so painting twice is identical to
          painting once. */
       --mask-overlap: 1.5px;
+
+      /* One duration and one delay for BOTH of the hero's slow moves: the
+         disc settling inward and John pushing in. They are two halves of the
+         same gesture, so they start together and land together; running them
+         at 1.4s and 3.2s made the disc arrive while he was still growing,
+         which read as two unrelated things happening near each other. Shared
+         as tokens so they cannot drift apart again. */
+      --settle-duration: 2600ms;
+      --settle-delay: 180ms;
+      /* Their own curve, not --ease-brand. That one is
+         cubic-bezier(0.22, 1, 0.36, 1), which is right for a control
+         responding to a click: it spends almost all its travel immediately.
+         Measured here, both moves were finished 400ms into a 2600ms
+         animation, so the duration was nearly all tail and the "slow" push-in
+         was not slow at all. This curve spreads the travel across the whole
+         duration and only eases at the very end. */
+      --settle-ease: cubic-bezier(0.36, 0.06, 0.28, 1);
 
       /* The cutout's last four rows never reach full opacity: he was cut off
          by the bottom of the source frame, so the matte ramps out instead of
