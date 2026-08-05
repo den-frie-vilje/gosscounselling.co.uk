@@ -90,7 +90,7 @@
   <ol class="stepList mark-row" use:scrollDraw={{ start: 0.55, end: 0.28 }}>
     {#each home.steps.items as step, i (step.title)}
       <li class="mark-row">
-        <span class="disc mark-disc" aria-hidden="true">{i + 1}</span>
+        <span class="disc mark mark-disc" aria-hidden="true">{i + 1}</span>
         <div>
           <h3 class="t-h3">{step.title}</h3>
           <p class="text-muted m-0 text-[16.5px]">{step.body}</p>
@@ -111,7 +111,7 @@
   <div class="border-line mt-13 border-t">
     {#each home.services.items as service, i (service.slug)}
       <article class="row mark-row">
-        <p class="num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</p>
+        <p class="num mark" aria-hidden="true">{String(i + 1).padStart(2, '0')}</p>
         <div class="min-w-0">
           <h3 class="t-h3">{service.title}</h3>
           <p class="who">{service.who}</p>
@@ -535,6 +535,9 @@
   .disc {
     font-family: var(--font-display);
     font-weight: 600;
+    /* 20px heading over a 15px numeral. Both Fraunces, so the ratio of sizes
+       is the ratio of x-heights, which is what the alignment rule wants. */
+    --mark-ratio: 1.3333;
     font-size: 15px;
     color: #fff;
     background: var(--color-teal);
@@ -545,14 +548,17 @@
     margin-bottom: 8px;
   }
 
-  /* The line between the discs: down them where the steps stack, across them
-     where they sit in a row. One segment per gap, so it needs no knowledge of
-     how tall any step's text is.
+  /* The line between the discs, and only where they stack.
 
      4px, because a hairline beside a serif heading reads as a mistake. That
      is the measured width of the thickest stem in the heading's own type
-     (cap H and I, Fraunces 600 at 20px), which is the floor Ole set: the
-     connector should be at least as heavy as the letterforms it runs beside.
+     (cap H and I, Fraunces 600 at 20px): the connector should be at least as
+     heavy as the letterforms it runs beside.
+
+     One segment per gap, so it needs no knowledge of how tall any step's text
+     is. Above 860px the three steps sit side by side, the sequence is already
+     read left to right without help, and a rule running through it would be
+     decoration; there is no line there at all.
 
      Its resting state is DRAWN. `js-anim`, which only the scroll-draw action
      adds, is what collapses it, so no JavaScript, an old browser or a
@@ -560,41 +566,27 @@
      hooks are wrapped in :global(): Svelte's scoper only sees classes written
      in the markup, so it prunes any rule keyed off one an action adds, and the
      animation silently does nothing while the stylesheet reads as correct. */
-  .stepList li:not(:last-child)::before {
-    content: '';
-    position: absolute;
-    left: 15px;
-    top: 34px;
-    bottom: -28px;
-    width: 4px;
-    background: var(--color-accent);
-    transform-origin: top center;
-  }
-  @media (min-width: 860px) {
+  @media (max-width: 859px) {
     .stepList li:not(:last-child)::before {
-      left: 34px;
-      right: -36px;
-      top: 15px;
-      bottom: auto;
-      width: auto;
-      height: 4px;
-      transform-origin: left center;
+      content: '';
+      position: absolute;
+      left: 15px;
+      top: 34px;
+      bottom: -28px;
+      width: 4px;
+      background: var(--color-accent);
+      transform-origin: top center;
     }
-  }
-  /* Each segment owns its own half of the travel, so the line reads 1 to 3
-     rather than both halves growing at once. */
-  .stepList:global(.js-anim) li:not(:last-child)::before {
-    transform: scaleY(var(--seg, 0));
-  }
-  .stepList:global(.js-anim) li:nth-child(1)::before {
-    --seg: clamp(0, calc(var(--draw-progress, 0) * 2), 1);
-  }
-  .stepList:global(.js-anim) li:nth-child(2)::before {
-    --seg: clamp(0, calc((var(--draw-progress, 0) - 0.5) * 2), 1);
-  }
-  @media (min-width: 860px) {
+    /* Each segment owns its own half of the travel, so the line reads 1 to 3
+       rather than both halves growing at once. */
     .stepList:global(.js-anim) li:not(:last-child)::before {
-      transform: scaleX(var(--seg, 0));
+      transform: scaleY(var(--seg, 0));
+    }
+    .stepList:global(.js-anim) li:nth-child(1)::before {
+      --seg: clamp(0, calc(var(--draw-progress, 0) * 2), 1);
+    }
+    .stepList:global(.js-anim) li:nth-child(2)::before {
+      --seg: clamp(0, calc((var(--draw-progress, 0) - 0.5) * 2), 1);
     }
   }
 
@@ -611,11 +603,15 @@
       grid-template-columns: auto 1fr 1.5fr;
     }
   }
+  /* Sized as a fixed fraction of the heading token rather than in pixels, so
+     the ratio the alignment rule needs stays true across the heading's whole
+     clamp instead of only at one viewport width. */
   .num {
     margin: 0;
     font-family: var(--font-display);
     font-weight: 600;
-    font-size: 15px;
+    --mark-ratio: 1.5;
+    font-size: calc(var(--text-h3) / 1.5);
     color: var(--color-gold);
     font-variant-numeric: tabular-nums;
   }

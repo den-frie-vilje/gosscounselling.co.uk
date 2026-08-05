@@ -71,6 +71,12 @@
   --color-on-deep-muted: #c2d7dd;
   --color-on-deep-kicker: #82c9dc;
 
+  /* Type sizes that a marker has to be sized against. Named so that a
+     numeral beside a heading can be a fixed fraction of it, which keeps
+     `--mark-ratio` constant across the clamp rather than only correct at one
+     viewport width. */
+  --text-h3: clamp(20px, 2vw, 24px);
+
   /* Layout rhythm */
   --spacing-section: 96px;
   --container-page: 1120px;
@@ -101,37 +107,55 @@
 /* ---- Alignment principle ----
    A marker and the thing it marks align on their TYPE, not on their boxes.
 
-   A numeral, disc, bullet or glyph set beside a heading shares that heading's
-   baseline. Never `align-items: start`, which lines the top of a 34px disc up
-   with the top of a line box and leaves the numeral floating above the word it
-   belongs to. The eye reads the relationship off the letterforms, so the
-   letterforms are what have to agree.
+   Text in a bullet, a disc, or any other frame sits on the BASELINE of the
+   title it belongs to, or of that title's first line, when the two are the
+   same size. When the marker is set smaller or larger, it is centred instead
+   on the x-height band of that title's first line.
 
-   `.mark-row` is the whole implementation, and it is deliberately arithmetic-
-   free. Two earlier attempts are worth not repeating:
+   Never `align-items: start`, which lines the top of a 34px disc up with the
+   top of a line box and leaves the numeral floating above the word it belongs
+   to. The eye reads the relationship off the letterforms, so the letterforms
+   are what have to agree.
 
-   A calc over `1lh`, `1cap` and `1ex` cannot do this. Font units resolve
-   against the element that USES them, so an offset written on a 15px numeral
-   measures the numeral and not the 20px heading. Hoisting the calc into a
-   custom property on the row does fix that, since a custom property is
-   computed where it is declared, but the expression
-   `(1lh - 1cap)/2 + (1cap - 1ex)/2 + 1ex/2` then simplifies to `1lh/2`: the
-   cap and x-height terms cancel, and what looks like x-height alignment is
-   line-box centring wearing a costume. It measured 5.47px out.
+   Both halves of the rule are one expression. Align the two baselines and the
+   browser has already done the hard part in real font metrics. What remains
+   is that each x-height band is centred half its own x-height above the shared
+   baseline, so the two centres differ by exactly `(xTitle - xMarker) / 2`.
+   Shifting the marker up by that much centres them; and when the sizes match,
+   the difference is zero and the rule collapses to plain baseline alignment on
+   its own, with no branch to write.
 
-   What actually works is to stop treating the marker as a shape. A grid or
-   flex box that centres its children offers its parent no baseline, so the
-   parent synthesises one from the bottom of the margin box and the disc hangs
-   below the line. Give the marker a real text baseline instead: lay the
-   numeral out as ordinary inline text in a box whose line-height IS the disc,
-   and the browser aligns the two baselines itself, in each element's own
-   metrics, at any size and through any change of typeface. */
+   `--mark-ratio` is the title's font-size over the marker's. `1ex` on the
+   marker gives its own x-height, and within one typeface x-height scales with
+   size, so `1ex * ratio` is the title's. The shift is a transform rather than
+   a margin because a margin on a baseline-aligned item is absorbed by the
+   alignment itself: the browser simply repositions the box to keep the
+   baselines together, and the nudge measures as having done nothing.
+
+   The one assumption: marker and title share a typeface. Across two families
+   with different x-height-to-size ratios, set `--mark-ratio` to the measured
+   ratio of their x-heights rather than of their sizes.
+
+   Two attempts worth not repeating. Font units resolve against the element
+   that USES them, so an offset written on a 15px numeral measures the numeral
+   and not the 20px heading. And a calc over `1lh`, `1cap` and `1ex` hoisted
+   into a custom property on the row does fix that, but the expression
+   `(1lh - 1cap)/2 + (1cap - 1ex)/2 + 1ex/2` simplifies to `1lh/2`: the cap and
+   x-height terms cancel, and what reads as x-height alignment is line-box
+   centring wearing a costume. It measured 5.47px out. */
 .mark-row {
   align-items: baseline;
 }
+.mark-row > .mark {
+  /* Zero when marker and title are the same size. */
+  transform: translateY(calc(1ex * (1 - var(--mark-ratio, 1)) / 2));
+}
+
 /* A round marker with a numeral in it. Centred by line-height and text-align
-   rather than by `place-items`, precisely so it keeps the baseline that makes
-   `.mark-row` work. */
+   rather than by `place-items`, precisely so it keeps a real text baseline:
+   a grid or flex box that centres its children offers its parent no baseline,
+   the parent synthesises one from the bottom of the margin box, and the disc
+   hangs below the line. */
 .mark-disc {
   display: inline-block;
   width: var(--mark-size, 34px);
@@ -224,7 +248,7 @@ h4 {
   font-size: clamp(28px, 3.7vw, 42px);
 }
 .t-h3 {
-  font-size: clamp(20px, 2vw, 24px);
+  font-size: var(--text-h3);
 }
 .t-kicker {
   font-family: var(--font-sans);
