@@ -47,7 +47,8 @@
     `--mask-position: ${geometry.maskPosition}`,
     `--layer-pad: ${geometry.layerPad}`,
     `--matte-drop: ${geometry.matteDrop}`,
-    `--disc-inset: ${geometry.discInset}`
+    `--disc-inset: ${geometry.discInset}`,
+    `--disc-settle: ${geometry.discSettle}`
   ].join('; ');
 
   const seo = buildPageSeo({
@@ -410,8 +411,8 @@
        sliding into place is the thing we are trying not to do. */
     :global(html:not([data-hero])) .heroCopy > *,
     :global(html[data-hero='stagger']) .heroCopy > *,
-    :global(html:not([data-hero])) .heroFig,
-    :global(html[data-hero='stagger']) .heroFig {
+    :global(html:not([data-hero])) .portrait,
+    :global(html[data-hero='stagger']) .portrait {
       animation: rise 620ms var(--ease-brand) both;
     }
     :global(html:not([data-hero])) .eyebrow,
@@ -438,8 +439,8 @@
     :global(html[data-hero='stagger']) .reassure {
       animation-delay: 510ms;
     }
-    :global(html:not([data-hero])) .heroFig,
-    :global(html[data-hero='stagger']) .heroFig {
+    :global(html:not([data-hero])) .portrait,
+    :global(html[data-hero='stagger']) .portrait {
       animation-name: settle;
       animation-duration: 900ms;
       animation-delay: 200ms;
@@ -452,7 +453,7 @@
       animation: rise 700ms var(--ease-brand) both;
       animation-delay: 80ms;
     }
-    :global(html[data-hero='block']) .heroFig {
+    :global(html[data-hero='block']) .portrait {
       animation: settle 900ms var(--ease-brand) both;
       animation-delay: 260ms;
     }
@@ -685,9 +686,21 @@
       animation: hero-cut-settle 3200ms var(--ease-brand) both;
       animation-delay: 220ms;
     }
+    .heroFig {
+      animation: disc-settle 1400ms var(--ease-brand) both;
+      animation-delay: 120ms;
+    }
   }
   /* A plain scale about the centre; the layers do the horizontal centring and
      the masks stay put on the plate. */
+  @keyframes disc-settle {
+    from {
+      transform: scale(var(--disc-settle));
+    }
+    to {
+      transform: scale(1);
+    }
+  }
   @keyframes hero-cut-settle {
     from {
       transform: translateY(var(--matte-drop)) scale(1);
@@ -741,6 +754,12 @@
          the grid row tall enough that the pop is not clipped by the hero's
          own `overflow: clip`. */
     }
+    /* The disc and its masks settle inward a little as the page arrives, so
+       the circle reads as an object placed on the band rather than as a hole
+       punched through it. It is on the plate box, so the masks scale with the
+       disc exactly and stay aligned; John's own push-in runs the other way and
+       at a different rate, which is what keeps the two from reading as one
+       move. */
     .heroFig {
       aspect-ratio: 1;
       /* No clipping and no background here: the plate is its own layer now,
@@ -778,9 +797,9 @@
          them both. Each is soft and none is strong. The point is that the
          surface is not flat, not that anyone notices a gradient. */
       background:
-        radial-gradient(52% 46% at 26% 18%, #d7ecf4 0%, rgb(215 236 244 / 0) 100%),
-        radial-gradient(58% 54% at 78% 88%, #8dc7db 0%, rgb(141 199 219 / 0) 100%),
-        radial-gradient(118% 118% at 32% 22%, #bfe2ee 0%, #b0dbea 42%, #9fd2e4 100%);
+        radial-gradient(52% 46% at 26% 18%, #b2d9e6 0%, rgb(178 217 230 / 0) 100%),
+        radial-gradient(58% 54% at 78% 88%, #7ab0c6 0%, rgb(122 176 198 / 0) 100%),
+        radial-gradient(118% 118% at 32% 22%, #9bcbdc 0%, #90c5d8 42%, #83bcd1 100%);
     }
 
     /* The shared parent. The push-in lives here, so both layers move as one. */
