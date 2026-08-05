@@ -181,3 +181,19 @@ The reason is the same one behind `docs/copy-to-confirm.md`: the alternative is 
 per service in John's voice about how he works, which is the failure this repo has already made
 once and caught. Empty pages are worse than absent ones for search, and invented ones are worse
 than both.
+
+## 23. He types external links; internal ones are the code's job
+The rule, in Ole's words: John may fill out URLs for external links, and the CMS structure must
+never ask him to refer to his own site's addresses.
+
+External links are his and stay editable: a register listing, an organisation he trained with, a
+link out of a blog post. Anything that addresses gosscounselling.co.uk is derived from the route
+tree in code, because the route tree already knows it. He never types a service page's address, a
+post's address, or an in-page anchor, and there is no "link to" field pointing inward.
+
+The same rule catches a subtler case, which is a field whose value the code already knows. His
+phone number was in the content three times, as the number to display, as a `tel:` link and
+inside a `wa.me` link; his email twice, as the address and as a `mailto:`. That is not a URL he
+should be typing either, and three copies of one fact drift the moment he changes it. He types
+the number once and the links are built from it.
+
