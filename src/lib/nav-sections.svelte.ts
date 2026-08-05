@@ -13,11 +13,25 @@
  * Order went second. The nav listed Blog last while its section sits above the
  * contact band, so the bar read in one order and the page in another.
  *
- * So the page states both. A section registers itself as it renders, handing
- * over its own element, and the header asks this module where things are
- * rather than being told. `inPageOrder` sorts the nav by the real document
- * positions of the real nodes, which means the sequence is not something
- * anyone can get wrong: it is read off the page every time.
+ * So a section registers itself as it renders, handing over its own element,
+ * and this module answers two questions about the result: is this section
+ * here, and does the bar's written order match the page's real one.
+ *
+ * The order is neither decided nor checked here. Sorting the bar by live
+ * document positions was the first attempt and it only worked on the home
+ * page: on a post or the blog index none of those sections exist, so there
+ * was nothing to sort by and the bar rearranged itself on navigation. An
+ * order that depends on which page you are looking at is not an order.
+ *
+ * So the order is written down in `nav` and gated at BUILD time by
+ * scripts/check-nav.ts, which reads the page's markup and the array and
+ * refuses a build where they disagree. This is a static site; a question that
+ * can be settled once during the build has no business being asked in every
+ * browser on every load.
+ *
+ * What remains here is the runtime half that a static read cannot do: which
+ * sections are actually on THIS page right now, for the highlight to track,
+ * and a dev warning when one a nav item points at never turns up.
  *
  * Registration is an attachment rather than `onMount` + `getElementById`,
  * which is what Svelte 5 recommends for exactly this (`{@attach ...}`): the
@@ -25,9 +39,9 @@
  */
 import { SvelteMap } from 'svelte/reactivity';
 
-/** id → the element, in a reactive Map so `inPageOrder` recomputes. A plain
- *  `$state(new Map())` would not: Svelte 5 proxies objects and arrays, not
- *  Maps and Sets, so mutating one never notifies anybody. */
+/** id → the element, in a reactive Map so a caller reading it inside a
+ *  `$derived` re-runs. A plain `$state(new Map())` would not: Svelte 5 proxies
+ *  objects and arrays, not Maps and Sets, so mutating one notifies nobody. */
 const sections = new SvelteMap<string, HTMLElement>();
 
 /**
@@ -52,41 +66,6 @@ export function hasSection(id: string): boolean {
 /** The element, for a caller that needs to measure it. */
 export function sectionEl(id: string): HTMLElement | undefined {
   return sections.get(id);
-}
-
-/**
- * The nav, in the order the page puts its sections.
- *
- * Items whose section is on this page are sorted among themselves by document
- * position and dealt back into the slots those items already occupied. Items
- * with no section here — a link to another page, on a page that has none of
- * these sections — keep their place untouched. So a nav of only external
- * links comes back exactly as it went in, and one of only sections comes back
- * in page order.
- */
-export function inPageOrder<T extends { id: string | null }>(items: T[]): T[] {
-  const slots: number[] = [];
-  const placed: T[] = [];
-
-  items.forEach((item, i) => {
-    if (item.id && sections.has(item.id)) {
-      slots.push(i);
-      placed.push(item);
-    }
-  });
-  if (placed.length < 2) return items;
-
-  placed.sort((a, b) => {
-    const ea = sections.get(a.id as string);
-    const eb = sections.get(b.id as string);
-    if (!ea || !eb) return 0;
-    // DOCUMENT_POSITION_FOLLOWING: b comes after a, so a sorts first.
-    return ea.compareDocumentPosition(eb) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
-  });
-
-  const out = [...items];
-  slots.forEach((slot, k) => (out[slot] = placed[k]));
-  return out;
 }
 
 /**
