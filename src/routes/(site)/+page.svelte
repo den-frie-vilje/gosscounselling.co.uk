@@ -674,32 +674,51 @@
          his head off, which is the exact comedy this was meant to fix. */
       padding-top: 15%;
     }
-    /* `top: 0` with the wrapper's own top padding as its height, so the band
-       sits directly on the plate. `bottom: 100%` would measure from the
-       wrapper's padding box and leave the head floating a padding above the
-       plate it is supposed to be breaking out of. */
+    /* Not a band any more: a full-height layer BEHIND the plate, carrying the
+       whole dark-ground matte at exactly the plate's geometry, and faded out
+       just below the plate's top edge.
+
+       A rectangle could not do this. Its bottom was a straight tangent to the
+       top of the circle, so on either side of his head the matte was cut off
+       in mid-air where the arc had already curved away. Measured: at the
+       plate's top edge his silhouette spans 21% to 69% of the disc's width,
+       while the arc at those x positions is already 9% of the plate lower, so
+       there is always a crescent where a straight edge shows.
+
+       Behind the plate instead, the opaque disc hides everything inside the
+       circle, and the mask takes the layer to nothing a little below the
+       plate's top, so his shoulders fade out rather than ending on a line.
+       What is left visible is his head, above the circle, which is the whole
+       point. */
     .headPop {
       display: block;
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      /* 9cqw, not 9%. `padding-top: 9%` on the wrapper resolves against its
-         WIDTH, but `height: 9%` here resolves against the wrapper's HEIGHT,
-         which includes that padding: the band came out 3.6px taller than the
-         gap it fills and the two mattes sat 3.6px out of register. A
-         container query unit resolves against the same width the padding
-         does. */
-      height: 15cqw;
+      inset: 0;
+      z-index: 0;
       overflow: hidden;
       pointer-events: none;
+      /* The wrapper is 115 parts tall (15 of padding, 100 of plate), so the
+         plate's top edge is at 13.04% and that is exactly where the fade
+         starts: everything above the circle stays fully opaque, and the fade
+         happens below the top edge, where the disc has already taken over the
+         middle and only the shoulders at the sides are still exposed. Start
+         it any higher and his neck dissolves just before it reaches the
+         circle. Verified against the render: the plate's top measures 13.04%
+         of the layer. */
+      mask-image: linear-gradient(to bottom, #000 0 13.04%, rgb(0 0 0 / 0) 19%);
     }
-    /* The same placement as the matte inside the plate, pushed down by the
-       plate's full height so the two are one continuous figure. */
+    /* The plate sits above the layer and does the covering. */
+    .heroFig {
+      position: relative;
+      z-index: 1;
+    }
+    /* Exactly the placement the matte inside the plate has. The layer's own
+       bottom is the plate's bottom, so no offset is needed any more, and the
+       two are one continuous figure. */
     .headPop img {
       position: absolute;
       left: 50%;
-      bottom: calc(-100cqw);
+      bottom: 0;
       width: 136%;
       /* Tailwind's preflight caps images at their container's width, which
          silently rendered this twin 66px narrower than the one in the plate
