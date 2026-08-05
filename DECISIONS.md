@@ -147,3 +147,31 @@ resolves because of `deploy/nginx.conf` is a URL that is broken on the other hos
 `.github/workflows/deploy-static-host.yml` is the second deployment, manual-only and inert
 until its secrets exist. What does not survive the move is the Sveltia editor, which needs the
 GitHub OAuth broker that runs in the staging compose stack.
+
+## 21. Scheduled publishing is decided at build time, and needs a daily build
+The site is prerendered to static HTML, so "publish this on Tuesday" has exactly two possible
+implementations and only one of them is acceptable.
+
+Filtering in the browser would mean the post is IN the served HTML from the moment it is saved,
+hidden by a script. Anyone who opens the source, or any crawler, reads it. This is a
+counsellor's writing about his own practice; a post held back is held back for a reason.
+
+So the filter is at build time: a post is live when its status is `published` and its
+`publishAt` has passed **as of the build**. An unpublished post is not in `build/` at all, has no
+page, and is not in the sitemap. `scripts/check-posts.ts` greps the build output for the text of
+unpublished posts and fails if it finds any, so the guarantee is enforced rather than intended.
+
+The consequence is that a future-dated post needs a build on or after its date, which is what
+`.github/workflows/scheduled-rebuild.yml` is for. It also means "publish now" is genuinely
+immediate: saving in the CMS is a commit, a commit is a build, and the post is live within
+minutes.
+
+## 22. Detail pages and the blog exist only when there is something to put in them
+Both are built as capabilities rather than as pages. A service renders a "More about" link and
+gets a route only when its `page` field has content; the blog section, the `/blog` index, the nav
+entry and the sitemap entries all appear only once a post is published.
+
+The reason is the same one behind `docs/copy-to-confirm.md`: the alternative is writing 800 words
+per service in John's voice about how he works, which is the failure this repo has already made
+once and caught. Empty pages are worse than absent ones for search, and invented ones are worse
+than both.
