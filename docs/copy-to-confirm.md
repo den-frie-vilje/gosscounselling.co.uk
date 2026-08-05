@@ -83,17 +83,60 @@ current before either goes live:
 Worth saying plainly to him: a directory listing that undercuts his own published fee is the kind
 of inconsistency that costs an enquiry, and search engines read the disagreement too.
 
-## 5. Three interface labels that are ours
+## 5. Four interface labels that are ours
 
-Everything else on the site is his words or derived from them. These three are not, because they
+Everything else on the site is his words or derived from them. These four are not, because they
 name a thing rather than say anything, and there was nothing of his to derive them from:
 
 - **"From the blog"**, the heading over the latest posts on the home page
 - **"Blog"**, the index's own heading and its nav entry
 - **"Read the blog"**, the link from the home page to the index
+- **"Writing from"**, the first two words of the blog index's description in search results
 
-If he calls his writing something else, and plenty of therapists do, these are the three strings
+If he calls his writing something else, and plenty of therapists do, these are the four strings
 to change. The rest is already derived: the link to a service page uses that service's own title,
-the way back from one uses his "How I can help" heading, and the blog index's meta description
-falls back to his own site description, because a standfirst for a blog is copy and copy is his.
+and the way back from one uses his "How I can help" heading.
+
+The fourth is new, and it replaced something worse. The blog index used to reuse his site
+description word for word — 147 characters about fees and session lengths, on a page that lists
+neither, and identical to the home page's. Two pages handing a search engine the same description
+are two pages saying they are the same page, and the one that loses is the newer one. What is
+there now is assembled out of sentences already published elsewhere on the site, so it follows him
+when he edits them:
+
+> Writing from **{his name}**, **{his job title, from the search-engine block}**. **{the location
+> line from the contact block}**
+
+which today reads *"Writing from John Goss, Counsellor and Clinical Supervisor. In person in
+Bletchley, Milton Keynes, or online."* Only "Writing from" is ours. **A standfirst for the blog in
+his own words would be better than any of this**, and is the thing to ask for if he wants one.
+
+## 6. Where he is, and how much of it to publish
+
+An SEO pass raised four questions that nobody here can answer for him. None of them is on the site
+in any form; the site publishes exactly what it has always published, "Bletchley, Milton Keynes
+MK3", and the structured data says no more than that either.
+
+The reason they are worth asking together: for "counsellor near me", the single largest factor is
+that his name, address and phone number read **identically** everywhere they appear.
+[social-profiles.md](social-profiles.md) already found six directory listings that disagree with
+each other about his address and about which domain is his. His own site is the one that settles it.
+
+- **Does he want his street address on the site?** Six directories and his Google Business Profile
+  already publish `221 Whaddon Way, Bletchley, Milton Keynes MK3 7DZ` — Google says `221A`, the
+  rest say `221`, and that discrepancy is one of the things
+  [the listings email](emails/2026-08-05-listing-discrepancies.md) asks him to settle. His own site
+  publishes only the outward code. Either answer is fine and neither is our decision; what is not
+  fine is the site staying quieter than the directories while the directories disagree.
+  **Which is right, 221 or 221A — and may it go on the site?**
+- **Should the postcode be the full one?** The structured data currently says `MK3`, because that
+  is what the page says. If the street address goes on, `MK3 7DZ` goes with it.
+- **Are there hours?** Google Business Profile records that he closes at 21:00. Nothing on the site
+  says anything about when he works, so nothing is claimed. **Is 21:00 right, and are there hours
+  worth publishing at all?** A counsellor with no fixed hours is entirely normal, and "no" is a
+  perfectly good answer — but then the Google listing should stop saying otherwise.
+- **How far does the online work reach?** The structured data says he serves Milton Keynes and the
+  United Kingdom. His own copy says "or online" without naming a limit. **Is UK-wide right?**
+  Working with someone abroad raises insurance and jurisdiction questions that are his to answer,
+  not ours to assume either way.
 

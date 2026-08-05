@@ -7,7 +7,7 @@
   site rather than the home page.
 -->
 <script lang="ts">
-  import { BLOG_PATH, postPath } from '$lib/content';
+  import { BLOG_PATH, postPath, site } from '$lib/content';
   import { blogPostingNode, buildPageSeo } from '$lib/seo/structured-data';
   import { dateAttr, formatDate } from '$lib/date';
   import SeoHead from '$lib/components/SeoHead.svelte';
@@ -23,8 +23,18 @@
   const seo = $derived(
     buildPageSeo({
       path: postPath(post),
-      title: post.seo?.title ?? post.title,
+      // The site name is appended, as it is on the home page and on a service
+      // page. Without it a post's tab and its search result read as a stray
+      // headline belonging to nobody, which is the opposite of what a post is
+      // for: it is often the first page of his that anyone sees. A post that
+      // sets its own `seo.title` is left exactly as written.
+      title: post.seo?.title ?? `${post.title} | ${site.name}`,
       description: post.seo?.description ?? post.excerpt,
+      // `article`, not the site-wide `website`. It is the one page here that
+      // is a piece of writing with a date rather than part of the furniture,
+      // and the `BlogPosting` node below already says so to search engines;
+      // this says the same thing to everything that reads Open Graph instead.
+      ogType: 'article',
       // The home card. A per-post card would need per-post `og` copy, and
       // that is copy John would have to write for every post he publishes.
       image: '/img/og/home.png',
