@@ -77,32 +77,52 @@
       <!-- His shoulders are cut by the edges of the source photograph, so the
            image is always wider than its frame: the visible cut is made by
            the frame on desktop and by the viewport on a phone, never left
-           hanging mid-section. -->
-      <!-- Two mattes, not one image styled twice. The dark-ground cutout
-           carries keyer edge treatment (colour edge-extend, a matte choke and
-           a negative light wrap) so it does not glow on the deep band; that
-           same treatment shows as a dark fringe on a light plate, where the
-           plain knockout is correct. Which one is visible depends on the
-           plate, and the loser is `display: none`. When the plate is settled
-           this becomes one image again. -->
-      <figure class="heroFig">
-        <img
-          use:latchVisible
-          class="heroCut cut-dark"
-          src="/img/john-cutout-dark.webp"
-          alt={home.hero.portraitAlt}
-          width="900"
-          height="900"
-        />
-        <img
-          class="heroCut cut-light"
-          src="/img/john-cutout.webp"
-          alt=""
-          aria-hidden="true"
-          width="900"
-          height="900"
-        />
-      </figure>
+           hanging mid-section.
+
+           From 880px his head breaks the top of the plate, and that is why
+           there are two mattes rather than one image styled twice. Above the
+           plate he is on the deep band, where the dark-ground cutout is
+           correct: it carries keyer edge treatment, a colour edge-extend, a
+           matte choke and a narrow negative light wrap, so the silhouette
+           does not glow. Inside the plate he is on sand, where that same
+           treatment reads as a dark fringe and the plain knockout is right.
+
+           The two are the same photograph at the same size and the same
+           origin, and they share one animation, so they stay registered and
+           the join falls exactly on the plate's edge. What differs across
+           that join is a sub-pixel of matte, not the silhouette.
+
+           The head band can be a plain rectangle because at that height
+           nothing but his head is in the frame: there are no shoulders up
+           there for a straight edge to cut. -->
+      <div class="portrait">
+        <div class="headPop" aria-hidden="true">
+          <img class="heroCut cut-dark" src="/img/john-cutout-dark.webp" alt="" width="900" height="900" />
+        </div>
+
+        <!-- A <picture>, so the browser fetches ONE matte rather than both and
+             throws half of it away: the preload scanner reads the raw HTML
+             before any CSS applies, so `display: none` deprioritises a
+             request without preventing it. It also keeps the alt text on
+             whichever image is actually shown, which two `<img>` tags did
+             not: at desktop widths the visible portrait had an empty alt and
+             the description sat on a hidden element. -->
+        <figure class="heroFig">
+          <picture>
+            <source media="(min-width: 880px)" srcset="/img/john-cutout.webp" type="image/webp" />
+            <img
+              use:latchVisible
+              class="heroCut"
+              src="/img/john-cutout-dark.webp"
+              alt={home.hero.portraitAlt}
+              width="900"
+              height="900"
+              fetchpriority="high"
+              decoding="async"
+            />
+          </picture>
+        </figure>
+      </div>
     </div>
   </div>
 </section>
@@ -494,15 +514,36 @@
     font-size: 15px;
     color: var(--color-on-deep-muted);
   }
+  /* This paragraph goes through `renderInline`, which has no wrapper, so it
+     never picks up `.prose-clear a`'s underline. Colour alone separates the
+     link from its own sentence at 1.24:1, which is SC 1.4.1. */
   .reassure :global(a) {
     color: var(--color-on-deep-kicker);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .reassure :global(a:hover) {
+    color: #fff;
+  }
+  .portrait {
+    position: relative;
+    align-self: end;
+    min-width: 0;
   }
   .heroFig {
     margin: 0;
-    align-self: end;
-    overflow: hidden;
+    /* `clip`, not `hidden`. `overflow: hidden` makes this a scroll container,
+       and the portrait's fade uses a `view()` timeline whose source is the
+       nearest such ancestor. This box has no scrollable overflow, so the
+       timeline can go inactive, contribute nothing, and leave the underlying
+       `opacity: 0` standing. `clip` clips without creating a scroller. */
+    overflow: clip;
     display: block;
     position: relative;
+  }
+  /* Below 880px there is no plate and nothing to break out of. */
+  .headPop {
+    display: none;
   }
   .heroFig img {
     width: 118%;
@@ -512,6 +553,9 @@
     display: block;
   }
   @media (max-width: 879px) {
+    .portrait {
+      align-self: end;
+    }
     .heroFig {
       width: 100vw;
       margin-left: calc(50% - 50vw);
@@ -534,7 +578,11 @@
     @supports (animation-timeline: view()) {
       .heroCut {
         opacity: 0;
-        animation: hero-cut-reveal linear both;
+        /* A duration, even though a view() timeline ignores it: Firefox
+           declines to apply the animation at all without one, and it supports
+           the timeline, so `@supports` passes and the bare `opacity: 0`
+           would be all that was left. */
+        animation: hero-cut-reveal 1ms linear both;
         animation-timeline: view();
         animation-range: entry 30% entry 55%;
       }
@@ -556,20 +604,6 @@
      deep gradient and needs the keyed one; on the sand plate he needs the
      plain knockout, because that keyer treatment reads as a dark fringe on a
      light ground. */
-  /* Scoped through `.heroFig` on purpose: `.heroFig img` already declares
-     `display: block`, and at equal source order a bare `.cut-light` loses to
-     it on specificity, so BOTH mattes render and there are two of him. */
-  .heroFig .cut-light {
-    display: none;
-  }
-  @media (min-width: 880px) {
-    .heroFig .cut-dark {
-      display: none;
-    }
-    .heroFig .cut-light {
-      display: block;
-    }
-  }
 
   @keyframes hero-cut-reveal {
     from {
@@ -590,9 +624,9 @@
      origin is the bottom centre, so he grows up and outward from where he
      stands rather than drifting off his own feet.
 
-     The base `translateX(-50%)` is repeated in both keyframes because a
-     transform is one property: a keyframe that sets only `scale()` would drop
-     the centring and throw him half a width to the right. */
+     The base translate is repeated in both keyframes because a transform is
+     one property: a keyframe that sets only `scale()` would drop the centring
+     and the head shift with it, and throw him half a width to the right. */
   @media (min-width: 880px) and (prefers-reduced-motion: no-preference) {
     .heroCut {
       transform-origin: bottom center;
@@ -602,10 +636,10 @@
   }
   @keyframes hero-cut-settle {
     from {
-      transform: translateX(-50%) scale(1);
+      transform: translateX(calc(-50% + var(--head-shift))) scale(1);
     }
     to {
-      transform: translateX(-50%) scale(1.045);
+      transform: translateX(calc(-50% + var(--head-shift))) scale(1.045);
     }
   }
   /* Above 880px he is no longer leaning on the viewport, so a circular plate
@@ -617,6 +651,63 @@
   @media (min-width: 880px) {
     .hero {
       padding-bottom: clamp(56px, 7vw, 92px);
+    }
+    /* An inline-size container, so the head band can say how far down its own
+       image has to sit: the plate is square, so the plate's HEIGHT is 100cqw.
+       Without this there is no unit that names it, since a percentage inside
+       the band resolves against the band's own height. */
+    .portrait {
+      container-type: inline-size;
+      align-self: center;
+      /* He is not centred in his own photograph. Measured by scanning the
+         cutout's alpha across its top rows, the centre of his head sits 2.42%
+         of the image width to the right of the image's centre, so centring
+         the IMAGE in the circle leaves his head off to one side. A percentage
+         in `translate` resolves against the element's own width, so this
+         moves him by that exact fraction whatever size he is drawn at. */
+      --head-shift: -2.42%;
+      /* Room above the plate for the head to occupy. It is also what keeps
+         the grid row tall enough that the pop is not clipped by the hero's
+         own `overflow: clip`. */
+      /* 15%, measured: at 136% his crown clears the plate's top edge by 66px,
+         which is 14.7% of the 450px plate. A shorter band clips the top of
+         his head off, which is the exact comedy this was meant to fix. */
+      padding-top: 15%;
+    }
+    /* `top: 0` with the wrapper's own top padding as its height, so the band
+       sits directly on the plate. `bottom: 100%` would measure from the
+       wrapper's padding box and leave the head floating a padding above the
+       plate it is supposed to be breaking out of. */
+    .headPop {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      /* 9cqw, not 9%. `padding-top: 9%` on the wrapper resolves against its
+         WIDTH, but `height: 9%` here resolves against the wrapper's HEIGHT,
+         which includes that padding: the band came out 3.6px taller than the
+         gap it fills and the two mattes sat 3.6px out of register. A
+         container query unit resolves against the same width the padding
+         does. */
+      height: 15cqw;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    /* The same placement as the matte inside the plate, pushed down by the
+       plate's full height so the two are one continuous figure. */
+    .headPop img {
+      position: absolute;
+      left: 50%;
+      bottom: calc(-100cqw);
+      width: 136%;
+      /* Tailwind's preflight caps images at their container's width, which
+         silently rendered this twin 66px narrower than the one in the plate
+         and broke the registration the whole effect depends on. */
+      max-width: none;
+      height: auto;
+      transform: translateX(calc(-50% + var(--head-shift)));
+      display: block;
     }
     .heroFig {
       aspect-ratio: 1;
@@ -639,13 +730,18 @@
       );
       align-self: center;
     }
+    /* 136%, not 114%. The cutout is wider than it is tall, so at 114% its
+       top edge, which is his reconstructed crown, sat 18px BELOW the top of
+       the plate and there was nothing to break out with. At 136% the figure
+       is 489px tall in a 450px plate, so his head crosses the edge by about
+       the height of the band above it. */
     .heroFig img {
       position: absolute;
       left: 50%;
       bottom: 0;
-      width: 114%;
+      width: 136%;
       margin-left: 0;
-      transform: translateX(-50%);
+      transform: translateX(calc(-50% + var(--head-shift)));
     }
   }
 

@@ -35,9 +35,14 @@ export const GET: RequestHandler = () => {
         `Sitemap: ${SITE_URL}/sitemap.xml`,
         ''
       ].join('\n')
-    : ['# Staging build — not intended for search engines.', 'User-agent: *', 'Disallow: /', ''].join(
-        '\n'
-      );
+    : [
+        '# Staging build. Crawlable ON PURPOSE, so that the noindex on every',
+        '# response is actually read. Nothing here may enter an index.',
+        'User-agent: *',
+        'Allow: /',
+        ...ROBOTS_DISALLOW.map((path) => `Disallow: ${path}`),
+        ''
+      ].join('\n');
 
   return new Response(body, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 };

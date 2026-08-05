@@ -102,7 +102,8 @@
 
   let accent = $state('lime-straw');
   let hero = $state('stagger');
-  let open = $state(true);
+  // Starts closed: it is a tool, not part of the page being judged.
+  let open = $state(false);
   let heroRun = $state(0);
 
 

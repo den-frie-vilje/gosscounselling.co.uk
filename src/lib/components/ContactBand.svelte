@@ -71,8 +71,11 @@
 </section>
 
 <style>
+  /* The accent, on things that are already here rather than on new marks.
+     This band is the one thing the page is for, so it is where the loud
+     colour earns its place. 12.03:1 on this ground. */
   .kicker-deep {
-    color: var(--color-on-deep-kicker);
+    color: var(--color-accent);
   }
   /* Rows on hairlines, not cards. The rest of the scroll divides its sections
      with a rule and a change of ground, and boxing the one thing the page is
@@ -115,7 +118,7 @@
   }
   .ico {
     flex: none;
-    color: var(--color-teal-bright);
+    color: var(--color-accent);
     /* Optically aligned to the value's cap height rather than to the label
        above it, which is where the eye reads the row from. */
     transform: translateY(6px);
@@ -129,8 +132,8 @@
     flex: none;
     margin-left: auto;
     align-self: center;
-    color: var(--color-on-deep-kicker);
-    opacity: 0.55;
+    color: var(--color-accent);
+    opacity: 0.5;
     transition:
       transform var(--dur-base) var(--ease-brand),
       opacity var(--dur-base) var(--ease-brand);
@@ -156,9 +159,12 @@
     font-size: clamp(19px, 2.8vw, 25px);
     line-height: 1.2;
     color: #fff;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    /* No `nowrap` + ellipsis. At 320px the address had 210px to live in and
+       needed 237px, so it rendered as `info@gosscounselling.c…`: the mailto:
+       still worked, but the address was no longer readable, which is the
+       information loss SC 1.4.10 forbids. The rows exist so it has somewhere
+       to go; let it use them. */
+    overflow-wrap: anywhere;
   }
   .h {
     display: block;

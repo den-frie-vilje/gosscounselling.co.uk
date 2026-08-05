@@ -6,7 +6,7 @@
  * For each photo, sharp downscales the source into AVIF + WebP `srcset`
  * widths plus a broadly-compatible JPEG fallback in
  * `static/img/photos/_gen/`, and records it in
- * `src/lib/photo-manifest.json` (consumed by `Photo.svelte`). Sources are
+ * `src/lib/photo-manifest.json` (consumed by `a Photo component (removed until his photographs arrive; the manifest shape is documented here)`). Sources are
  * never upscaled: only widths ≤ the source's own width are emitted, so a
  * small photo simply gets fewer variants.
  *
@@ -14,7 +14,7 @@
  * match its hash is skipped — so an ordinary deploy does zero image work
  * and only a genuinely changed/added photo is (re)processed. The hashes
  * live in a sidecar next to the variants rather than in the manifest,
- * because the manifest is the shape `Photo.svelte` reads and the sidecar
+ * because the manifest is the shape `a Photo component (removed until his photographs arrive; the manifest shape is documented here)` reads and the sidecar
  * is only meaningful while the (git-ignored) `_gen/` output survives.
  *
  * Runs in `prebuild` (the production/staging build a CMS photo change
@@ -36,7 +36,7 @@ const CACHE = resolve(GEN_DIR, '.hashes.json');
 const TARGET_WIDTHS = [320, 480, 640, 768, 1024, 1280, 1600];
 const PHOTO_EXT = /\.(jpe?g|png|webp)$/i;
 
-/** Exactly the shape `src/lib/components/Photo.svelte` reads. */
+/** Exactly the shape `src/lib/components/a Photo component (removed until his photographs arrive; the manifest shape is documented here)` reads. */
 interface Variant {
   type: string;
   srcset: string;
