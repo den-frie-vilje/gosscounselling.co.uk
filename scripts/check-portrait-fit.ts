@@ -10,23 +10,25 @@
  *   --head-shift        how far to move him so his HEAD, not his image, is
  *                       centred in the circle
  *
- * It also records a NEGATIVE result, which is the more valuable half. His head
- * does not break out of the top of the disc, and that is not a decision anyone
- * took: the solver below sweeps every width from 100% to 160% and finds none
- * where his crown clears the plate AND his shoulders stay inside the circle
- * far enough down to hide a second layer's edge behind it. His shoulders run
- * off the edges of the source frame, so they are at full width the moment he
- * is large enough to clear the top. Every attempt therefore leaves a visible
- * seam, and the disc's own antialiased rim ends up drawn across his face.
+ * It also emits the mask geometry the two layers need. His head breaks out of
+ * the top of the disc, and the reason that works is the construction rather
+ * than the numbers: the circle is a MASK on two identical layers, one keeping
+ * what falls inside it and one what falls outside, so neither layer has a
+ * rectangle edge anywhere near the figure.
  *
- * Run it before changing either number, and read the feasibility line before
- * trying the pop again:
+ * That matters because his shoulders run off the edges of the source frame.
+ * `last outside` below reports that he is outside the circle essentially all
+ * the way down, so any construction that put a BOX behind the disc had an edge
+ * the disc could not cover: that is what cut his shoulders on the tangent and
+ * what put the disc's antialiased rim across his forehead. Masks have no such
+ * edge, and because the two masks are complementary across the same ramp their
+ * alphas sum to 1 along the circle, so there is no join and no double-painted
+ * pixel for a fade to stack on.
  *
  *     pkgx node scripts/check-portrait-fit.ts
  *
- * It exists because both numbers were first arrived at by looking, which got
- * the crown 18px inside the circle and his head off-centre, and because the
- * impossibility above is not visible in anything but arithmetic.
+ * It exists because these numbers were first arrived at by looking, which got
+ * the crown 18px inside the circle and his head off-centre.
  *
  * Fail-closed: an unreadable image, an image with no alpha, or a stylesheet
  * whose declarations cannot be found are all failures, not passes.
@@ -149,74 +151,73 @@ for (const r of rows) {
   }
 }
 
-// ---- 3. solve for the size, rather than guessing one -------------------
-// The two requirements pull against each other. Drawn larger, his crown
-// clears the plate by more; drawn larger, his SHOULDERS also reach the plate's
-// top sooner, and once they reach it there is no depth left for the head layer
-// to overlap into and no way to hide its edge behind the disc. Sweep the
-// width and report the range where both hold, so the token is chosen by the
-// photograph rather than by eye.
-const WANT_CLEAR = 0.05; // crown must clear the plate by at least this
-const WANT_OVERLAP = 0.06; // shoulders must stay in the circle at least this far down
-
-function evaluate(widthFrac: number) {
-  const iH = widthFrac * (h / w);
-  const clear = iH - 1;
-  const sh = (headShiftPct / 100) * widthFrac;
-  const left0 = 0.5 - widthFrac / 2 + sh;
-  let escape = Infinity;
-  for (const r of rows) {
-    const depth = r.y * iH - clear;
-    if (depth <= 0) continue;
-    const l = left0 + r.left * widthFrac;
-    const rt = left0 + r.right * widthFrac;
-    if (!insideCircle(l, depth) || !insideCircle(rt, depth)) {
-      escape = depth;
-      break;
-    }
-  }
-  return { clear, escape };
-}
-
-let best: { width: number; clear: number; escape: number } | null = null;
-const feasible: number[] = [];
-for (let width = 1.0; width <= 1.6; width += 0.005) {
-  const { clear, escape } = evaluate(width);
-  if (clear >= WANT_CLEAR && escape !== Infinity && escape >= WANT_OVERLAP) {
-    feasible.push(width);
-    if (!best || clear > best.clear) best = { width, clear, escape };
+// ---- 3. where does the figure return INSIDE the circle for good? -------
+// The outer layer is masked to the circle's complement, so it paints only
+// where the figure is outside the disc: his head above the arc, and the
+// slivers of shoulder near the top corners. Below the last depth at which any
+// part of him is outside the circle, that layer paints nothing at all — so a
+// hard horizontal cutoff placed below it is invisible, and it is what stops
+// his shoulders spilling out of the frame further down.
+let lastEscape = -Infinity;
+for (const r of rows) {
+  const p = inPlate(r);
+  if (p.depth <= 0) continue;
+  if (!insideCircle(p.left, p.depth) || !insideCircle(p.right, p.depth)) {
+    lastEscape = p.depth;
   }
 }
+
+// The pop is specified as how far the crown clears the plate; the width that
+// produces it follows from the cutout's aspect. Stated this way round because
+// the clearance is the thing anyone has an opinion about.
+// The push-in scales the layers about their shared bottom centre and the
+// plate does not scale with them, so the clearance the eye finally sees is
+// larger than the one the geometry starts at. `--crown-clear` names the
+// RESTING, visible clearance, because that is the one anyone has an opinion
+// about, and the width is solved back from it.
+const pushScale = declared(css, /--push-in-scale: ([\d.]+)/, '--push-in-scale');
+const wantedClear = declared(css, /--crown-clear: ([\d.]+)%/, '--crown-clear') / 100;
+const widthForWantedClear = ((1 + wantedClear) / pushScale / (h / w)) * 100;
+const restingClear = pushScale * imgH - 1;
+
+// ---- 4. the mask geometry, in the layers' own coordinates --------------
+// Both layers are the IMAGE's box, so neither has a rectangle edge anywhere
+// near the figure. The circle therefore has to be expressed as a mask tile
+// placed inside that larger box, and these are the numbers that place it.
+//
+// The tile is the plate: square in pixels, so its size is a different
+// percentage of the box's width than of its height.
+const tileW = 1 / imgW; // plate diameter as a fraction of the box's width
+const tileH = 1 / imgH; // and of its height
+// `mask-position` percentages align p% of the free space, not a raw offset.
+const freeX = imgW - 1;
+const freeY = imgH - 1;
+const posX = freeX > 0 ? -imgLeft / freeX : 0;
+const posY = freeY > 0 ? crownAbovePlateTop / freeY : 0;
 
 // ---- report ------------------------------------------------------------
 const pct = (v: number) => `${(v * 100).toFixed(2)}%`;
 console.log(`cutout            ${w}x${h}, aspect ${(h / w).toFixed(4)}`);
 console.log(`drawn at          ${imgWidthPct}% of the plate → ${pct(imgH)} of its height`);
-console.log(`crown clears      ${pct(crownAbovePlateTop)} of the plate above its top edge`);
+console.log(`crown clears      ${pct(crownAbovePlateTop)} before the push-in, ${pct(restingClear)} after it`);
 console.log(`head centre       ${pct(headCentre)} of the plate (error ${pct(centringError)})`);
 console.log(
-  `shoulders escape  ${firstEscape === Infinity ? 'never' : pct(firstEscape)} below the plate's top`
+  `first outside     ${firstEscape === Infinity ? 'never' : pct(firstEscape)} below the plate's top`
 );
-if (feasible.length) {
-  const lo = Math.min(...feasible);
-  const hi = Math.max(...feasible);
-  console.log(
-    `\nfeasible widths   ${(lo * 100).toFixed(1)}% to ${(hi * 100).toFixed(1)}% ` +
-      `(crown clears >= ${pct(WANT_CLEAR)}, shoulders stay in >= ${pct(WANT_OVERLAP)})`
-  );
-  if (best) {
-    console.log(
-      `largest clearance ${(best.width * 100).toFixed(1)}% → crown ${pct(best.clear)}, overlap ${pct(best.escape)}`
-    );
-  }
-} else {
-  console.log(
-    `\nfeasible widths   NONE between 100% and 160%. At every size, either the crown does not` +
-      `\n                  clear the plate or his shoulders reach its top edge. The head cannot` +
-      `\n                  break out of a circle this size without the layer's edge showing.`
-  );
-}
-
+console.log(
+  `last outside      ${lastEscape === -Infinity ? 'never' : pct(lastEscape)} below the plate's top`
+);
+console.log(
+  `→ he is outside the circle down to ${pct(lastEscape)}, so the outer layer needs a fade`
+);
+console.log('');
+console.log('mask geometry for the two complementary layers, in the image box:');
+console.log(`  --mask-size:     ${pct(tileW)} ${pct(tileH)}`);
+console.log(`  --mask-position: ${pct(posX)} ${pct(posY)}`);
+console.log('');
+console.log(
+  `--crown-clear ${pct(wantedClear)} wants --plate-img-width ${widthForWantedClear.toFixed(2)}%`
+);
 let failures = 0;
 
 if (crownAbovePlateTop <= 0.005) {
@@ -235,6 +236,12 @@ if (Math.abs(centringError) > 0.01) {
 // The crown clearing the plate is what keeps the image's own top edge OUTSIDE
 // the disc. If it did not clear, that straight edge would fall inside the
 // circle and read as a line cut across his head.
+if (Math.abs(widthForWantedClear - imgWidthPct) > 0.5) {
+  console.error(
+    `\nFAIL  --crown-clear asks for ${pct(wantedClear)} once the push-in has run, but --plate-img-width is ${imgWidthPct}%, which settles at ${pct(restingClear)}. Set the width to ${widthForWantedClear.toFixed(2)}%.`
+  );
+  failures++;
+}
 if (crownAbovePlateTop < 0.02) {
   console.error(
     `\nFAIL  the crown clears by only ${pct(crownAbovePlateTop)}, so the image's top edge falls inside the disc and draws a line across his head.`
@@ -244,5 +251,5 @@ if (crownAbovePlateTop < 0.02) {
 
 if (failures) process.exit(1);
 console.log(
-  `\nThe portrait fits: his crown clears the plate by ${pct(crownAbovePlateTop)}, so the image's own top edge falls outside the disc, and his head is centred in the circle to ${pct(Math.abs(centringError))}.`
+  `\nThe portrait fits: his crown settles ${pct(restingClear)} above the plate, the image's own top edge falls outside the disc, and his head is centred in the circle to ${pct(Math.abs(centringError))}.`
 );
