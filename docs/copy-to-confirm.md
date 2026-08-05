@@ -124,9 +124,9 @@ each other about his address and about which domain is his. His own site is the 
 
 - **Does he want his street address on the site?** Six directories and his Google Business Profile
   already publish `221 Whaddon Way, Bletchley, Milton Keynes MK3 7DZ` — Google says `221A`, the
-  rest say `221`, and that discrepancy is one of the things
-  [the listings email](emails/2026-08-05-listing-discrepancies.md) asks him to settle. His own site
-  publishes only the outward code. Either answer is fine and neither is our decision; what is not
+  rest say `221`. [The listings email](emails/2026-08-05-listing-discrepancies.md) asks him both
+  questions, because they belong with the other "how you appear on other people's sites" ones
+  rather than with the copy. His own site publishes only the outward code. Either answer is fine and neither is our decision; what is not
   fine is the site staying quieter than the directories while the directories disagree.
   **Which is right, 221 or 221A — and may it go on the site?**
 - **Should the postcode be the full one?** The structured data currently says `MK3`, because that
