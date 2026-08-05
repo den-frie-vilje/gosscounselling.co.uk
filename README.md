@@ -10,29 +10,45 @@ Practice's warm ground and air. See [DECISIONS.md](DECISIONS.md) §16.
 
 ## Running it
 
+Activate the toolchain first. This matters more than it looks: **`pkgx dev` is what reads
+`pkgx.yml`; an ad-hoc `pkgx <cmd>` does not.** It defaults to "latest", which broke a sibling
+site silently when Node 26 landed upstream and pkgx began handing it to a project pinned to
+~25. The Dockerfile carries the same warning for the same reason.
+
 ```sh
-pkgx pnpm install
-pkgx pnpm dev --host 0.0.0.0    # vite on :5173, reachable from the LAN
-pkgx pnpm check                 # svelte-check, the CMS key-diff and the contrast check
-pkgx pnpm build --mode staging  # static output into build/
+eval "$(pkgx dev --shellcode)" && dev on
+
+pnpm install
+pnpm dev --host 0.0.0.0      # vite on :5173, reachable from the LAN
+pnpm check                   # every gate below
+pnpm build --mode staging    # static output into build/
 ```
 
-`pnpm check` is what the image build runs before `pnpm build`, so all three gates fail the
-image rather than production:
+`pnpm check` is what the image build runs before `pnpm build`, so each gate fails the image
+rather than production. Its `precheck` runs the asset pipeline first, so nothing downstream
+measures a stale cut-out:
 
 - `svelte-check` — the content JSON against its interfaces in `src/lib/content/index.ts`
 - `scripts/check-cms.ts` — the Sveltia config against the JSON, both directions. A key the
   config does not name is deleted the first time the editor saves that file
+- `scripts/check-nav.ts` — the bar's written order against the section order in the home page's
+  own markup. Sorting the bar at runtime instead worked on the home page and nowhere else
+- `scripts/check-contact.ts` — the number John typed can actually be dialled. The `tel:`, the
+  `mailto:` and the wa.me address are derived from it, so one typo breaks three links
 - `scripts/check-contrast.ts` — every colour pairing, 4.5:1 for text and 3:1 for graphic marks
+- `scripts/check-portrait-fit.ts` — the hero's geometry, solved from the cut-out's own alpha
+- `scripts/check-mattes.ts` — the cut-outs differ only where they are supposed to, against a
+  floor the WebP encoder's own noise sets rather than a number somebody picked
 
-Both checkers are self-tested against injected faults before their clean runs are believed:
-`pkgx pnpm check:cms:selftest`.
+Each one is self-tested against injected faults before its clean run is believed — a checker
+that has never been seen to fail is not a checker. `pnpm check:cms:selftest`,
+`pnpm cutouts:selftest`.
 
 Two more gates read the OUTPUT rather than the input, so they run AFTER the build rather than
 in `pnpm check`. The image build and the static-host workflow both run them:
 
 ```sh
-pkgx pnpm check:build   # check-posts + check-mock, against build/
+pnpm check:build   # check-posts + check-mock, against build/
 ```
 
 - `scripts/check-posts.ts` — no draft post's words are anywhere in `build/`. Drafts are
@@ -52,6 +68,25 @@ The four prototypes John chose from are archived in
 python3 -m http.server 5199 --bind 0.0.0.0
 ```
 
+## The asset pipeline
+
+Keying his portrait is the most expensive thing in the build, so it runs only when something
+it reads has changed. `scripts/build-gate.ts` hashes each step's declared inputs, including
+the script that does the work, and `src/lib/generated/build-manifest.json` — committed, so CI
+reaches the same decision a laptop does — records the result.
+
+```sh
+pnpm assets          # the gated pipeline (also runs via precheck and prebuild)
+pnpm assets:list     # what each step reads and writes, in dependency order
+pnpm assets:force    # ignore the manifest and rebuild everything
+```
+
+`scripts/keyer.ts` measures the backdrop rather than assuming it: colour by a robust plane fit
+to a border band, then its gradient across the frame and its residual noise. A backdrop too
+uneven to key is REFUSED, with the measurement and the limit in the message, rather than
+quietly producing a bad matte. `pnpm cutouts:selftest` runs five frames it must accept and
+five it must refuse.
+
 ## Documentation
 
 - [docs/client-brief.md](docs/client-brief.md) — what John asked for, and what the practice is
@@ -65,9 +100,12 @@ python3 -m http.server 5199 --bind 0.0.0.0
 
 ## Portrait assets
 
-`scripts/build-cutouts.py` rebuilds everything in `design/assets/` from the source photographs.
-It takes one argument, the height of the reconstructed crown as a fraction of the fitted arc
-(currently `0.5`):
+Two paths, and they are not rivals. `scripts/keyer.ts` is the general one, described above: it
+keys whatever photograph it is given, measuring the backdrop rather than assuming it, and it is
+what a photo John uploads goes through. `scripts/build-cutouts.py` is the original hand pass
+over his current portrait, and it still owns the one thing the general keyer will not do —
+inventing the top of his head, which the photograph clips. It takes one argument, the height of
+the reconstructed crown as a fraction of the fitted arc (currently `0.5`):
 
 ```sh
 python3 scripts/build-cutouts.py 0.5
