@@ -404,12 +404,15 @@
     margin-top: 2px;
     white-space: nowrap;
   }
-  /* Below 420px the second line costs the burger its breathing room. */
-  @media (max-width: 419px) {
-    .brand span {
-      display: none;
-    }
-  }
+  /* The second line stays down to the narrowest width the site supports.
+     It used to be hidden below 420px, for a reason that measurement does not
+     support: at 320px the brand is 202px wide with the tagline showing, the
+     burger is 46px, and 32px of the row is still empty — no overflow, and the
+     header's own height is unchanged at 73px, because two 11.5px lines still
+     fit inside its 72px minimum. There was no room being taken.
+
+     It matters more here than anywhere: on a phone the bar is the only thing
+     on screen that says what he does, and "John Goss" alone does not. */
 
   .navlink {
     position: relative;
