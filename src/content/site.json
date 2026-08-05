@@ -1,0 +1,55 @@
+{
+  "name": "John Goss",
+  "tagline": "Counselling & Supervision",
+  "description": "Counselling and supervision in Bletchley, Milton Keynes, and online. Fees, session lengths and what happens when you get in touch, set out in full.",
+  "footerNote": "© {year} John Goss, Counselling & Supervision, Bletchley, Milton Keynes MK3.",
+  "schema": {
+    "jobTitle": "Counsellor and Clinical Supervisor",
+    "bio": "Counselling and clinical supervision in Bletchley, Milton Keynes, and online. Individual, relationship and psychosexual therapy, and clinical supervision for therapists.",
+    "serviceType": "Counselling and clinical supervision",
+    "knowsAbout": [
+      "Individual counselling",
+      "Relationship counselling",
+      "Psychosexual therapy",
+      "Clinical supervision",
+      "Anxiety",
+      "Depression",
+      "Bereavement",
+      "Painful sex",
+      "Unreliable erections",
+      "Delayed ejaculation",
+      "Low desire",
+      "Vaginismus",
+      "Orgasm problems",
+      "Vulvodynia",
+      "Porn use",
+      "Kink",
+      "Couples, throuples and poly dynamics",
+      "Harmful sexual behaviour"
+    ],
+    "areaServed": [
+      "Milton Keynes",
+      "United Kingdom"
+    ]
+  },
+  "memberships": [
+    {
+      "name": "National Counselling & Psychotherapy Society",
+      "abbr": "NCPS",
+      "note": "Accredited Member",
+      "href": null
+    },
+    {
+      "name": "Children & Young People's Register",
+      "abbr": "NCPS",
+      "note": null,
+      "href": null
+    },
+    {
+      "name": "College of Sex & Relationship Therapists",
+      "abbr": "COSRT",
+      "note": null,
+      "href": null
+    }
+  ]
+}

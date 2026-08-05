@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en-GB">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!-- Build identity — invisible to users; lets the nas-sites deploy agent's
+		     verify step confirm this exact commit is live. Substituted at build
+		     from the PUBLIC_GIT_SHA build-arg. A template placeholder rather than
+		     a $env/static import: the placeholder bakes to '' when the var is
+		     unset (local builds), where a static import would hard-fail. -->
+		<meta name="git-sha" content="%sveltekit.env.PUBLIC_GIT_SHA%" />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>

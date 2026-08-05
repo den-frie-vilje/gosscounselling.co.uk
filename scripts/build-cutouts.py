@@ -56,7 +56,7 @@ from scipy.interpolate import PchipInterpolator
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
-OUT = f"{REPO}/design/assets"
+OUT = f"{REPO}/static/img"
 SRC = f"{REPO}/docs/source-assets"
 FROM_MASTER = "--from-master" in sys.argv
 

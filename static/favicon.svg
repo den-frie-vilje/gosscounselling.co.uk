@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="John Goss">
+  <!-- Squared corners with only a slight softening: the host platform applies
+       its own corner mask, and pre-rounding double-rounds it. -->
+  <rect width="64" height="64" rx="6" fill="#0a2833"/>
+  <!-- Two arcs facing each other, not quite closing: one person listening to
+       another. Drawn as paths so the mark does not depend on a font being
+       present. -->
+  <path d="M20 20a13 13 0 0 0 0 24" fill="none" stroke="#17a2c4" stroke-width="5" stroke-linecap="round"/>
+  <path d="M44 20a13 13 0 0 1 0 24" fill="none" stroke="#e9f2f4" stroke-width="5" stroke-linecap="round"/>
+</svg>

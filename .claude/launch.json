@@ -2,11 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "design-preview",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "5199", "--bind", "0.0.0.0"],
-      "port": 5199,
-      "url": "http://localhost:5199"
+      "name": "dev",
+      "runtimeExecutable": "pkgx",
+      "runtimeArgs": ["pnpm", "dev", "--host", "0.0.0.0"],
+      "port": 5173
     }
   ]
 }

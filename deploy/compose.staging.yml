@@ -28,7 +28,7 @@ services:
         aliases: [gosscounselling-staging]
       internal:
     ports:
-      - "127.0.0.1:${CADDY_PORT:-18084}:80"
+      - "127.0.0.1:${CADDY_PORT:-18087}:80"
     volumes:
       - ./Caddyfile.staging:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
