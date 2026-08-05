@@ -15,6 +15,7 @@
   import { buildPageSeo, faqNode, reviewNodes } from '$lib/seo/structured-data';
   import { renderInline } from '$lib/markdown';
   import { scrollDraw } from '$lib/actions/scroll-draw';
+  import { latchVisible } from '$lib/actions/latch-visible';
   import SeoHead from '$lib/components/SeoHead.svelte';
   import Section from '$lib/components/Section.svelte';
   import Prose from '$lib/components/Prose.svelte';
@@ -22,6 +23,14 @@
   import ContactBand from '$lib/components/ContactBand.svelte';
   import Testimonials from '$lib/components/Testimonials.svelte';
   import Icon from '$lib/components/Icon.svelte';
+
+  // Below 880px he goes full-bleed under the copy, so the fold cuts him at
+  // the top of his head, which is comical rather than welcoming. He starts
+  // transparent there and fades up as the page scrolls.
+  //
+  // The hide and the fade are pure CSS on a scroll-driven `view()` timeline,
+  // so there is no hydration blink. `latchVisible` only stops the fade running
+  // backwards once he has been seen.
 
   const seo = buildPageSeo({
     path: '/',
@@ -70,7 +79,14 @@
            the frame on desktop and by the viewport on a phone, never left
            hanging mid-section. -->
       <figure class="heroFig">
-        <img src="/img/john-cutout-dark.webp" alt={home.hero.portraitAlt} width="900" height="900" />
+        <img
+          use:latchVisible
+          class="heroCut"
+          src="/img/john-cutout-dark.webp"
+          alt={home.hero.portraitAlt}
+          width="900"
+          height="900"
+        />
       </figure>
     </div>
   </div>
@@ -87,7 +103,7 @@
        the sequence: it runs 1 to 3, down the discs where the steps stack and
        across them where they sit in a row, drawn by the scroll rather than by
        a timer, and it never retracts. -->
-  <ol class="stepList mark-row" use:scrollDraw={{ start: 0.55, end: 0.28 }}>
+  <ol class="stepList mark-row" use:scrollDraw={{ start: 0.78, end: 0.34 }}>
     {#each home.steps.items as step, i (step.title)}
       <li class="mark-row">
         <span class="disc mark mark-disc" aria-hidden="true">{i + 1}</span>
@@ -485,6 +501,43 @@
     .heroFig img {
       width: 116vw;
       margin-left: -8vw;
+    }
+    /* He fades up as he is scrolled to, rather than greeting the reader with
+       the top of his head. Guarded on the timeline's own support so that a
+       browser without it never applies the `opacity: 0`: the failure mode to
+       avoid is hiding him permanently, which is exactly what an unguarded
+       hide would do. The latch class then wins over the animation for good.
+
+       `:global()` on the latch class because the action adds it at runtime,
+       and Svelte's scoper prunes any rule keyed off a class it cannot see in
+       the markup: without it the latch compiles away and he re-hides on every
+       scroll back to the top, while the stylesheet still reads as correct. */
+    @supports (animation-timeline: view()) {
+      .heroCut {
+        opacity: 0;
+        animation: hero-cut-reveal linear both;
+        animation-timeline: view();
+        animation-range: entry 30% entry 55%;
+      }
+      .heroCut:global(.is-revealed) {
+        opacity: 1;
+        animation: none;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .heroCut,
+      .heroCut:global(.is-revealed) {
+        opacity: 1;
+        animation: none;
+      }
+    }
+  }
+  @keyframes hero-cut-reveal {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
     }
   }
   /* Above 880px he is no longer leaning on the viewport, so a circular plate
