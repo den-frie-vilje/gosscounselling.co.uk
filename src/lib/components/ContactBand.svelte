@@ -11,10 +11,15 @@
 -->
 <script lang="ts">
   import { contact, home } from '$lib/content';
+  import { registerSection } from '$lib/nav-sections.svelte';
   import Icon from './Icon.svelte';
+
+  // Not a `Section`, but it is one of the nav's targets, so it registers the
+  // same way. See nav-sections.svelte.ts.
+  const register = registerSection('contact');
 </script>
 
-<section id="contact" class="section-y bg-deep text-on-deep">
+<section id="contact" {@attach register} class="section-y bg-deep text-on-deep">
   <div class="container-page">
     <div class="section-head">
       <p class="t-kicker kicker-deep m-0 mb-3.5">{home.contact.kicker}</p>

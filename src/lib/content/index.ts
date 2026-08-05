@@ -176,11 +176,14 @@ export interface Testimonial {
   detail?: string;
 }
 
+/**
+ * A kicker and the quotes. There is no heading and no standing note: a
+ * quotation introduced by a sentence telling you it is a quotation is weaker
+ * than the quotation. The kicker stays because every other section on the page
+ * has one, and it is a label rather than an introduction.
+ */
 export interface Testimonials {
   kicker: string;
-  heading: string;
-  /** Optional standing note shown under the heading. Empty string hides it. */
-  note: string;
   items: Testimonial[];
 }
 
@@ -371,20 +374,44 @@ export const publishedPosts: Post[] = livePosts(BUILD_TIME);
  * anchor that is not there and the link does nothing at all.
  */
 export interface NavItem {
+  /**
+   * The section this item corresponds to, or null if it has none.
+   *
+   * It is not only what gets highlighted; it is also where the item sits in
+   * the bar. The header sorts by where these sections really are in the
+   * document, so Blog carries the id of its teaser on the home page even
+   * though its href is a page of its own: that is what keeps it above Get in
+   * touch in the bar, because that is where it is on the page.
+   *
+   * The id is the SOURCE and the href is derived from it below. It used to be
+   * the other way round, with the header recovering an id by slicing each
+   * href, and that broke silently the day the hrefs became `/#help` for
+   * cross-page anchors: every lookup missed and nothing was ever highlighted.
+   * A derived value cannot drift from the thing it is derived from.
+   */
+  id: string | null;
   href: string;
   label: string;
 }
 
+/** The href for an in-page section, from the one place its id is written. */
+export function sectionHref(id: string): string {
+  return `/#${id}`;
+}
+
 export const nav: NavItem[] = [
-  { href: '/#help', label: 'How I can help' },
-  { href: '/#about', label: 'About me' },
-  { href: '/#fees', label: 'Fees' },
-  { href: '/#faq', label: 'Questions' },
-  { href: '/#contact', label: 'Get in touch' }
+  { id: 'help', href: sectionHref('help'), label: 'How I can help' },
+  { id: 'about', href: sectionHref('about'), label: 'About me' },
+  { id: 'fees', href: sectionHref('fees'), label: 'Fees' },
+  { id: 'faq', href: sectionHref('faq'), label: 'Questions' },
+  { id: 'contact', href: sectionHref('contact'), label: 'Get in touch' }
 ];
 
-/** Appended by the header only while there is something to read. */
-export const blogNavItem: NavItem = { href: BLOG_PATH, label: 'Blog' };
+/** Appended by the header only while there is something to read. The id is
+ *  the teaser section on the home page, not a target for the href — see
+ *  NavItem.id. On the blog's own pages that section does not exist, so the
+ *  item simply has nothing to track and nothing to sort against. */
+export const blogNavItem: NavItem = { id: 'blog', href: BLOG_PATH, label: 'Blog' };
 
 /** Footer note with the `{year}` placeholder resolved. */
 export function footerNote(year: number): string {
