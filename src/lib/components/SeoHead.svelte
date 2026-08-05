@@ -3,7 +3,13 @@
   rendering; the `PageSeo` shape is built by `$lib/seo/structured-data`.
 -->
 <script lang="ts">
+  import { PUBLIC_ALLOW_INDEXING } from '$env/static/public';
   import type { PageSeo } from '$lib/seo/structured-data';
+
+  // Fail closed: only the literal 'true' is indexable, so a staging or dev
+  // build carries the noindex in the page itself, travelling with the HTML
+  // rather than depending on a header a proxy might drop.
+  const indexable = PUBLIC_ALLOW_INDEXING === 'true';
 
   interface Props {
     seo: PageSeo;
@@ -14,6 +20,9 @@
 
 <svelte:head>
   <title>{seo.title}</title>
+  {#if !indexable}
+    <meta name="robots" content="noindex, nofollow" />
+  {/if}
   <meta name="description" content={seo.description} />
   <meta name="author" content={seo.author} />
   <meta name="theme-color" content={seo.themeColor} />

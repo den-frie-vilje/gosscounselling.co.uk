@@ -211,9 +211,16 @@ body {
   html {
     scroll-behavior: auto;
   }
+  /* `::details-content` is neither an element nor ::before/::after, so the
+     universal selector does not match it and the FAQ's height transition
+     would keep running under reduce. Every other motion on this page is
+     neutralised by its own `no-preference` wrapper rather than by this rule;
+     this block is a backstop, and it is worth knowing which cases it cannot
+     reach. */
   *,
   *::before,
-  *::after {
+  *::after,
+  *::details-content {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
@@ -229,15 +236,36 @@ body {
   color: var(--color-deep);
 }
 
-/* One focus ring, chosen to read on the light grounds and on the dark
-   bands alike. */
+/* The focus ring, in two values rather than one.
+   `outline-offset` is positive, so the ring is separated from the component
+   by page ground on both sides and the only colour it has to clear is that
+   ground. One bright value could not do both: it measured 2.35:1 on the sand,
+   2.66:1 on the mist and 2.88:1 on the paper, all under the 3:1 that SC 1.4.11
+   requires of a focus indicator, and the earlier comment here claimed the
+   opposite. The deep teal clears every light ground; the bright one is kept
+   for the dark bands, where the deep one would not. Both pairs are in
+   scripts/check-contrast.ts now, which is why this was invisible: the ring is
+   a GLOBAL rule landing on four grounds, and the checker only ever paired the
+   bright value with the one ground the design rule allowed. */
 :focus-visible {
-  outline: 3px solid var(--color-teal-bright);
+  outline: 3px solid var(--color-teal);
   outline-offset: 3px;
   border-radius: 3px;
 }
+.bg-deep :focus-visible,
+.hero :focus-visible {
+  outline-color: var(--color-teal-bright);
+}
 
-/* The sticky header is 72px; anchor targets clear it. */
+/* The sticky header is 72px and opaque. `scroll-padding-top` on the scroller
+   covers BOTH anchor navigation and the browser scrolling a focused element
+   into view; `scroll-margin-top: 92px` on `[id]` only ever covered the first,
+   because almost nothing focusable on this page has an id. Without it,
+   Shift+Tab to an element above the viewport parks it under the header, and a
+   65px FAQ summary ends up entirely hidden, which is SC 2.4.11. */
+html {
+  scroll-padding-top: 92px;
+}
 [id] {
   scroll-margin-top: 92px;
 }
@@ -255,8 +283,15 @@ h4 {
 }
 
 /* ---- Typographic scale ---- */
+/* The floor is 29px, not 35px, and that is a measurement rather than taste.
+   "clinical supervision" is bound with a non-breaking space in the content so
+   the phrase never splits across lines, which means the display size has to
+   be small enough that the bound phrase still fits the narrowest column we
+   support. At 320px the column is 280px, and the phrase measures 329px at
+   35px, so it needs 29px to fit. The vw term is steep enough that only the
+   genuinely narrow widths ever see the floor. */
 .t-display {
-  font-size: clamp(35px, 5.2vw, 57px);
+  font-size: clamp(29px, 8.2vw, 57px);
   line-height: 1.06;
   letter-spacing: -0.022em;
 }

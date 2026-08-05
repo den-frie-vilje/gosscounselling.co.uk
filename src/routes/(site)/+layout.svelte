@@ -9,6 +9,13 @@
 
   let { children } = $props();
 
+  // The open menu is an opaque, full-viewport panel, so everything behind it
+  // has to leave the tab order and the accessibility tree. `inert` on the
+  // page is the documented shape for this and it also fixes find-in-page and
+  // pointer hit-testing; trapping focus by script would fix neither. The
+  // header and the panel are siblings of these, so they stay live.
+  let menuOpen = $state(false);
+
   // `import.meta.env.DEV` is a compile-time constant, so the panel and its
   // import are removed from the production bundle entirely rather than being
   // shipped behind a runtime check.
@@ -18,11 +25,13 @@
 <a href="#main" class="skip">Skip to content</a>
 
 <div class="flex min-h-dvh flex-col">
-  <SiteHeader />
-  <main id="main" tabindex="-1" class="flex-1 scroll-mt-24 focus:outline-none">
+  <SiteHeader bind:open={menuOpen} />
+  <main id="main" tabindex="-1" class="flex-1 scroll-mt-24 focus:outline-none" inert={menuOpen}>
     {@render children()}
   </main>
-  <SiteFooter />
+  <div inert={menuOpen}>
+    <SiteFooter />
+  </div>
 </div>
 
 {#if dev}
@@ -30,6 +39,11 @@
 {/if}
 
 <style>
+  /* The page must not scroll behind the panel. */
+  :global(html:has(#site-menu.is-open)) {
+    overflow: hidden;
+  }
+
   /* Off-screen until focused, then a real, visible target at the top left. */
   .skip {
     position: absolute;

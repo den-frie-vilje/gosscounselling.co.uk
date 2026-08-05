@@ -69,7 +69,14 @@ const PAIRS: [string, string, string][] = [
   ['deep', 'accent', 'selected text on the accent'],
   ['accent-ink', 'paper', 'accent mark on the page ground'],
   ['accent-ink', 'mist', 'the step connector, on the band'],
-  ['accent-ink', 'sand', 'accent mark on the warm strip']
+  ['accent-ink', 'sand', 'accent mark on the warm strip'],
+  // The focus ring is a GLOBAL rule, so it lands on every ground the site
+  // has, not only the one its colour was chosen against. Leaving these out is
+  // how a 2.35:1 indicator passed a green check for weeks.
+  ['teal', 'paper', 'focus ring on the page ground'],
+  ['teal', 'mist', 'focus ring on the band'],
+  ['teal', 'sand', 'focus ring on the warm strip'],
+  ['teal-bright', 'deep', 'focus ring on the dark bands']
 ];
 
 /** Pairings that are graphic marks rather than text, where WCAG 1.4.11 sets
@@ -78,7 +85,11 @@ const GRAPHIC = new Set([
   'accent-ink on paper',
   'accent-ink on mist',
   'accent-ink on sand',
-  'accent on deep'
+  'accent on deep',
+  'teal on paper',
+  'teal on mist',
+  'teal on sand',
+  'teal-bright on deep'
 ]);
 
 let failures = 0;

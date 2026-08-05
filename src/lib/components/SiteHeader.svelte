@@ -19,7 +19,12 @@
   import { contact, nav, site } from '$lib/content';
   import Icon from './Icon.svelte';
 
-  let open = $state(false);
+  interface Props {
+    /** Bound out so the layout can `inert` the page behind an open menu. */
+    open?: boolean;
+  }
+
+  let { open = $bindable(false) }: Props = $props();
   let toggleBtn = $state<HTMLButtonElement | undefined>();
   let panel = $state<HTMLElement | undefined>();
 
@@ -36,6 +41,13 @@
     }
   }
 
+  // The panel is `display: none` from navfull up, so a viewport that grows
+  // past it while the menu is open would leave a stale `aria-expanded="true"`
+  // on a control nobody can see.
+  function onResize() {
+    if (open && window.matchMedia('(min-width: 62.5rem)').matches) open = false;
+  }
+
   // When the panel opens, move focus into it so keyboard and screen-reader
   // users land on the menu rather than continuing behind it.
   $effect(() => {
@@ -43,7 +55,7 @@
   });
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<svelte:window onkeydown={onKeydown} onresize={onResize} />
 
 <header
   class="border-line bg-paper sticky top-0 z-60 border-b"
@@ -88,7 +100,7 @@
       class="burgerbtn navfull:hidden"
       aria-expanded={open}
       aria-controls="site-menu"
-      aria-label={open ? 'Close menu' : 'Open menu'}
+      aria-label="Menu"
       onclick={() => (open = !open)}
     >
       <span class="burger" class:is-open={open}></span>
@@ -105,12 +117,13 @@
   with `pointer-events:none` while closed, so it is out of the accessibility
   tree and cannot be tabbed into.
 -->
-<div
+<nav
   bind:this={panel}
   id="site-menu"
   class="menupanel navfull:hidden"
   class:is-open={open}
   inert={!open}
+  aria-label="Menu"
 >
   <div class="container-page">
     <ul class="m-0 list-none p-0">
@@ -122,14 +135,14 @@
     </ul>
 
     <div class="menucontact">
-      <p class="k">{contact.menuHeading}</p>
+      <h2 class="k">{contact.menuHeading}</h2>
       <a href={contact.phoneHref} onclick={close}>{contact.phone}</a>
       <a href={contact.emailHref} onclick={close}>{contact.email}</a>
       <a href={contact.whatsappHref} onclick={close}>WhatsApp</a>
       <p class="place">{contact.location}</p>
     </div>
   </div>
-</div>
+</nav>
 
 <style>
   .brand {
@@ -321,6 +334,7 @@
   }
   .menucontact .k {
     margin: 0;
+    font-family: var(--font-sans);
     font-size: 12.5px;
     font-weight: 700;
     letter-spacing: 0.14em;

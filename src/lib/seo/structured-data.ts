@@ -43,9 +43,19 @@ const personSameAs = site.memberships
 /**
  * The site-wide graph: the practice and the person, cross-linked by `@id`.
  *
- * No `address`: John works in Bletchley and online, and the old site never
- * published a street address. `areaServed` carries the geography instead, so
- * the entity is placed without inventing a postal address it does not have.
+ * The address is built only from what the page already publishes in prose,
+ * "Bletchley, Milton Keynes MK3", and no further. `streetAddress` is not a
+ * required property of PostalAddress, and John has never published one, so
+ * there is none here.
+ *
+ * It is present at all because `address` is one of only two properties Google
+ * requires of a LocalBusiness, and a node missing a required property is inert
+ * rather than merely thinner: `areaServed` does not substitute and is not
+ * mentioned in that guidance at any point. `areaServed` stays alongside it.
+ *
+ * This will not move the local pack. That is Google Business Profile's job,
+ * and proximity for a service-area business is computed from the verified
+ * address held there, not from anything on a website.
  */
 function siteGraph(): object[] {
   return [
@@ -57,13 +67,22 @@ function siteGraph(): object[] {
       url: `${SITE_URL}/`,
       telephone: contact.phone,
       email: contact.email,
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: 'Bletchley',
+        addressRegion: 'Milton Keynes',
+        postalCode: 'MK3',
+        addressCountry: 'GB'
+      },
       // Derived from the fee rows actually published on the page, rather
       // than a hand-picked band nobody chose.
       priceRange: '£45-£110',
-      serviceType: site.schema.serviceType,
+      // `knowsAbout`, not `serviceType`: the latter's domain is Service, not
+      // LocalBusiness, so it was three lines that looked like they were doing
+      // work and were not. Same reason `provider` and `availableLanguage`
+      // came out; `founder` already carries the link to the person.
+      knowsAbout: site.schema.knowsAbout,
       areaServed: site.schema.areaServed.map((name) => ({ '@type': 'Place', name })),
-      availableLanguage: 'en-GB',
-      provider: { '@id': PERSON_ID },
       founder: { '@id': PERSON_ID }
     },
     {
