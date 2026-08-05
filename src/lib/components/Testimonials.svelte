@@ -30,7 +30,7 @@
         {#each testimonials.items as item, i (item.quote)}
           <li class="border-line-cool border-b">
             <figure class="quotefig mark-row">
-              <p class="num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</p>
+              <p class="num mark" aria-hidden="true">{String(i + 1).padStart(2, '0')}</p>
               <blockquote class="quote">{item.quote}</blockquote>
               <figcaption class="cap">
                 {item.name}{#if item.detail} · {item.detail}{/if}
@@ -72,7 +72,10 @@
     margin: 0;
     font-family: var(--font-display);
     font-weight: 600;
-    font-size: 15px;
+    /* The quote runs clamp(20px, 2.4vw, 26px); the numeral is a fixed
+       fraction of it so the alignment ratio holds across the clamp. */
+    --mark-ratio: 1.6;
+    font-size: calc(clamp(20px, 2.4vw, 26px) / 1.6);
     color: var(--color-gold);
     font-variant-numeric: tabular-nums;
   }
