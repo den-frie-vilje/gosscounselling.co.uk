@@ -1,0 +1,12 @@
+{
+  "psychosexual-therapy": {
+    "body": "Mock detail body MOCKONLY-8f3a1c. Everything above this line is the service's own summary from the home page; this is the material that only the detail page carries.\n\n## A mock symptom heading MOCKONLY-8f3a1c\n\nMock paragraph MOCKONLY-8f3a1c. docs/information-architecture.md asks for one heading per symptom and two honest paragraphs under each, so this is the shape that page will take.\n\n## A second mock heading MOCKONLY-8f3a1c\n\nMock paragraph MOCKONLY-8f3a1c, so the spacing between two headings with a paragraph between them can be seen.",
+    "seo": {
+      "title": "Mock detail page title MOCKONLY-8f3a1c",
+      "description": "Mock detail meta description MOCKONLY-8f3a1c, roughly the length a real one would be, so the head can be inspected in dev."
+    }
+  },
+  "supervision": {
+    "body": "Mock detail body MOCKONLY-8f3a1c, on the one service whose page sits at the top level of the site rather than under /counselling/, so both derived addresses can be seen working."
+  }
+}

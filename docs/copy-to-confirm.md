@@ -51,3 +51,27 @@ Carried over from [content-coverage.md](content-coverage.md):
   nothing on the old site addressed it. It needs his words.
 - **Whether he has a waiting list.** People ringing about a bereavement or a sexual difficulty
   often choose between therapists on availability alone.
+
+## 4. His Men's Therapy Hub listing contradicts this site
+
+Found 2026-08-05 at `menstherapyhub.co.uk/therapist/john-goss/`, and it is certainly him: the
+phone number `07776153426`, `goss-counselling.co.uk`, Milton Keynes, and both NCPS and COSRT all
+match. Last modified 2026-06-17.
+
+Three things on it disagree with what we are about to publish, and he should be asked which is
+current before either goes live:
+
+- **"Fees: £50 +/hr".** This site publishes £70 to £90 for a 50-minute session in person, £60 to
+  £80 online, and £45 to £80 for supervision. A prospective client who checks both will find two
+  different prices for the same hour.
+- **"Trainee Psychosexual Therapist"** and **"College of Sex & Relationship Therapists (Student
+  Member)"**. This site lists the CICS Diploma in Psychosexual & Relationship Therapy at 2026 and
+  COSRT membership without qualification. The listing may simply be out of date, but it is his
+  own words describing his own standing, so it is his to reconcile, not ours.
+- It points at **`goss-counselling.co.uk`**, the hyphenated domain being retired.
+  `information-architecture.md` already lists repointing his directory entries; this is one of
+  them, and it needs the fee and the training status corrected at the same time.
+
+Worth saying plainly to him: a directory listing that undercuts his own published fee is the kind
+of inconsistency that costs an enquiry, and search engines read the disagreement too.
+

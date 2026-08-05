@@ -1,0 +1,16 @@
+{
+  "kicker": "Mock kicker MOCKONLY-8f3a1c",
+  "heading": "Mock testimonials heading MOCKONLY-8f3a1c",
+  "note": "Mock standing note MOCKONLY-8f3a1c, so the optional line under the heading can be seen.",
+  "items": [
+    {
+      "quote": "Mock quote MOCKONLY-8f3a1c. Long enough to run to two or three lines at the measure the rail sets, because a one-line quote does not test anything.",
+      "name": "Mock attribution MOCKONLY-8f3a1c",
+      "detail": "Mock role MOCKONLY-8f3a1c"
+    },
+    {
+      "quote": "Mock second quote MOCKONLY-8f3a1c, shorter, so two of unequal length can be seen together.",
+      "name": "Mock second attribution MOCKONLY-8f3a1c"
+    }
+  ]
+}

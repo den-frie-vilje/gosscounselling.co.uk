@@ -22,15 +22,22 @@ const pageSources = import.meta.glob('/src/routes/**/+page.svelte', {
   eager: true
 }) as Record<string, string>;
 
-/** `/src/routes/(site)/foo/+page.svelte` → `/foo`; group segments drop out. */
+/**
+ * `/src/routes/(site)/foo/+page.svelte` → `/foo/`; group segments drop out.
+ *
+ * With the trailing slash, because `src/routes/+layout.ts` sets
+ * `trailingSlash: 'always'` and every page prerenders to `<path>/index.html`.
+ * `/foo` is not the address of anything here, and a sitemap that advertises
+ * one URL while the page declares another as canonical is a sitemap arguing
+ * with itself. The home page is `/` either way.
+ */
 function routePath(file: string): string {
-  const path = file
+  const segments = file
     .replace(/^\/src\/routes/, '')
     .replace(/\/\+page\.svelte$/, '')
     .split('/')
-    .filter((seg) => seg && !(seg.startsWith('(') && seg.endsWith(')')))
-    .join('/');
-  return '/' + path;
+    .filter((seg) => seg && !(seg.startsWith('(') && seg.endsWith(')')));
+  return segments.length ? `/${segments.join('/')}/` : '/';
 }
 
 const NOINDEX = /<meta[^>]+name=["']robots["'][^>]*content=["'][^"']*noindex/i;
@@ -40,7 +47,7 @@ export function sitemapPaths(extraPaths: string[] = []): string[] {
     .filter(([file]) => !file.includes('['))
     .filter(([, source]) => !NOINDEX.test(source))
     .map(([file]) => routePath(file))
-    .filter((path) => !ROBOTS_DISALLOW.some((rule) => (path + '/').startsWith(rule)));
+    .filter((path) => !ROBOTS_DISALLOW.some((rule) => path.startsWith(rule)));
   return [...new Set([...paths, ...extraPaths])].sort();
 }
 
