@@ -93,17 +93,6 @@
     }
   ];
 
-  // The circular plate behind John at 880px and up. His near-black shirt
-  // separates from the current teal at only 1.82:1, which is why the
-  // silhouette bleeds into its own ground; a light plate takes that to 7:1 or
-  // better. Measured against the band and against the shirt.
-  const PLATES = [
-    { id: 'teal', name: 'Teal', css: '#164b5d', note: 'As it is. Shirt separates at 1.82:1.' },
-    { id: 'olive', name: 'Olive', css: '#615a0f', note: 'The accent taken right down. 2.47:1.' },
-    { id: 'drysand', name: 'Dry sand', css: '#b6a461', note: 'Light plate, plain matte. 7.03:1.' },
-    { id: 'sand', name: 'Sand', css: '#dfca7d', note: 'Lighter still. 10.69:1, and the boldest.' }
-  ];
-
   const HEROES = [
     { id: 'stagger', name: 'Stagger', note: 'Each part in turn, reading order, John last.' },
     { id: 'block', name: 'One block', note: 'The column as one thing; he follows a beat behind.' },
@@ -114,17 +103,8 @@
   let accent = $state('lime-straw');
   let hero = $state('stagger');
   let open = $state(true);
-  let plate = $state('teal');
   let heroRun = $state(0);
 
-  function applyPlate(id: string) {
-    plate = id;
-    const chosen = PLATES.find((p) => p.id === id);
-    if (!chosen) return;
-    document.documentElement.setAttribute('data-plate', id);
-    document.documentElement.style.setProperty('--plate', chosen.css);
-    localStorage.setItem('studio.plate', id);
-  }
 
   function applyAccent(id: string) {
     accent = id;
@@ -157,7 +137,6 @@
   onMount(() => {
     const savedAccent = localStorage.getItem('studio.accent');
     const savedHero = localStorage.getItem('studio.hero');
-    applyPlate(localStorage.getItem('studio.plate') ?? 'teal');
     if (savedAccent) applyAccent(savedAccent);
     if (savedHero) applyHero(savedHero);
     else document.documentElement.setAttribute('data-hero', 'stagger');
@@ -186,21 +165,6 @@
                 <span class="nm">{a.name}</span>
                 <span class="nt">{a.note}</span>
                 <span class="nt">{a.hex} on dark · {a.inkHex} on light · {a.onDeep}</span>
-              </span>
-            </button>
-          </li>
-        {/each}
-      </ul>
-
-      <p class="head">Portrait plate</p>
-      <ul>
-        {#each PLATES as p (p.id)}
-          <li>
-            <button type="button" class:on={plate === p.id} onclick={() => applyPlate(p.id)}>
-              <span class="sw" style="background: {p.css}"></span>
-              <span class="txt">
-                <span class="nm">{p.name}</span>
-                <span class="nt">{p.note}</span>
               </span>
             </button>
           </li>
