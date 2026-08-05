@@ -659,15 +659,17 @@
        edge drifted away from the plate. The two images sit in identical boxes
        with identical transforms, so animating them separately is still exactly
        synchronous. */
+    /* Scaled about its CENTRE, so he grows outward in both directions rather
+       than rising off his own feet. */
     .layer img {
       transform: translateY(var(--matte-drop));
-      transform-origin: bottom center;
+      transform-origin: center;
       animation: hero-cut-settle 3200ms var(--ease-brand) both;
       animation-delay: 220ms;
     }
   }
-  /* A plain scale: the images carry no translate of their own, the layers do
-     the centring, and the masks stay put on the plate. */
+  /* A plain scale about the centre; the layers do the horizontal centring and
+     the masks stay put on the plate. */
   @keyframes hero-cut-settle {
     from {
       transform: translateY(var(--matte-drop)) scale(1);
@@ -712,7 +714,7 @@
          own scale, and the script computes and gates it. */
       --crown-clear: 7%;
       --push-in-scale: 1.045;
-      --plate-img-width: 127.35%;
+      --plate-img-width: 130.16%;
       --head-shift: -2.42%;
 
       /* The circle, expressed as a mask tile inside the LAYER's box. The
@@ -720,19 +722,21 @@
          edge falls anywhere near the figure; the tile is the plate, square in
          pixels, which is why its size is a different percentage of the box's
          width than of its height. Both derived by the script. */
-      --mask-size: 78.78% 93.46%;
-      --mask-position: 61.41% 100%;
+      --mask-size: 78.52% 95.20%;
+      --mask-position: 61.27% 100%;
 
       /* Room at the top of each layer for the push-in's overshoot. A transform
          does not change layout, so the scaled image reaches above its own box;
          the mask is sized to that box, so without this the crown falls outside
-         the mask and is cut clean off.
+         the mask and is cut clean off. Half the overshoot, because the scale
+         is about the image's centre: the other half goes below the plate's
+         bottom, where the circle has already ended and nothing is painted.
 
          Against the PLATE, because a percentage padding resolves against the
          containing block's inline size and this layer's containing block is
          the plate, not the layer. Reading that reference wrong left it 4.41px
          short and the crown still clipped by exactly that much. */
-      --layer-pad: 4.61%;
+      --layer-pad: 2.31%;
 
       /* Where the outer layer fades out. It starts below his crown and ends
          where he is back inside the circle, so the outer layer is painting
