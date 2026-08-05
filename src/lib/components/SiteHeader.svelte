@@ -67,11 +67,21 @@
     };
   }
 
-  /** Which section the reader is in: the last one whose top has passed under
-   *  the sticky header. Read from the sections themselves rather than from a
-   *  scroll offset, so it stays right whatever the content does. */
+  /** Which section the reader is in: the last one whose top has crossed a
+   *  line a quarter of the way down the viewport.
+   *
+   *  Not the sticky header's own edge, where the bar only moved once the
+   *  previous section had left the screen entirely and the nav read as lagging
+   *  behind the page. Not three quarters down either, which handed over as
+   *  soon as a section appeared at the bottom, long before anyone was reading
+   *  it. A quarter down is roughly where the eye is.
+   *
+   *  Read from the sections themselves rather than from a scroll offset, so it
+   *  stays right whatever the content does. */
+  const HANDOVER = 0.25;
+
   function readSection() {
-    const line = 96;
+    const line = (window.innerHeight || document.documentElement.clientHeight) * HANDOVER;
     let found = -1;
     for (let i = 0; i < nav.length; i++) {
       const el = document.getElementById(nav[i].href.slice(1));
@@ -114,6 +124,7 @@
   // on a control nobody can see.
   function onResize() {
     if (open && window.matchMedia('(min-width: 62.5rem)').matches) open = false;
+    readSection();
     place();
   }
 

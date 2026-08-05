@@ -185,15 +185,29 @@ const restingClear = pushScale * imgH - 1;
 // near the figure. The circle therefore has to be expressed as a mask tile
 // placed inside that larger box, and these are the numbers that place it.
 //
+// The layer's box is NOT the image's box. The push-in is a transform, and a
+// transform does not change layout, so the scaled image reaches above its own
+// box by the overshoot; the mask is sized to the box, so without room for it
+// the crown falls outside the mask and is cut clean off. The layer therefore
+// carries top padding of exactly that overshoot.
+//
+// Expressed against the PLATE, because a percentage padding resolves against
+// the containing block's inline size and the layer's containing block is the
+// plate, not the layer itself. Getting that reference wrong left the padding
+// 4.41px short and the crown still clipped by exactly that much.
+const overshoot = (pushScale - 1) * imgH; // in plate units
+const layerPad = overshoot; // plate units == a fraction of the containing block
+const boxH = imgH + overshoot; // = pushScale * imgH
+
 // The tile is the plate: square in pixels, so its size is a different
 // percentage of the box's width than of its height.
 const tileW = 1 / imgW; // plate diameter as a fraction of the box's width
-const tileH = 1 / imgH; // and of its height
+const tileH = 1 / boxH; // and of its height
 // `mask-position` percentages align p% of the free space, not a raw offset.
 const freeX = imgW - 1;
-const freeY = imgH - 1;
+const freeY = boxH - 1;
 const posX = freeX > 0 ? -imgLeft / freeX : 0;
-const posY = freeY > 0 ? crownAbovePlateTop / freeY : 0;
+const posY = freeY > 0 ? (overshoot + crownAbovePlateTop) / freeY : 0;
 
 // ---- report ------------------------------------------------------------
 const pct = (v: number) => `${(v * 100).toFixed(2)}%`;
@@ -214,6 +228,7 @@ console.log('');
 console.log('mask geometry for the two complementary layers, in the image box:');
 console.log(`  --mask-size:     ${pct(tileW)} ${pct(tileH)}`);
 console.log(`  --mask-position: ${pct(posX)} ${pct(posY)}`);
+console.log(`  --layer-pad:     ${pct(layerPad)}  (room for the push-in's overshoot)`);
 console.log('');
 console.log(
   `--crown-clear ${pct(wantedClear)} wants --plate-img-width ${widthForWantedClear.toFixed(2)}%`
