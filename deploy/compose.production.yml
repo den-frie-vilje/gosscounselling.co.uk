@@ -1,0 +1,55 @@
+# Production stack — gosscounselling.co.uk
+# Lives at /volume1/docker/gosscounselling.co.uk/production on the NAS.
+#
+# Reconciled by the nas-sites pull-only agent within ~5 minutes of a push to
+# `main`. Two containers only: the front door and the built site. No OAuth
+# proxy: the editor is stripped from the production image, so there is
+# nothing at /admin to authenticate against.
+
+name: gosscounselling-production
+
+networks:
+  nas-deploy:
+    external: true
+  internal:
+
+services:
+  caddy:
+    image: caddy:2-alpine@sha256:834468128c7696cec0ceea6172f7d692daf645ae51983ca76e39da54a97c570d
+    restart: unless-stopped
+    # DSM Web Station terminates TLS on the host and proxies to a loopback
+    # port, so this stack has to publish one. The value comes from the per-stack
+    # production.env (see deploy/production.env.example) rather than being baked here,
+    # which is how the sibling sites do it.
+    #
+    # Ports live in /volume1/docker/<domain>/<env>/<env>.env — NOT in the
+    # agent's sites.d/ files, which is where you would first think to look.
+    networks:
+      nas-deploy:
+        aliases: [gosscounselling-production]
+      internal:
+    ports:
+      - "127.0.0.1:${CADDY_PORT:-18088}:80"
+    volumes:
+      - ./Caddyfile.production:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      site:
+        condition: service_started
+
+  site:
+    image: ghcr.io/den-frie-vilje/gosscounselling:production-latest
+    restart: unless-stopped
+    networks: [internal]
+    pull_policy: always
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  caddy_data:
+  caddy_config:

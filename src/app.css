@@ -78,6 +78,11 @@
 
 :root {
   color-scheme: light;
+  /* Lets a length transition to and from a keyword, which is what allows the
+     FAQ answers to open to `height: auto` in CSS alone. Where it is not
+     supported the disclosure just snaps open, which is what a <details> has
+     always done. */
+  interpolate-size: allow-keywords;
 }
 
 html {

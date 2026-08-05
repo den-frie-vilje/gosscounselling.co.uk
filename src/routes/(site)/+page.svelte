@@ -14,6 +14,7 @@
   import { contact, home, site } from '$lib/content';
   import { buildPageSeo, faqNode, reviewNodes } from '$lib/seo/structured-data';
   import { renderInline } from '$lib/markdown';
+  import { reveal } from '$lib/actions/reveal';
   import SeoHead from '$lib/components/SeoHead.svelte';
   import Section from '$lib/components/Section.svelte';
   import Prose from '$lib/components/Prose.svelte';
@@ -36,9 +37,10 @@
      which is the shape John asked for. -->
 <section id="top" class="hero">
   <div class="wash" aria-hidden="true"></div>
+  <div class="wash2" aria-hidden="true"></div>
   <div class="container-page">
     <div class="heroGrid">
-      <div>
+      <div class="heroCopy">
         <p class="eyebrow">{home.hero.eyebrow}</p>
         <h1 class="t-display text-white">{home.hero.title}</h1>
         <p class="lede t-lead">{home.hero.lead}</p>
@@ -76,10 +78,13 @@
   heading={home.steps.heading}
   intro={home.steps.intro}
 >
-  <ol class="stepList">
+  <!-- The only thing on the page that waits to be scrolled to. The line is
+       the sequence: it runs 1 to 3, down the discs where the steps stack and
+       across them where they sit in a row, and it draws once. -->
+  <ol class="stepList" use:reveal>
     {#each home.steps.items as step, i (step.title)}
       <li>
-        <span aria-hidden="true">{i + 1}</span>
+        <span class="disc" aria-hidden="true">{i + 1}</span>
         <div>
           <h3 class="t-h3">{step.title}</h3>
           <p class="text-muted m-0 text-[16.5px]">{step.body}</p>
@@ -165,10 +170,22 @@
       <h3 class="t-h3 !text-[19px]">{home.quals.bodies.title}</h3>
       <Prose md={home.quals.bodies.body} class="mt-3.5 !text-[16px]" />
       <!-- Other people's marks, monochrome until hovered, so they read as
-           credentials rather than as brands competing with John's own. -->
+           credentials rather than as brands competing with John's own.
+
+           His old site carried two NCPS files: the society lockup, and a
+           second one pairing the NCPS mark with the Professional Standards
+           Authority's. They are two different claims, not two versions of
+           one, so the PSA mark is shown on its own rather than printing the
+           NCPS flower twice. It is the one that matters most here:
+           "counsellor" is not a protected title in the UK, so being on a
+           PSA-accredited register is the real gate. -->
       <div class="logos">
         <img src="/img/logos/NCPS_RGB.png" alt="National Counselling & Psychotherapy Society" />
         <img src="/img/logos/cosrt.png" alt="College of Sex & Relationship Therapists" />
+        <img
+          src="/img/logos/professional-standards-authority.png"
+          alt="Professional Standards Authority accredited register"
+        />
       </div>
     </div>
   </div>
@@ -217,6 +234,110 @@
       rgb(2 14 19 / 0.18) 70%,
       transparent 88%
     );
+  }
+  /* A second pool, low and right, so the light never settles into a horizon. */
+  .wash2 {
+    position: absolute;
+    inset: 30% -30% -35% 30%;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(
+      closest-side,
+      rgb(29 92 112 / 0.42) 0%,
+      rgb(29 92 112 / 0.16) 55%,
+      transparent 82%
+    );
+  }
+
+  /* The two pools drift, and that is all they do.
+     No pulsing, no scaling, no change of colour or opacity: a light that
+     breathes in and out is a television studio, and this is a page about
+     bereavement and erections. What is left is positional, under 2% of the
+     viewport, over a minute a cycle, on two periods that do not share a
+     factor so the pair never visibly repeats. Most visitors will not notice
+     it; that is the intended amount. */
+  @media (prefers-reduced-motion: no-preference) {
+    .wash {
+      animation: drift-a 71s ease-in-out infinite;
+    }
+    .wash2 {
+      animation: drift-b 97s ease-in-out infinite;
+    }
+  }
+  @keyframes drift-a {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      transform: translate3d(1.6%, -1.1%, 0);
+    }
+  }
+  @keyframes drift-b {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      transform: translate3d(-1.3%, 1.5%, 0);
+    }
+  }
+
+  /* ---- the hero arriving ----
+     Each part comes up a little after the one above it, once, on first paint.
+     The whole sequence is done inside a second.
+
+     Wrapped in `no-preference` so the resting state is the FINISHED state:
+     with reduced motion, or if the stylesheet's animations never run, every
+     element is simply present. `both` fill holds the opening state through
+     the delay, so nothing flashes in before its turn. */
+  @media (prefers-reduced-motion: no-preference) {
+    .heroCopy > *,
+    .heroFig {
+      animation: rise 620ms var(--ease-brand) both;
+    }
+    .eyebrow {
+      animation-delay: 60ms;
+    }
+    .heroCopy h1 {
+      animation-delay: 140ms;
+    }
+    .lede {
+      animation-delay: 260ms;
+    }
+    .actions {
+      animation-delay: 360ms;
+    }
+    .reassure {
+      animation-delay: 440ms;
+    }
+    /* He arrives last and barely moves: a cutout of a person sliding into
+       place would be the thing we are trying not to do. */
+    .heroFig {
+      animation-name: settle;
+      animation-duration: 900ms;
+      animation-delay: 200ms;
+    }
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 12px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+  @keyframes settle {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 6px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
   }
   /* A grid item's automatic minimum size is min-content, and the full-bleed
      figure inside is viewport-wide, so the track could not be narrower than
@@ -318,7 +439,6 @@
     padding: 0;
     display: grid;
     gap: 28px;
-    counter-reset: none;
   }
   @media (min-width: 860px) {
     .stepList {
@@ -332,8 +452,9 @@
     gap: 18px;
     align-items: start;
     min-width: 0;
+    position: relative;
   }
-  .stepList li > span {
+  .disc {
     font-family: var(--font-display);
     font-weight: 600;
     font-size: 15px;
@@ -345,9 +466,66 @@
     display: grid;
     place-items: center;
     font-variant-numeric: tabular-nums;
+    position: relative;
+    z-index: 1;
   }
   .stepList h3 {
     margin-bottom: 8px;
+  }
+
+  /* The line between the discs: down them where the steps stack, across them
+     where they sit in a row. One segment per gap, so it needs no knowledge of
+     how tall any step's text is.
+
+     Its resting state is DRAWN. `js-anim`, which only the reveal action adds,
+     is what collapses it to nothing, so no JavaScript, an old browser or a
+     reduced-motion preference all leave the line simply present.
+
+     Both runtime classes are wrapped in :global(). Svelte's scoper only sees
+     classes written in the markup, so it prunes any rule keyed off a class
+     added by an action at runtime, and the animation silently does nothing
+     while the stylesheet reads as correct. */
+  .stepList li:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    top: 34px;
+    bottom: -28px;
+    width: 2px;
+    background: var(--color-teal);
+    opacity: 0.32;
+    transform-origin: top center;
+  }
+  @media (min-width: 860px) {
+    .stepList li:not(:last-child)::before {
+      left: 34px;
+      right: -36px;
+      top: 16px;
+      bottom: auto;
+      width: auto;
+      height: 2px;
+      transform-origin: left center;
+    }
+  }
+  .stepList:global(.js-anim) li:not(:last-child)::before {
+    transform: scaleY(0);
+  }
+  .stepList:global(.js-anim.is-revealed) li:not(:last-child)::before {
+    transform: scaleY(1);
+    transition: transform 520ms var(--ease-brand);
+  }
+  @media (min-width: 860px) {
+    .stepList:global(.js-anim) li:not(:last-child)::before {
+      transform: scaleX(0);
+    }
+    .stepList:global(.js-anim.is-revealed) li:not(:last-child)::before {
+      transform: scaleX(1);
+    }
+  }
+  /* The second segment waits for the first, so the line reads 1 to 3 rather
+     than arriving all at once. */
+  .stepList:global(.js-anim.is-revealed) li:nth-child(2)::before {
+    transition-delay: 380ms;
   }
 
   /* ---- services as numbered rows ---- */

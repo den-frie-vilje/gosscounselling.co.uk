@@ -1,0 +1,30 @@
+# Front door for gosscounselling.co.uk.
+#
+# DSM Web Station proxies the production hostname to 127.0.0.1:${CADDY_PORT};
+# this Caddy speaks plain HTTP on the docker network and fronts one upstream.
+# No OAuth proxy here: the editor is stripped from the production image, so
+# there is nothing at /admin to authenticate against.
+
+{
+    admin off
+    auto_https off
+}
+
+:80 {
+    # One canonical host. The apex is the canonical name (it matches his
+    # email address, which is the whole reason for the new domain), so www
+    # redirects to it rather than the other way round.
+    @www host www.gosscounselling.co.uk
+    redir @www https://gosscounselling.co.uk{uri} permanent
+
+    handle {
+        reverse_proxy site:8080
+    }
+
+    encode gzip zstd
+
+    log {
+        output stdout
+        format json
+    }
+}
