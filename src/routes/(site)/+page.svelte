@@ -660,6 +660,7 @@
        with identical transforms, so animating them separately is still exactly
        synchronous. */
     .layer img {
+      transform: translateY(var(--matte-drop));
       transform-origin: bottom center;
       animation: hero-cut-settle 3200ms var(--ease-brand) both;
       animation-delay: 220ms;
@@ -669,10 +670,10 @@
      the centring, and the masks stay put on the plate. */
   @keyframes hero-cut-settle {
     from {
-      transform: scale(1);
+      transform: translateY(var(--matte-drop)) scale(1);
     }
     to {
-      transform: scale(var(--push-in-scale));
+      transform: translateY(var(--matte-drop)) scale(var(--push-in-scale));
     }
   }
   /* Above 880px he is no longer leaning on the viewport, so a circular plate
@@ -711,7 +712,7 @@
          own scale, and the script computes and gates it. */
       --crown-clear: 7%;
       --push-in-scale: 1.045;
-      --plate-img-width: 126.93%;
+      --plate-img-width: 127.35%;
       --head-shift: -2.42%;
 
       /* The circle, expressed as a mask tile inside the LAYER's box. The
@@ -747,6 +748,15 @@
          photograph in the same place, so painting twice is identical to
          painting once. */
       --mask-overlap: 1.5px;
+
+      /* The cutout's last four rows never reach full opacity: he was cut off
+         by the bottom of the source frame, so the matte ramps out instead of
+         ending. On the deep band that is invisible, but inside the sand plate
+         the ground showed through them as a rim under his shirt. Dropping him
+         by that much puts those rows below the circle, where the mask is
+         already empty. Measured, not guessed, and against the IMAGE's own
+         height, which is what a percentage in `translateY` resolves against. */
+      --matte-drop: 0.34%;
 
       /* Room above the plate for the head to occupy. It is also what keeps
          the grid row tall enough that the pop is not clipped by the hero's
