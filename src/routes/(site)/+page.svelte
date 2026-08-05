@@ -722,8 +722,8 @@
          edge falls anywhere near the figure; the tile is the plate, square in
          pixels, which is why its size is a different percentage of the box's
          width than of its height. Both derived by the script. */
-      --mask-size: 78.52% 95.20%;
-      --mask-position: 61.27% 100%;
+      --mask-size: 76.83% 93.15%;
+      --mask-position: 60.44% 100%;
 
       /* Room at the top of each layer for the push-in's overshoot. A transform
          does not change layout, so the scaled image reaches above its own box;
@@ -736,7 +736,7 @@
          containing block's inline size and this layer's containing block is
          the plate, not the layer. Reading that reference wrong left it 4.41px
          short and the crown still clipped by exactly that much. */
-      --layer-pad: 2.31%;
+      --layer-pad: 2.36%;
 
       /* Where the outer layer fades out. It starts below his crown and ends
          where he is back inside the circle, so the outer layer is painting

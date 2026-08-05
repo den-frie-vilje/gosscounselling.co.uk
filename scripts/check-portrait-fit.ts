@@ -298,6 +298,36 @@ if (Math.abs(widthForWantedClear - imgWidthPct) > 0.5) {
   );
   failures++;
 }
+// The mask tokens in the stylesheet must match what this run computes. They
+// were once copied from a run taken BEFORE the width token was updated in the
+// same sitting, which left the mask circle 9.91px wider than the plate and a
+// rim of the disc showing along the edge. Reading a number out of an earlier
+// run's output is exactly the mistake this catches.
+const declaredMask = css.match(/--mask-size: ([\d.]+)% ([\d.]+)%/);
+const declaredPos = css.match(/--mask-position: ([\d.]+)% ([\d.]+)%/);
+const declaredPad = css.match(/--layer-pad: ([\d.]+)%/);
+const declaredDrop = css.match(/--matte-drop: ([\d.]+)%/);
+if (!declaredMask || !declaredPos || !declaredPad || !declaredDrop) {
+  console.error('\nFAIL  could not find the mask tokens in the stylesheet; this check is blind.');
+  process.exit(1);
+}
+const expect: [string, number, number][] = [
+  ['--mask-size width', parseFloat(declaredMask[1]), tileW * 100],
+  ['--mask-size height', parseFloat(declaredMask[2]), tileH * 100],
+  ['--mask-position x', parseFloat(declaredPos[1]), posX * 100],
+  ['--mask-position y', parseFloat(declaredPos[2]), posY * 100],
+  ['--layer-pad', parseFloat(declaredPad[1]), layerPad * 100],
+  ['--matte-drop', parseFloat(declaredDrop[1]), matteDrop * 100]
+];
+for (const [name, declared_, computed] of expect) {
+  if (Math.abs(declared_ - computed) > 0.02) {
+    console.error(
+      `\nFAIL  ${name} is ${declared_}% in the stylesheet but computes to ${computed.toFixed(2)}%. The mask no longer matches the plate.`
+    );
+    failures++;
+  }
+}
+
 if (crownAbovePlateTop < 0.02) {
   console.error(
     `\nFAIL  the crown clears by only ${pct(crownAbovePlateTop)}, so the image's top edge falls inside the disc and draws a line across his head.`
