@@ -6,7 +6,7 @@
  *     node scripts/gen-cutouts.ts --source docs/source-assets/John-Goss-1.jpg \
  *                                 --out-dir /tmp/audit   # audit a run without touching the assets
  *     node scripts/gen-cutouts.ts --source ... --out-dir /tmp/audit --compare
- *                                                 # and measure it against the committed pair
+ *                                                 # and measure it against the committed files
  *
  * ISOLATION. `--out-dir` also moves the audit record, to `<out-dir>/cutout-audit.json`. An
  * audit run may not leave anything behind that describes assets it did not write.
@@ -43,9 +43,24 @@ const SRC_DIR = resolve(root, 'static/img/portrait');
 const ASSET_DIR = resolve(root, 'static/img');
 const PHOTO_EXT = /\.(jpe?g|png|webp|tiff?)$/i;
 
-/** The two names the page asks for; see `src/routes/(site)/+page.svelte`. */
-const OUT_LIGHT = 'john-cutout.webp';
-const OUT_DARK = 'john-cutout-dark.webp';
+/**
+ * TWO FILES, ONE ASSET. There used to be a light/dark PAIR — the same alpha under two
+ * colour treatments, one baked for each ground — and that pair is gone: the solve in
+ * `scripts/keyer.ts` produces a foreground that is the subject's own colour at every
+ * coverage, which is right on every ground at once.
+ *
+ * What is written now is what `scripts/build-cutouts.py` writes, and for the same two
+ * reasons. `OUT_ASSET` is the one file the page paints, on every ground it uses.
+ * `OUT_MASTER` is the plain knockout — the photograph's own pixels under the same matte,
+ * with nothing solved and the backing still in its fringe. Nothing paints it. It is the
+ * reference the geometry is measured from (`scripts/check-portrait-fit.ts`) and the
+ * unsolved control `scripts/check-mattes.ts` measures the asset against, and it has to be
+ * the same size and the same matte as the asset for either of those to mean anything.
+ *
+ * See `src/routes/(site)/+page.svelte` for who paints which.
+ */
+const OUT_MASTER = 'john-cutout.webp';
+const OUT_ASSET = 'john-cutout-dark.webp';
 
 const argv = process.argv.slice(2);
 const flag = (name: string) => argv.includes(name);
@@ -114,20 +129,33 @@ function report(r: KeyResult, label: string) {
     ` ${r.medianSnr.toFixed(0)}x the measured backing noise`);
   console.log(`    ill-conditioned fringe   ${pct(r.illConditioned, 1)}  (limit 50.0%) — where the subject`);
   console.log(`                             is within ${DEFAULTS.sepLoSnr}x the backing noise and the solve cannot speak`);
+  console.log(`    clipped fringe           ${pct(r.clippedFringe, 1)} — where the plate is clipped at the`);
+  console.log('                             backing\'s own end and the equation carries nothing at all');
+  console.log(`    interior depth           ${r.coreDepthPx.toFixed(2)}px; past it the figure is settled opaque`);
 
-  if (r.agreement.length) {
-    console.log('\n  CRUDE DISTANCE KEY vs KNOWN-BACKING SOLVE (median, well-conditioned pixels)');
-    console.log('    crude    ' + r.agreement.map((a) => a.crude.toFixed(2).padStart(6)).join(''));
-    console.log('    solved   ' + r.agreement.map((a) => a.solved.toFixed(2).padStart(6)).join(''));
-    console.log('    n        ' + r.agreement.map((a) => String(a.n).padStart(6)).join(''));
+  if (r.transfer.length) {
+    console.log('\n  THE FALLBACK CURVE, fitted from the pixels where the equation does speak');
+    console.log('    crude    ' + r.transfer.map((a) => a.crude.toFixed(2).padStart(6)).join(''));
+    console.log('    solved   ' + r.transfer.map((a) => a.solved.toFixed(2).padStart(6)).join(''));
+    console.log('    n        ' + r.transfer.map((a) => String(a.n).padStart(6)).join(''));
+    console.log('    A crude distance key is a SILHOUETTE detector, not a coverage: read the two');
+    console.log('    rows against each other and the gap is why it may not be blended in raw.');
   }
 
-  console.log('\n  EDGE TREATMENT');
-  console.log(`    edge band                full to ${r.edgeBand.in.toFixed(2)}px in, zero from ${r.edgeBand.out.toFixed(2)}px in`);
-  console.log(`                             ${r.edgeBand.width.toFixed(2)}px wide, smootherstep (C2) between`);
-  console.log(`    de-lighting belongs to   the ${r.delitIsFor} ground` +
-    ` (backing is ${r.delitIsFor === 'dark' ? 'brighter' : 'darker'} than the subject)`);
-  console.log(`    fitted psi in the band   max ${r.psiMax.toFixed(3)}, mean ${r.psiMean.toFixed(4)}`);
+  // The property the whole solve exists to have, measured on the pixels it just wrote.
+  console.log('\n  FRINGE PURITY — the delivered foreground against the subject\'s own colour,');
+  console.log('  in sRGB luminance levels, by coverage. Positive is toward the backing, which is');
+  console.log('  the only direction contamination can push. A correct asset is FLAT in coverage;');
+  console.log('  one with backing left in it climbs as coverage falls.');
+  console.log('    coverage ' + r.purity.map((b) => `${b.lo.toFixed(2)}-${b.hi.toFixed(2)}`.padStart(10)).join(''));
+  console.log('    n        ' + r.purity.map((b) => String(b.n).padStart(10)).join(''));
+  console.log('    mean d   ' + r.purity.map((b) => (b.n ? (b.mean >= 0 ? '+' : '') + b.mean.toFixed(1) : '-').padStart(10)).join(''));
+  const worst = r.purity.filter((b) => b.n).reduce((m, b) => Math.max(m, b.mean), -Infinity);
+  console.log(`    worst departure in the contamination direction: ${worst >= 0 ? '+' : ''}${worst.toFixed(1)} levels`);
+  console.log(`    Below coverage ${DEFAULTS.directLo.toFixed(2)} the foreground IS the reference this is measured`);
+  console.log('    against, so those buckets can only read near zero; they say the fade happened, not');
+  console.log('    that the solve is right. `node scripts/check-mattes.ts` measures it independently.');
+
   if (r.touchesEdges.length) {
     console.log(`\n  WARNING: the figure runs off the ${r.touchesEdges.join(', ')} edge(s) of the frame.`);
     console.log('           Nothing here reconstructs what the camera did not see (DECISIONS §11);');
@@ -177,22 +205,40 @@ async function writeCutout(
   }
   // The same encode as build-cutouts.py: q92 colour, lossless alpha, slowest search.
   // DECISIONS §12 measured the floor these settings impose — VP8's 4:2:0 chroma
-  // subsampling is an irreducible error that quality does not buy off — and chose the
-  // edge band against it, so changing them here would invalidate that sweep.
+  // subsampling is an irreducible error that quality does not buy off — so changing the
+  // first three would invalidate that sweep.
+  //
+  // `exact` is the fourth, and it is the one build-cutouts.py has always passed and this
+  // file did not. Without it libwebp runs WebPCleanupTransparentArea, which flattens the
+  // RGB under fully transparent pixels to whatever compresses best — measured on this
+  // matte, it replaced the subject's colour with a flat 255 on 21% of the empty pixels
+  // within four of the outline. That is the colour bleed thrown away at the last step:
+  // VP8 is YUV 4:2:0, so the chroma of those pixels is averaged into the fringe beside
+  // them, and white averaged into a fringe on a dark ground is a bright rim by another
+  // route. It costs about 4% of the file and it is not optional.
+  //
+  // What proves it is not the self-test, which never encodes anything:
+  // `scripts/check-mattes.ts`'s colour-bleed measurement, on the written file.
   await sharp(rgba, { raw: { width: box.width, height: box.height, channels: 4 } })
-    .webp({ quality: 92, alphaQuality: 100, effort: 6 })
+    .webp({ quality: 92, alphaQuality: 100, effort: 6, exact: true })
     .toFile(file);
   return statSync(file).size;
 }
 
 // ---------------------------------------------------------------------------
-// --compare: this key against the committed, hand-tuned pair.
+// --compare: this key against the committed hand pass.
 //
 // The two are NOT expected to be identical and one of them is not "right". The hand pass
 // started from a matte a person pulled and then reconstructed the clipped crown
 // (DECISIONS §11), which is why its canvas is taller; this pass starts from the
 // photograph and reconstructs nothing. What the comparison is for is to say WHERE they
 // differ and by how much, in numbers, so that a swap is a decision and not a surprise.
+//
+// Both files are compared, and they answer different questions. On `john-cutout.webp`,
+// where both sides are the unsolved master, a difference is a difference in the MATTE.
+// On `john-cutout-dark.webp` it is the matte plus the solve, and since both sides now run
+// the same solve, a difference there that is not in the first comparison is the solve
+// disagreeing about the same edge.
 // ---------------------------------------------------------------------------
 
 interface Plate {
@@ -363,15 +409,11 @@ function compareOne(mine: Plate, theirs: Plate, label: string) {
   return best;
 }
 
-async function compareToCommitted(
-  result: KeyResult,
-  lightRgb: Uint8Array,
-  darkRgb: Uint8Array
-) {
-  console.log('\n  AGAINST THE COMMITTED HAND-TUNED PAIR');
+async function compareToCommitted(result: KeyResult, masterRgb: Uint8Array) {
+  console.log('\n  AGAINST THE COMMITTED HAND PASS');
   for (const [name, mineRgb] of [
-    [OUT_LIGHT, lightRgb],
-    [OUT_DARK, darkRgb]
+    [OUT_MASTER, masterRgb],
+    [OUT_ASSET, result.rgb]
   ] as [string, Uint8Array][]) {
     const file = resolve(ASSET_DIR, name);
     if (!existsSync(file)) {
@@ -488,11 +530,7 @@ function selfTest(): number {
    * legitimately harder — a backing this keyer is allowed to accept can still be noisy
    * enough that the last few levels of a soft edge are not recoverable.
    */
-  const keys = (
-    name: string,
-    o: SynthOpts,
-    e: { alphaTol: number; fgTol: number; delitIsFor?: 'dark' | 'light' }
-  ) => {
+  const keys = (name: string, o: SynthOpts, e: { alphaTol: number; fgTol: number }) => {
     const s = synth(o);
     let r;
     try {
@@ -520,40 +558,53 @@ function selfTest(): number {
     for (let i = 0; i < s.w * s.h; i++) {
       if (s.alpha[i] < 0.999) continue;
       n++;
-      for (let c = 0; c < 3; c++) devs.push(Math.abs(r.ground[i * 3 + c] - s.fg[c]));
+      for (let c = 0; c < 3; c++) devs.push(Math.abs(r.rgb[i * 3 + c] - s.fg[c]));
     }
     devs.sort((a, b) => a - b);
     const meanDev = devs.reduce((a, b) => a + b, 0) / Math.max(devs.length, 1);
     const p999 = devs[Math.min(devs.length - 1, Math.floor(devs.length * 0.999))] ?? 0;
-    const pass =
-      dc < 2.5 && err < e.alphaTol && meanDev < e.fgTol && (!e.delitIsFor || r.delitIsFor === e.delitIsFor);
+    const pass = dc < 2.5 && err < e.alphaTol && meanDev < e.fgTol;
     ok(
       name,
       pass,
       `backing ${r.backing.hex} off by ${dc.toFixed(2)}, mean |da| ${err.toFixed(4)} (worst ${worst.toFixed(2)}), ` +
         `fg off by ${meanDev.toFixed(2)} mean / ${p999} p99.9 / ${devs[devs.length - 1]} worst over ` +
-        `${n.toLocaleString()} px, de-lit for the ${r.delitIsFor} ground, ` +
-        `tilt ${Math.max(...r.backing.tilt).toFixed(1)}, residual ${r.backing.measuredNoise.toFixed(2)}, ` +
-        `median SNR ${r.medianSnr.toFixed(0)}x`
+        `${n.toLocaleString()} px, tilt ${Math.max(...r.backing.tilt).toFixed(1)}, ` +
+        `residual ${r.backing.measuredNoise.toFixed(2)}, median SNR ${r.medianSnr.toFixed(0)}x, ` +
+        `worst fringe purity ${fmtPurity(r)}`
     );
     return r;
+  };
+
+  /** The worst departure from the subject's own colour, in the contamination direction. */
+  const fmtPurity = (r: KeyResult) => {
+    const v = r.purity.filter((b) => b.n).map((b) => b.mean);
+    return v.length ? `${Math.max(...v) >= 0 ? '+' : ''}${Math.max(...v).toFixed(1)} lv` : 'n/a';
   };
 
   console.log('cutouts: self-test — synthetic frames with a known answer\n');
   console.log('  ACCEPTS — the reference framing, and four other photographs it must also key\n');
 
   // The reference: a gently tilted, mildly noisy white cyclorama, John's own situation.
-  const ref = keys('white cyclorama, reference framing', {}, { alphaTol: 0.01, fgTol: 1.5, delitIsFor: 'dark' });
+  const ref = keys('white cyclorama, reference framing', {}, { alphaTol: 0.01, fgTol: 1.5 });
   if (ref) {
+    // THE PROPERTY THE WHOLE SOLVE EXISTS TO HAVE, on a frame whose answer is known: the
+    // foreground must be the subject's colour at EVERY coverage, not just deep inside.
+    // This replaces the old "the two treatments differ" assertion, which checked that a
+    // ground-specific de-lighting had been applied — the thing that was removed.
+    const worstPurity = Math.max(...ref.purity.filter((b) => b.n).map((b) => b.mean));
+    const flattest = Math.min(...ref.purity.filter((b) => b.n).map((b) => b.mean));
     ok(
-      'two treatments differ',
-      Buffer.compare(Buffer.from(ref.ground), Buffer.from(ref.delit)) !== 0 || ref.psiMax === 0,
-      `psi max ${ref.psiMax.toFixed(4)} — a spill-free synthetic legitimately needs no de-lighting`
+      'the fringe carries the subject, not the backing',
+      worstPurity < 6 && flattest > -6,
+      `foreground departs from the subject's own colour by ${flattest.toFixed(1)} to ` +
+        `${worstPurity >= 0 ? '+' : ''}${worstPurity.toFixed(1)} levels across all coverage ` +
+        `(a white backing left IN the fringe reads +100 and up at the bottom)`
     );
     ok(
-      'edge band scales with width',
-      Math.abs(ref.edgeBand.out - (DEFAULTS.edgeOut * 480) / DEFAULTS.refWidth) < 1e-6,
-      `${ref.edgeBand.out.toFixed(3)}px at 480px wide, ${DEFAULTS.edgeOut}px at ${DEFAULTS.refWidth}px`
+      'the interior depth scales with width',
+      Math.abs(ref.coreDepthPx - (DEFAULTS.coreDepth * 480) / DEFAULTS.refWidth) < 1e-6,
+      `${ref.coreDepthPx.toFixed(3)}px at 480px wide, ${DEFAULTS.coreDepth}px at ${DEFAULTS.refWidth}px`
     );
   }
 
@@ -565,13 +616,15 @@ function selfTest(): number {
   // "how much of the border is background" gate move at once.
   keys('mid grey backdrop, subject at 1.35x', { backing: [138, 140, 143], scale: 1.35 }, { alphaTol: 0.012, fgTol: 1.5 });
 
-  // A DARK backdrop with a light subject, which inverts the de-lighting: the rim the
-  // backdrop throws is now a DARK one, and psi has to come out negative. If the sign
-  // logic were wrong this is where it would show.
+  // A DARK backdrop with a light subject. Nothing in the output is allowed to know which
+  // way round that is any more — there is one asset and no de-lighting — but the SOLVE
+  // still has to work with the inequality reversed: the gamut bound's "spill only pulls
+  // toward B" is now a pull DOWNWARD, and an implementation that had quietly assumed a
+  // bright backing would show it here as a foreground error.
   keys(
     'dark studio wall, light subject',
     { backing: [34, 33, 38], fg: [206, 178, 152] },
-    { alphaTol: 0.012, fgTol: 1.5, delitIsFor: 'light' }
+    { alphaTol: 0.012, fgTol: 1.5 }
   );
 
   // GRADIENT AND GRAIN WITHIN TOLERANCE. tilt 16 measures 24 of the 28 levels allowed
@@ -652,8 +705,8 @@ if (!source) {
   process.exit(0);
 }
 
-const lightPath = resolve(OUT_DIR, OUT_LIGHT);
-const darkPath = resolve(OUT_DIR, OUT_DARK);
+const masterPath = resolve(OUT_DIR, OUT_MASTER);
+const assetPath = resolve(OUT_DIR, OUT_ASSET);
 console.log(`cutouts: keying ${rel(source)}`);
 
 const { data, info } = await sharp(source).rotate().removeAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -679,18 +732,17 @@ report(result, rel(source));
 mkdirSync(OUT_DIR, { recursive: true });
 mkdirSync(dirname(AUDIT_FILE), { recursive: true });
 const box = alphaBbox(result.alpha, result.width, result.height);
-// The de-lighting goes to whichever ground the backing is NOT like; see keyer.ts §7.
-const lightRgb = result.delitIsFor === 'light' ? result.delit : result.ground;
-const darkRgb = result.delitIsFor === 'dark' ? result.delit : result.ground;
-const lightBytes = await writeCutout(lightRgb, result.alpha, result.width, result.height, box, lightPath);
-const darkBytes = await writeCutout(darkRgb, result.alpha, result.width, result.height, box, darkPath);
+// The master is the PHOTOGRAPH's own pixels under the solved matte — nothing keyed out of
+// its fringe, which is exactly what makes it a control. The asset is the solve.
+const masterBytes = await writeCutout(rgb, result.alpha, result.width, result.height, box, masterPath);
+const assetBytes = await writeCutout(result.rgb, result.alpha, result.width, result.height, box, assetPath);
 
 console.log('\n  OUTPUT');
 console.log(`    cropped to alpha         ${box.width}x${box.height} at (${box.left}, ${box.top})`);
-console.log(`    ${OUT_LIGHT.padEnd(24)} ${(lightBytes / 1024).toFixed(0)} KB   ${rel(lightPath)}`);
-console.log(`    ${OUT_DARK.padEnd(24)} ${(darkBytes / 1024).toFixed(0)} KB   ${rel(darkPath)}`);
+console.log(`    ${OUT_MASTER.padEnd(24)} ${(masterBytes / 1024).toFixed(0)} KB   ${rel(masterPath)}   the unsolved master; nothing paints it`);
+console.log(`    ${OUT_ASSET.padEnd(24)} ${(assetBytes / 1024).toFixed(0)} KB   ${rel(assetPath)}   THE asset, on every ground`);
 
-if (COMPARE) await compareToCommitted(result, lightRgb, darkRgb);
+if (COMPARE) await compareToCommitted(result, rgb);
 
 // The audit trail, in the shape a person would want to diff two keyings by. It is NOT
 // the gate — `src/lib/generated/build-manifest.json` is — so nothing reads it back and
@@ -699,21 +751,34 @@ const audit = {
   note:
     'Written by scripts/gen-cutouts.ts: the numbers the keyer derived from the photograph ' +
     'named below. A record, not a gate — scripts/build-gate.ts decides whether the keying ' +
-    'has to happen at all. Do not edit.',
+    'has to happen at all. scripts/check-mattes.ts DOES read `source`, `crop` and ' +
+    '`backing.plane` back, because reproducing the photograph is a statement about a ' +
+    'specific picture, a specific alignment and a specific backing. Do not edit.',
   source: rel(source),
   keyedAt: new Date().toISOString(),
   outputs: {
-    light: rel(lightPath),
-    dark: rel(darkPath),
-    lightBytes,
-    darkBytes
+    master: rel(masterPath),
+    asset: rel(assetPath),
+    masterBytes,
+    assetBytes
   },
+  /** Where the written files sit in the SOURCE photograph's frame, after the alpha crop. */
+  crop: { left: box.left, top: box.top, width: box.width, height: box.height },
   derived: {
     sourceSize: `${result.width}x${result.height}`,
     outputSize: `${box.width}x${box.height}`,
     backing: {
       hex: result.backing.hex,
       centre: result.backing.centre.map((v) => Number(v.toFixed(2))),
+      // The fitted plane itself, per channel, in the SOURCE frame's normalised
+      // coordinates: value = c + gx·xn + gy·yn with xn, yn in [-1, 1] across the frame.
+      // `tilt` is a peak-to-peak magnitude and has thrown the signs away, so it cannot be
+      // used to reconstruct B(x, y) and the reproduction check needs B(x, y).
+      plane: result.backing.plane.map((pl) => ({
+        c: Number(pl.c.toFixed(4)),
+        gx: Number(pl.gx.toFixed(4)),
+        gy: Number(pl.gy.toFixed(4))
+      })),
       tilt: result.backing.tilt.map((v) => Number(v.toFixed(2))),
       residualSigma: result.backing.residual.map((v) => Number(v.toFixed(3))),
       measuredNoise: Number(result.backing.measuredNoise.toFixed(3)),
@@ -729,16 +794,20 @@ const audit = {
     },
     figureFraction: Number(result.figureFraction.toFixed(5)),
     illConditionedFringe: Number(result.illConditioned.toFixed(4)),
+    clippedFringe: Number(result.clippedFringe.toFixed(4)),
     medianSeparation: Number(result.medianSeparation.toFixed(4)),
     medianSnr: Number(result.medianSnr.toFixed(1)),
-    edgeBandPx: {
-      in: Number(result.edgeBand.in.toFixed(3)),
-      out: Number(result.edgeBand.out.toFixed(3)),
-      width: Number(result.edgeBand.width.toFixed(3))
-    },
-    delitIsFor: result.delitIsFor,
-    psiMax: Number(result.psiMax.toFixed(4)),
-    psiMean: Number(result.psiMean.toFixed(5)),
+    interiorDepthPx: Number(result.coreDepthPx.toFixed(3)),
+    fallbackCurve: result.transfer.map((t) => ({
+      crude: Number(t.crude.toFixed(4)),
+      solved: Number(t.solved.toFixed(4)),
+      n: t.n
+    })),
+    fringePurity: result.purity.map((b) => ({
+      coverage: `${b.lo.toFixed(2)}-${b.hi.toFixed(2)}`,
+      n: b.n,
+      meanLevels: Number(b.mean.toFixed(2))
+    })),
     figureTouchesFrameEdges: result.touchesEdges
   }
 };

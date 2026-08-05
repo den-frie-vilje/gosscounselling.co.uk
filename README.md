@@ -119,9 +119,13 @@ python3 scripts/build-cutouts.py 0.5
   chord. A circle fitted to the local edge slope on both sides of the gap restores the arc, at
   half its fitted height, with edge fuzz matched to the measured statistics of his real
   silhouette (ramp 6.4px vs 6.5px real, roughness 0.41px vs 0.42px real).
-- **A separate dark-ground variant** (`john-cutout-dark.webp`) gets keyer-style edge treatment —
-  colour edge-extend, matte choke, negative light wrap — because a matte pulled from a white
-  backdrop carries light spill that glows on a dark ground.
+- **One asset is painted, on every ground** (`john-cutout-dark.webp`, a name kept only because
+  the scripts write to it). There used to be a light/dark pair, each with its own edge treatment
+  — colour edge-extend, matte choke, negative light wrap — and that is gone from both the hand
+  pass and the general keyer. Instead the foreground is pinned to John's own colour, carried
+  across the fringe geodesically from the opaque interior, and coverage is solved against the
+  measured backing; `F*a + ground*(1-a)` is then right on the light plate and the deep band at
+  once, by arithmetic rather than by grading. Nothing in the file knows what it will sit on.
 - **The dark studio frame keeps its background**, levelled with a tone curve that lifts the mids
   (median 38 → 55) while leaving the highlights where they were, and is only used small and round.
 

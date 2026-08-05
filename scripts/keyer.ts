@@ -31,43 +31,56 @@
  *      §2.1) — the colour travels THROUGH the figure, so a crevice inherits from its own
  *      surface rather than across the gap.
  *
- *   4. ALPHA, re-solved against the known backing: Wang & Cohen (CVPR 2007) eq. 2,
+ *   4. ALPHA, solved against the known backing: Wang & Cohen (CVPR 2007) eq. 2,
  *      alpha = (C - B)·(F - B) / ||F - B||², in linear light, with B measured rather
- *      than sampled. Blended back to the crude key by a CONDITIONING weight, because
- *      where the subject's colour equals the backing's the equation says nothing —
- *      and the fraction of the fringe where that is true is reported, not hidden.
+ *      than sampled. Where the equation cannot speak — the plate clipped at the same end
+ *      the backing is, or F and B too close to tell apart from the backing's own noise —
+ *      alpha falls back to ONE MONOTONE TRANSFER CURVE, fitted from the crude key to the
+ *      solved alpha over the pixels where the equation DOES speak. The fraction of the
+ *      fringe that needed the fallback is reported, not hidden.
  *
- *   5. FOREGROUND COLOUR: fast multi-level foreground estimation (Germer, Uelwer,
- *      Conrad & Harmeling, ICPR 2020), minimising Levin, Lischinski & Weiss's
- *      closed-form F/B cost — but with B PINNED to the backing field, which is the whole
- *      advantage of a known backing. The 2×2 local solve collapses to a scalar one:
- *
- *          (a² + Σ dₙ) F = a(C − (1−a)B) + Σ dₙ Fₙ,    dₙ = reg + gw·|a − aₙ|
- *
- *      run over an image pyramid so foreground colour propagates a long way into the
- *      transparent region.
+ *   5. FOREGROUND COLOUR, in closed form: F = (C − B(1−a)) / a. Not an estimate — the
+ *      definition of unassociated alpha against a known backing. Below `directLo` the
+ *      1/a noise gain makes it unusable (at a = 0.05 one level of plate noise becomes
+ *      twenty in F), so there it fades to the geodesically extended interior colour,
+ *      which is the right answer at 5% coverage because F is 5% of what is drawn.
  *
  *   6. GAMUT BOUND. Spill only ever pushes the observed colour TOWARD the backing, so F
  *      may not sit further along (B − F_prior) than F_prior does by more than
  *      `gamutSlack`. The component perpendicular to that direction is untouched, so
  *      detail survives. This is the general form of build-cutouts.py's one-sided
- *      luminance cap, which is what it reduces to for a neutral bright backing.
+ *      luminance cap: general because a backing may be DARKER than the subject, where
+ *      "spill can only brighten" is false but "spill can only pull toward B" still holds.
  *
- *   7. INVERSE LIGHT WRAP, confined to an edge band. The backing is a large area source
- *      and throws real light onto the silhouette; it is IN the plate, so unpremultiplying
- *      cannot touch it. Nuke's LightWrap builds that signature by blurring the matte and
- *      multiplying by the backdrop, so ψ = E_backing/E_key is fitted against two such
- *      kernels and divided out in linear light. Confined by a smootherstep (Perlin's C2
- *      quintic) window on the distance into the silhouette — the core/edge split of
- *      DECISIONS §12, whose EDGE_IN/EDGE_OUT are carried over here as fractions of the
- *      reference width they were swept at.
+ *   7. COLOUR BLEED. Where the matte is empty the RGB still carries the extended interior
+ *      colour. VP8 is YUV 4:2:0, so the chroma of a one-pixel fringe is averaged with its
+ *      neighbours whatever is put there, and that average wants the subject on the other
+ *      side of it.
+ *
+ * WHY THIS PINS F AND NOT ALPHA, AND WHAT WENT WITH THAT. Smith & Blinn (SIGGRAPH 96)
+ * show single-backing matting is underdetermined by exactly one equation, so the F/alpha
+ * pair has to be pinned from outside the photograph. This file used to pin ALPHA — the
+ * crude key led and F was estimated afterwards (Germer, Uelwer, Conrad & Harmeling, ICPR
+ * 2020) to reproduce the plate at that coverage — and then repaired the result with an
+ * inverse light wrap confined to an edge band, which is why it had to emit a light/dark
+ * PAIR: an edge treatment baked for one ground is wrong on the other.
+ *
+ * build-cutouts.py measured all three of those and none survived. The multi-level
+ * estimator left +16 to +42 levels of white backing in F, because its smoothness prior is
+ * satisfied by a partly-white foreground. The de-lighting ran the fringe 24-41 levels
+ * darker than John's own colour at EVERY coverage, which no shading explains. And a
+ * treatment windowed on distance-from-the-silhouette is a spatial gradient in the
+ * picture, so it shows up wherever anything else — the hero's circle, say — crosses it.
+ * Pinning F removes all three at once: F is John's own colour by construction, alpha is
+ * whatever reproduces the photograph given it, and NOTHING in the output knows what
+ * ground it will sit on. Hence ONE asset, on every ground, by arithmetic: the departure
+ * from a correct composite is (F − F_john)·a, which has no ground term in it.
  *
  * WHAT IT DELIBERATELY DOES NOT DO. build-cutouts.py's dichromatic subtraction on the
- * navy tee (its §4b) is not here. It is correct and it is measured, but it is measured
- * against ONE garment at ONE row range in ONE photograph, and a keyer that has to work on
- * a picture nobody has seen yet cannot assume either. Nor is the crown reconstruction of
- * DECISIONS §11: a photograph that clips the top of the head needs a person, and the only
- * responsible thing an automatic pass can do is SAY so, which it does.
+ * navy tee is not here, and neither is anything else that was ever a look rather than a
+ * solve. Nor is the crown reconstruction of DECISIONS §11: a photograph that clips the
+ * top of the head needs a person, and the only responsible thing an automatic pass can do
+ * is SAY so, which it does.
  */
 
 /** value = c + gx·xn + gy·yn, with xn, yn ∈ [-1, 1] across the frame. */
@@ -116,17 +129,25 @@ export interface AlphaHistogram {
   partial: number;
 }
 
+/** One coverage bucket of the fringe audit; `mean` is in sRGB luminance levels. */
+export interface PurityBucket {
+  lo: number;
+  hi: number;
+  n: number;
+  mean: number;
+}
+
 export interface KeyResult {
   width: number;
   height: number;
-  /** Alpha, 0-255, `width * height`. Shared by both outputs. */
+  /** Alpha, 0-255, `width * height`. */
   alpha: Uint8Array;
-  /** Foreground colour with the backing taken out of the fringe. RGB, `width * height * 3`. */
-  ground: Uint8Array;
-  /** The same, with the backing's rim light divided out inside the edge band. */
-  delit: Uint8Array;
-  /** Which of the two the de-lit treatment belongs to, given where the backing sits. */
-  delitIsFor: 'dark' | 'light';
+  /**
+   * THE ONE OUTPUT: straight (unassociated) alpha whose foreground is the subject's own
+   * colour at every coverage, so `rgb*a + ground*(1-a)` is right over ANY ground.
+   * RGB, `width * height * 3`.
+   */
+  rgb: Uint8Array;
   backing: BackingEstimate;
   histogram: AlphaHistogram;
   /** Fraction of the frame the figure covers. */
@@ -137,15 +158,36 @@ export interface KeyResult {
   medianSeparation: number;
   /** The same, in multiples of the measured backing noise — the number the gate uses. */
   medianSnr: number;
-  /** The edge band, in px of this image: treatment is full to `in`, zero from `out`. */
-  edgeBand: { in: number; out: number; width: number };
-  /** Max and mean of the fitted ψ = E_backing / E_key inside the band. */
-  psiMax: number;
-  psiMean: number;
+  /**
+   * Of the partial pixels, the fraction where the plate is clipped at the same end the
+   * backing is, so the mixture equation carries no information at all. A blown-out
+   * cyclorama behind hair is mostly this, and there alpha is the fitted curve.
+   */
+  clippedFringe: number;
+  /**
+   * The fitted monotone transfer from the crude key to the solved alpha — the fallback
+   * used where the equation cannot speak, and a diagnostic in its own right: it is how
+   * far a distance-from-the-backing key is from a physical one on THIS photograph.
+   */
+  transfer: { crude: number; solved: number; n: number }[];
+  /** How deep into the silhouette a pixel must be to count as interior, px of this image. */
+  coreDepthPx: number;
+  /**
+   * THE CLAIM, MEASURED ON THE OUTPUT: departure of the delivered foreground from the
+   * subject's own colour, by coverage, in sRGB luminance levels. Positive is toward the
+   * backing, which is the only direction contamination can push. A correct asset is flat
+   * in coverage; one with backing left in it climbs as coverage falls.
+   *
+   * READ THE BOTTOM BUCKET WITH CARE: below `directLo` the foreground IS the prior this
+   * is measured against, so those buckets can only come out near zero and they are a
+   * statement that the fade happened, not evidence about the solve. The buckets from
+   * `directHi` up are the ones the closed-form solve has to answer for, and the
+   * independent measurement is `scripts/check-mattes.ts`, which builds its own reference
+   * from the written file's opaque pixels and never sees this one.
+   */
+  purity: PurityBucket[];
   /** Which frame edges the figure runs off. A clipped subject is a warning, not a failure. */
   touchesEdges: string[];
-  /** Crude key vs. known-backing solve: median α_solved per bin of α_crude. Diagnostic. */
-  agreement: { bin: number; crude: number; solved: number; n: number }[];
   timings: Record<string, number>;
 }
 
@@ -185,21 +227,22 @@ export interface KeyerParams {
   sepHiSnr: number;
   /** The width the spatial constants below were measured at. Everything scales off it. */
   refWidth: number;
-  /** Core/edge split, px at `refWidth`. DECISIONS §12; swept there, carried here. */
-  edgeIn: number;
-  edgeOut: number;
-  /** How far in the light-wrap fit looks, and its three kernel widths, px at `refWidth`. */
-  dref: number;
-  sigNear: number;
-  sigWide: number;
-  sigFit: number;
-  /** Ceiling on ψ = E_backing / E_key. */
-  psiClamp: number;
+  /**
+   * How far inside the silhouette a pixel must be before it is unambiguously interior,
+   * px at `refWidth`. It is NOT an edge band and nothing is treated inside it: it seeds
+   * the geodesic prior and it is the depth past which alpha is settled to 1.
+   */
+  coreDepth: number;
+  /**
+   * The coverage window over which F hands over from the extended interior colour to the
+   * closed-form solve. Below `directLo` the 1/alpha gain in F = (C − B(1−a))/a turns one
+   * level of plate noise into 1/a levels of foreground, so the prior carries it; above
+   * `directHi` the photograph carries it on its own. Smoothstepped between.
+   */
+  directLo: number;
+  directHi: number;
   /** How far past F_prior, along (B − F_prior), F is allowed to sit. */
   gamutSlack: number;
-  /** Germer et al. foreground estimation. */
-  regularization: number;
-  gradientWeight: number;
   /** Subsampling factor and blur schedule for the geodesic extension. */
   geoScale: number;
   geoSchedule: [number, number][];
@@ -214,16 +257,10 @@ export const DEFAULTS: KeyerParams = {
   sepLoSnr: 8,
   sepHiSnr: 20,
   refWidth: 1800,
-  edgeIn: 2,
-  edgeOut: 16,
-  dref: 55,
-  sigNear: 6,
-  sigWide: 30,
-  sigFit: 40,
-  psiClamp: 3,
+  coreDepth: 16,
+  directLo: 0.1,
+  directHi: 0.2,
   gamutSlack: 0.15,
-  regularization: 5e-3,
-  gradientWeight: 0.1,
   geoScale: 3,
   geoSchedule: [
     [3.0, 45],
@@ -286,7 +323,8 @@ for (let i = 0; i < 256; i++) {
 /**
  * Box widths whose repeated application approximates a Gaussian of this sigma.
  * Three passes; Kovesi's construction, so the result is C2 and the cost is O(n)
- * INDEPENDENT of sigma — which matters, because `sigFit` is 40px.
+ * INDEPENDENT of sigma, which is what makes the geodesic extension's wide early passes
+ * affordable at full frame size.
  */
 function boxesForGauss(sigma: number, n: number): number[] {
   const wIdeal = Math.sqrt((12 * sigma * sigma) / n + 1);
@@ -346,13 +384,6 @@ export function gauss(plane: Float32Array, w: number, h: number, sigma: number, 
     src = i === 2 ? plane : a;
   }
   return plane;
-}
-
-/** Convenience: blur a copy. */
-export function blurred(plane: Float32Array, w: number, h: number, sigma: number): Float32Array {
-  const out = Float32Array.from(plane);
-  gauss(out, w, h, sigma);
-  return out;
 }
 
 /** Felzenszwalb & Huttenlocher's exact squared EDT, one dimension. */
@@ -504,8 +535,9 @@ export function geodesicExtend(
   // as the fraction of the field that actually reached each pixel. Without it a cell the
   // diffusion never got to reads as a legitimate ZERO, and downstream that is not a
   // missing value, it is a black one. On a subsampled grid whole cells along a thin
-  // silhouette can miss the mask, so this is not a corner case — it is where the fitted
-  // light wrap went to psi = 2.4 on a synthetic with no spill in it at all.
+  // silhouette can miss the mask, so this is not a corner case: a black F_prior there
+  // would put |B − F| at its maximum, which is the solve's most CONFIDENT state, and the
+  // one place it has no business being confident.
   const total = channels + 1;
   for (let c = 0; c < total; c++) {
     src.push(new Float32Array(n));
@@ -736,124 +768,12 @@ export function estimateBacking(rgb: Uint8Array, w: number, h: number, p: KeyerP
 }
 
 // ---------------------------------------------------------------------------
-// 5. Foreground colour, known backing
-// ---------------------------------------------------------------------------
-
-function halve(src: Float32Array, ch: number, w: number, h: number): { data: Float32Array; w: number; h: number } {
-  const nw = Math.max(1, w >> 1);
-  const nh = Math.max(1, h >> 1);
-  const out = new Float32Array(nw * nh * ch);
-  for (let y = 0; y < nh; y++) {
-    const y0 = Math.min(2 * y, h - 1);
-    const y1 = Math.min(2 * y + 1, h - 1);
-    for (let x = 0; x < nw; x++) {
-      const x0 = Math.min(2 * x, w - 1);
-      const x1 = Math.min(2 * x + 1, w - 1);
-      for (let c = 0; c < ch; c++) {
-        out[(y * nw + x) * ch + c] =
-          0.25 *
-          (src[(y0 * w + x0) * ch + c] +
-            src[(y0 * w + x1) * ch + c] +
-            src[(y1 * w + x0) * ch + c] +
-            src[(y1 * w + x1) * ch + c]);
-      }
-    }
-  }
-  return { data: out, w: nw, h: nh };
-}
-
-function upNearest(src: Float32Array, ch: number, sw: number, sh: number, w: number, h: number): Float32Array {
-  const out = new Float32Array(w * h * ch);
-  for (let y = 0; y < h; y++) {
-    const sy = Math.min(sh - 1, y >> 1);
-    for (let x = 0; x < w; x++) {
-      const sx = Math.min(sw - 1, x >> 1);
-      for (let c = 0; c < ch; c++) out[(y * w + x) * ch + c] = src[(sy * sw + sx) * ch + c];
-    }
-  }
-  return out;
-}
-
-/**
- * Germer, Uelwer, Conrad & Harmeling's multi-level foreground estimation (ICPR 2020),
- * with B PINNED to the known backing field.
- *
- * Their 2×2 local solve for (F, B) collapses to a scalar one when B is not an unknown:
- *
- *     (a² + Σ dₙ)·F = a·(C − (1−a)·B) + Σ dₙ·Fₙ,      dₙ = reg + gw·|a − aₙ|
- *
- * which is the same minimiser of Levin, Lischinski & Weiss's closed-form colour cost —
- * compositing residual plus alpha-gradient-weighted smoothness — with half the unknowns
- * and none of the ill-conditioning that comes from asking a single equation for two
- * colours. Gauss-Seidel in place over an image pyramid, so foreground colour propagates
- * a long way into the transparent region.
- *
- * All arrays are LINEAR light, 0-1.
- */
-export function estimateForegroundKnownBacking(
-  img: Float32Array,
-  alpha: Float32Array,
-  back: Float32Array,
-  w: number,
-  h: number,
-  p: KeyerParams
-): Float32Array {
-  const imgs = [{ data: img, w, h }];
-  const alphas = [{ data: alpha, w, h }];
-  const backs = [{ data: back, w, h }];
-  while (Math.min(imgs[imgs.length - 1].w, imgs[imgs.length - 1].h) > 32 && imgs.length < 12) {
-    const last = imgs.length - 1;
-    imgs.push(halve(imgs[last].data, 3, imgs[last].w, imgs[last].h));
-    alphas.push(halve(alphas[last].data, 1, alphas[last].w, alphas[last].h));
-    backs.push(halve(backs[last].data, 3, backs[last].w, backs[last].h));
-  }
-
-  let F: Float32Array | null = null;
-  for (let l = imgs.length - 1; l >= 0; l--) {
-    const lw = imgs[l].w;
-    const lh = imgs[l].h;
-    const I = imgs[l].data;
-    const A = alphas[l].data;
-    const B = backs[l].data;
-    F = F === null ? Float32Array.from(I) : upNearest(F, 3, imgs[l + 1].w, imgs[l + 1].h, lw, lh);
-    const iters = Math.min(lw, lh) <= 64 ? 10 : 2;
-    for (let it = 0; it < iters; it++) {
-      for (let y = 0; y < lh; y++) {
-        for (let x = 0; x < lw; x++) {
-          const i = y * lw + x;
-          const a = A[i];
-          let a00 = a * a;
-          let b0 = a * (I[i * 3] - (1 - a) * B[i * 3]);
-          let b1 = a * (I[i * 3 + 1] - (1 - a) * B[i * 3 + 1]);
-          let b2 = a * (I[i * 3 + 2] - (1 - a) * B[i * 3 + 2]);
-          for (let k = 0; k < 4; k++) {
-            const nx = x + (k === 0 ? -1 : k === 1 ? 1 : 0);
-            const ny = y + (k === 2 ? -1 : k === 3 ? 1 : 0);
-            const j = Math.min(lh - 1, Math.max(0, ny)) * lw + Math.min(lw - 1, Math.max(0, nx));
-            const d = p.regularization + p.gradientWeight * Math.abs(a - A[j]);
-            a00 += d;
-            b0 += d * F[j * 3];
-            b1 += d * F[j * 3 + 1];
-            b2 += d * F[j * 3 + 2];
-          }
-          const inv = 1 / a00;
-          F[i * 3] = Math.min(1, Math.max(0, b0 * inv));
-          F[i * 3 + 1] = Math.min(1, Math.max(0, b1 * inv));
-          F[i * 3 + 2] = Math.min(1, Math.max(0, b2 * inv));
-        }
-      }
-    }
-  }
-  return F as Float32Array;
-}
-
-// ---------------------------------------------------------------------------
 // The keyer
 // ---------------------------------------------------------------------------
 
 /**
  * Key `rgb` (w×h, 3 channels, sRGB bytes) against a backing estimated from its own
- * border, and return one alpha with two colour treatments.
+ * border, and return ONE straight-alpha asset that is correct on every ground.
  *
  * Throws `UnkeyableError` for a background it will not key. That is the point of the
  * exercise: a keyer that quietly emits a bad matte costs more than one that stops.
@@ -1005,7 +925,7 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
   // the second seed is the first pass's own answer.
   const region = new Uint8Array(n);
   for (let i = 0; i < n; i++) region[i] = figure[i] || alpha0[i] > 0.005 ? 1 : 0;
-  const outPx = (p.edgeOut * w) / p.refWidth;
+  const corePx = (p.coreDepth * w) / p.refWidth;
   const plateF = new Float32Array(n * 3);
   for (let i = 0; i < n * 3; i++) plateF[i] = rgb[i];
 
@@ -1014,6 +934,12 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
   const sepArr = new Float32Array(n);
   const snrArr = new Float32Array(n);
   const alsArr = new Float32Array(n);
+  const clipArr = new Uint8Array(n);
+  /** The diffused interior colour as the extension actually left it, for the colour bleed. */
+  let Fgeo = new Float32Array(n * 3);
+  /** Where the prior is the subject's own colour rather than the substituted backing. */
+  const priorOk = new Uint8Array(n);
+  let transfer: { crude: number; solved: number; n: number }[] = [];
   // The measured backing noise, carried into linear light at each pixel's own backing
   // level: RMS over the channels, because `sep` is an RMS over the channels too.
   const sigLin = new Float32Array(n);
@@ -1040,14 +966,23 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
       );
     }
     const geoF = clock(tag, () => geodesicExtend(plateF, 3, known, region, w, h, p.geoScale, p.geoSchedule));
+    Fgeo = new Float32Array(geoF.data);
     Fprior = geoF.data;
     // Where nothing was diffused — outside the region, or a cell the subsampled grid
     // never reached — hand the pixel the backing itself. |B − F| is then zero, the solve
     // is unconditioned there by construction, and the crude key speaks instead of a
     // fabricated colour. Never a silent zero.
     for (let i = 0; i < n; i++) {
-      if (!region[i] || geoF.valid[i] < 0.25) {
+      priorOk[i] = region[i] && geoF.valid[i] >= 0.25 ? 1 : 0;
+      if (!priorOk[i]) {
         for (let c = 0; c < 3; c++) Fprior[i * 3 + c] = Bsrgb[i * 3 + c];
+      }
+      // A far weaker test for the COLOUR BLEED, which is cosmetic rather than load-
+      // bearing: any diffusion at all reached here, so the value is the subject's colour
+      // carried outward rather than an artefact. It only has to hold for the few pixels
+      // just outside the matte, which is where 4:2:0 averages chroma across the boundary.
+      if (geoF.valid[i] < 0.02) {
+        for (let c = 0; c < 3; c++) Fgeo[i * 3 + c] = Bsrgb[i * 3 + c];
       }
     }
     // Linear light once, not four times: srgbToLinear is a Math.pow and this is 7.8M.
@@ -1080,23 +1015,77 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
       // scale is what one level of it is worth in linear light.
       const snr = sep / Math.max(sigLin[i], 1e-9);
       snrArr[i] = snr;
-      const cw = Math.min(1, Math.max(0, (snr - p.sepLoSnr) / (p.sepHiSnr - p.sepLoSnr))) * (1 - clip);
-      conf[i] = cw;
-      alpha[i] = cw * als + (1 - cw) * alpha0[i];
+      clipArr[i] = clip;
+      conf[i] = Math.min(1, Math.max(0, (snr - p.sepLoSnr) / (p.sepHiSnr - p.sepLoSnr))) * (1 - clip);
     }
+
+    // THE FALLBACK, for the pixels where the equation cannot speak: ONE monotone transfer
+    // curve from the crude key to the solved alpha, fitted from the pixels where it CAN.
+    //
+    // Not a blend back to the crude key, which is what this used to do and which is a
+    // scale error rather than a compromise. The crude key is a distance from the backing
+    // ramped over the backing's NOISE, so on a subject that separates strongly it is
+    // saturated at a true alpha of a few per cent: measured on John's plate, its 0.95 bin
+    // is a solved alpha of 0.13. Handing those pixels 0.95 makes the fringe seven times
+    // too opaque exactly where the photograph stopped being able to say otherwise — over
+    // blown-out cyclorama behind hair, which is where it matters most. The curve puts the
+    // crude key on the solve's own scale first, which is the only thing it is good for.
+    //
+    // Fitted on the crude ramp only, 0 < alpha0 < 1: alpha0 = 1 is a silhouette statement
+    // and not a coverage, so including it would anchor the top of the curve at a value the
+    // solve never agreed to. Monotone by cumulative maximum, anchored at the origin, and
+    // held flat past the last populated bin.
+    {
+      const BINS = 32;
+      const buckets: number[][] = Array.from({ length: BINS }, () => []);
+      const counts = new Array(BINS).fill(0);
+      for (let i = 0; i < n; i++) {
+        if (conf[i] <= 0.5 || alpha0[i] <= 0 || alpha0[i] >= 1) continue;
+        const b = Math.min(BINS - 1, Math.floor(alpha0[i] * BINS));
+        counts[b]++;
+        if (buckets[b].length < 50000) buckets[b].push(alsArr[i]);
+      }
+      transfer = [];
+      let run = 0;
+      for (let b = 0; b < BINS; b++) {
+        if (counts[b] < 60) continue;
+        run = Math.max(run, Math.min(1, median(buckets[b], buckets[b].length)));
+        transfer.push({ crude: (b + 0.5) / BINS, solved: run, n: counts[b] });
+      }
+    }
+    const curve = (x: number): number => {
+      if (transfer.length === 0) return x; // nothing to fit from; the crude key is all there is
+      if (x <= 0) return 0;
+      if (x <= transfer[0].crude) return (x / transfer[0].crude) * transfer[0].solved;
+      for (let k = 1; k < transfer.length; k++) {
+        if (x <= transfer[k].crude) {
+          const t = (x - transfer[k - 1].crude) / (transfer[k].crude - transfer[k - 1].crude);
+          return transfer[k - 1].solved + t * (transfer[k].solved - transfer[k - 1].solved);
+        }
+      }
+      return transfer[transfer.length - 1].solved;
+    };
+    for (let i = 0; i < n; i++) {
+      alpha[i] = conf[i] >= 1 ? alsArr[i] : conf[i] * alsArr[i] + (1 - conf[i]) * curve(alpha0[i]);
+    }
+
     // Settle the two ends. Deep inside the figure AND saturated on the crude key, the
     // answer is not in doubt and a stray 0.99 would only cost bytes and put a hint of the
     // ground through his shoulder. BOTH conditions, deliberately: a genuinely soft edge
-    // wider than the band keeps alpha0 < 1, so nothing hardens it.
+    // wider than `coreDepth` keeps alpha0 < 1, so nothing hardens it.
     for (let i = 0; i < n; i++) {
-      if (figure[i] && D[i] > outPx && alpha0[i] >= 1) alpha[i] = 1;
+      if (figure[i] && D[i] > corePx && alpha0[i] >= 1) alpha[i] = 1;
       else if (!figure[i] && alpha0[i] <= 0) alpha[i] = 0;
       if (alpha[i] < 1 / 510) alpha[i] = 0;
+      // THE SUPPORT IS AN INVARIANT (build-cutouts.py makes the same one against its
+      // master): the solve may reshape the ramp, which is what it is for, but it may not
+      // empty a pixel the figure holds. At this scale a dropped pixel is a hair.
+      if (figure[i] && alpha[i] < 6 / 255) alpha[i] = 6 / 255;
     }
   };
 
   const seed1 = new Uint8Array(n);
-  const seedDepth = Math.max(2, (p.edgeOut * w) / p.refWidth * 0.5);
+  const seedDepth = Math.max(2, ((p.coreDepth * w) / p.refWidth) * 0.5);
   for (let i = 0; i < n; i++) seed1[i] = figure[i] && D[i] >= seedDepth ? 1 : 0;
   pass(seed1, 'geo-fprior-1');
 
@@ -1108,11 +1097,13 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
   // number that tells a human the key is guessing — white hair on a white cyclorama.
   let bandCount = 0;
   let illCount = 0;
+  let clipCount = 0;
   const seps: number[] = [];
   const snrs: number[] = [];
   for (let i = 0; i < n; i++) {
     if (alpha[i] > 0.02 && alpha[i] < 0.98) {
       bandCount++;
+      if (clipArr[i]) clipCount++;
       // conf is zero exactly when the separation is below `sepLoSnr` (or when the plate
       // is clipped at the same end the backing is, where the mixture equation carries no
       // information at all). Counting at conf < 0.5 instead would be counting a DIFFERENT
@@ -1126,6 +1117,7 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
     }
   }
   const illConditioned = bandCount ? illCount / bandCount : 0;
+  const clippedFringe = bandCount ? clipCount / bandCount : 0;
   const medianSeparation = seps.length ? median(seps, seps.length) : 0;
   const medianSnr = snrs.length ? median(snrs, snrs.length) : 0;
   if (illConditioned > 0.5 && bandCount > 1000) {
@@ -1166,32 +1158,35 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
     );
   }
 
-  // Diagnostic: does the crude distance key agree with the physical solve? A large
-  // disagreement is not itself a failure — the solve is the better answer — but it is
-  // the first thing to look at when a matte comes out wrong.
-  const agreement: { bin: number; crude: number; solved: number; n: number }[] = [];
-  {
-    const buckets: number[][] = Array.from({ length: 10 }, () => []);
-    const counts = new Array(10).fill(0);
+  // -- 5. the foreground, in closed form at that alpha -----------------------------
+  //
+  // F = (C − B(1−a)) / a is not an estimate. It is the definition of unassociated alpha
+  // against a known backing, and with alpha already solved from a foreground prior that
+  // is the subject's own colour, it returns that colour — build-cutouts.py measures the
+  // round trip at within 1.5 levels at every coverage.
+  //
+  // Two places it cannot be trusted, both measured per pixel rather than assumed. The
+  // divide by alpha turns one level of plate noise into 1/a levels of F, so below
+  // `directLo` the prior carries it instead; and where the equation carried no
+  // information for alpha either (`conf`), it carries none for F, so the prior carries
+  // that too. At 5% coverage F is 5% of what is drawn, which is why the smooth prior is
+  // the right answer there rather than a concession.
+  const F = new Float32Array(n * 3);
+  clock('foreground', () => {
     for (let i = 0; i < n; i++) {
-      if (conf[i] <= 0.5 || alpha0[i] <= 0 || alpha0[i] >= 1) continue;
-      const b = Math.min(9, Math.floor(alpha0[i] * 10));
-      counts[b]++;
-      if (buckets[b].length < 50000) buckets[b].push(alsArr[i]);
+      const j = i * 3;
+      const a = alpha[i];
+      const t = Math.min(1, Math.max(0, (a - p.directLo) / Math.max(p.directHi - p.directLo, 1e-6)));
+      const wF = a >= 0.995 ? 1 : conf[i] * (t * t * (3 - 2 * t));
+      const ia = 1 / Math.max(a, 1e-6);
+      for (let c = 0; c < 3; c++) {
+        const direct = (Ilin[j + c] - Blin[j + c] * (1 - a)) * ia;
+        F[j + c] = Math.min(1, Math.max(0, wF * direct + (1 - wF) * Fplin[j + c]));
+      }
     }
-    for (let b = 0; b < 10; b++) {
-      if (counts[b] < 60) continue;
-      agreement.push({
-        bin: b,
-        crude: (b + 0.5) / 10,
-        solved: median(buckets[b], buckets[b].length),
-        n: counts[b]
-      });
-    }
-  }
+  });
 
-  // -- 5. foreground colour, and 6. the gamut bound --------------------------------
-  const F = clock('foreground', () => estimateForegroundKnownBacking(Ilin, alpha, Blin, w, h, p));
+  // -- 6. the gamut bound ----------------------------------------------------------
   clock('gamut', () => {
     for (let i = 0; i < n; i++) {
       const j = i * 3;
@@ -1224,179 +1219,127 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
     }
   });
 
-  // -- 7. the inverse light wrap, confined to an edge band -------------------------
-  const S = w / p.refWidth;
-  const edgeIn = p.edgeIn * S;
-  const edgeOut = p.edgeOut * S;
-  const dref = p.dref * S;
-  const ts = new Float32Array(n);
-  for (let i = 0; i < n; i++) {
-    const te = Math.min(1, Math.max(0, (edgeOut - D[i]) / Math.max(edgeOut - edgeIn, 1e-6)));
-    // Perlin's C2 quintic, not the C1 smoothstep: its derivative is zero at BOTH ends,
-    // so the treated band hands over to the untreated core with matching slope and there
-    // is no fixed-distance slope break for the eye to read as a ring (DECISIONS §12).
-    ts[i] = te * te * te * (10 + te * (te * 6 - 15));
-  }
-
-  const Ylin = new Float32Array(n);
-  for (let i = 0; i < n; i++) {
-    Ylin[i] = LUMA[0] * F[i * 3] + LUMA[1] * F[i * 3 + 1] + LUMA[2] * F[i * 3 + 2];
-  }
-  // Is the backing brighter than the subject? That decides which of the two outputs the
-  // de-lighting belongs to: the rim the backing threw is correct on a ground of the same
-  // brightness and wrong on the opposite one.
-  const backCentreY = LUMA[0] * srgbToLinear(backing.centre[0]) + LUMA[1] * srgbToLinear(backing.centre[1]) + LUMA[2] * srgbToLinear(backing.centre[2]);
-  const interior: number[] = [];
-  for (let i = 0; i < n; i++) if (figure[i] && D[i] >= dref && interior.length < 200000) interior.push(Ylin[i]);
-  const interiorY = interior.length ? median(interior, interior.length) : 0.5;
-  const backingIsBright = backCentreY > interiorY;
-
-  const deep = new Uint8Array(n);
-  for (let i = 0; i < n; i++) deep[i] = figure[i] && D[i] >= dref ? 1 : 0;
-  let deepCount = 0;
-  for (let i = 0; i < n; i++) deepCount += deep[i];
-  const psi = new Float32Array(n);
-  if (deepCount >= 64) {
-    clock('lightwrap', () => {
-      const geoY = geodesicExtend(Ylin, 1, deep, figure, w, h, p.geoScale, p.geoSchedule);
-      const Ybase = geoY.data;
-      const excess = new Float32Array(n);
-      // Only where the interior's shading actually reached. A pixel the extension never
-      // got to has no baseline, and treating its missing baseline as a dark one is what
-      // manufactures a light wrap that was never in the photograph.
-      for (let i = 0; i < n; i++) {
-        excess[i] =
-          figure[i] && geoY.valid[i] >= 0.25 && Ybase[i] > 1e-4
-            ? Math.min(8, Math.max(-1, Ylin[i] / Ybase[i] - 1))
-            : 0;
-      }
-      const fitOk = new Float32Array(n);
-      for (let i = 0; i < n; i++) fitOk[i] = figure[i] && geoY.valid[i] >= 0.25 && Ybase[i] > 1e-4 ? 1 : 0;
-      const oneMinusA = new Float32Array(n);
-      for (let i = 0; i < n; i++) oneMinusA[i] = 1 - alpha[i];
-      const W1 = blurred(oneMinusA, w, h, p.sigNear * S);
-      const W2 = blurred(oneMinusA, w, h, p.sigWide * S);
-      for (let i = 0; i < n; i++) {
-        W1[i] = Math.min(1, Math.max(0, 2 * W1[i]));
-        W2[i] = Math.min(1, Math.max(0, 2 * W2[i]));
-      }
-      const fit = new Float32Array(n);
-      for (let i = 0; i < n; i++) fit[i] = fitOk[i] && D[i] < 2 * dref ? 1 : 0;
-      const G = (make: (i: number) => number) => {
-        const a = new Float32Array(n);
-        for (let i = 0; i < n; i++) a[i] = make(i);
-        gauss(a, w, h, p.sigFit * S);
-        return a;
-      };
-      const M11 = G((i) => W1[i] * W1[i] * fit[i]);
-      const M12 = G((i) => W1[i] * W2[i] * fit[i]);
-      const M22 = G((i) => W2[i] * W2[i] * fit[i]);
-      const b1 = G((i) => excess[i] * W1[i] * fit[i]);
-      const b2 = G((i) => excess[i] * W2[i] * fit[i]);
-      // The locally averaged excess, normalised by its own support so the background's
-      // zeros cannot drag it down. This is the BOUND on psi below, and it is not a
-      // safeguard bolted on: dividing by (1 + psi) with psi > excess would take the
-      // surface below the interior's own extrapolated shading, and the backdrop only
-      // ever ADDED light. Same one-sided argument build-cutouts.py makes for its
-      // garment subtraction.
-      // At sigNear, not sigFit: the rim's excess lives in a band about that wide, so
-      // averaging it over the 40px fitting radius would dilute the bound by the ratio of
-      // the two radii and quietly throttle the correction to a quarter of what the
-      // photograph asks for. Measured on John's plate: the residual shoulder sheen over
-      // #0a2833 goes from +7.9 sRGB levels to +1.6 on this one change.
-      const Gn = (make: (i: number) => number) => {
-        const a = new Float32Array(n);
-        for (let i = 0; i < n; i++) a[i] = make(i);
-        gauss(a, w, h, p.sigNear * S);
-        return a;
-      };
-      const exNum = Gn((i) => excess[i] * fit[i]);
-      const exDen = Gn((i) => fit[i]);
-      const lo = backingIsBright ? 0 : -0.9;
-      const hi = backingIsBright ? p.psiClamp : 0;
-      for (let i = 0; i < n; i++) {
-        const m11 = M11[i] + 1e-3;
-        const m22 = M22[i] + 1e-3;
-        const det = m11 * m22 - M12[i] * M12[i];
-        let a1 = 0;
-        let a2 = 0;
-        if (Math.abs(det) > 1e-12) {
-          a1 = (m22 * b1[i] - M12[i] * b2[i]) / det;
-          a2 = (m11 * b2[i] - M12[i] * b1[i]) / det;
-        }
-        // NON-NEGATIVE least squares, on two variables, done by hand. The two LightWrap
-        // kernels are blurs of the same (1 − alpha) at different radii, so they are very
-        // nearly collinear and the 2×2 normal equations are close to singular; the
-        // unconstrained solve answers with a large positive amplitude against a large
-        // negative one, which is a numerically valid fit and physical nonsense. Light is
-        // added, so both amplitudes are non-negative: clamp the offender to zero and
-        // re-solve the one-variable problem that is left. On a synthetic with no spill in
-        // it at all this is the difference between psi = 2.4 and psi = 0.
-        const sign = backingIsBright ? 1 : -1;
-        if (sign * a1 < 0) {
-          a1 = 0;
-          a2 = b2[i] / m22;
-        }
-        if (sign * a2 < 0) {
-          a2 = 0;
-          a1 = b1[i] / m11;
-          if (sign * a1 < 0) a1 = 0;
-        }
-        const bound = exDen[i] > 1e-6 ? exNum[i] / exDen[i] : 0;
-        const fitted = a1 * W1[i] + a2 * W2[i];
-        psi[i] = backingIsBright
-          ? Math.min(hi, Math.max(lo, Math.min(fitted, Math.max(bound, 0))))
-          : Math.max(lo, Math.min(hi, Math.max(fitted, Math.min(bound, 0))));
-      }
-      gauss(psi, w, h, 8 * S);
-      for (let i = 0; i < n; i++) psi[i] *= ts[i];
-    });
-  }
-  let psiMax = 0;
-  let psiSum = 0;
-  let psiN = 0;
-  for (let i = 0; i < n; i++) {
-    if (ts[i] > 0 && figure[i]) {
-      psiMax = Math.max(psiMax, Math.abs(psi[i]));
-      psiSum += Math.abs(psi[i]);
-      psiN++;
-    }
-  }
-
-  // -- the two outputs -------------------------------------------------------------
-  const ground = new Uint8Array(n * 3);
-  const delit = new Uint8Array(n * 3);
+  // -- 7. the output, and the audit of it ------------------------------------------
+  //
+  // ONE asset. There is no second treatment and no ground-dependent term anywhere above:
+  // the inverse light wrap that used to live here, and the light/dark pair it forced, are
+  // both gone. The cyclorama's real rim light stays on the subject, because it is light
+  // that really fell on him and a straight-alpha asset's job is to carry the subject, not
+  // to relight him. What is removed is the backing showing THROUGH him, which is the part
+  // that was never his.
+  const out = new Uint8Array(n * 3);
   const alphaOut = new Uint8Array(n);
   clock('encode', () => {
     for (let i = 0; i < n; i++) {
       const j = i * 3;
-      const g = 1 / (1 + psi[i]);
+      const empty = alpha[i] <= 0;
       for (let c = 0; c < 3; c++) {
-        ground[j + c] = Math.round(Math.min(255, Math.max(0, linearToSrgb(F[j + c]))));
-        delit[j + c] = Math.round(Math.min(255, Math.max(0, linearToSrgb(F[j + c] * g))));
+        // COLOUR BLEED: where the matte is empty the RGB still carries the extended
+        // interior colour, because VP8 subsamples chroma across the boundary into the
+        // fringe whatever is put there, and both averages want the subject.
+        const v = empty ? Fgeo[j + c] : linearToSrgb(F[j + c]);
+        out[j + c] = Math.round(Math.min(255, Math.max(0, v)));
       }
       alphaOut[i] = Math.round(Math.min(1, Math.max(0, alpha[i])) * 255);
     }
   });
 
+  // The geodesic field is the right colour for the empty region, but it does not reach
+  // everywhere: it is diffused on a subsampled grid across a mask that hugs the subject,
+  // so a few pixels' width out it runs out of support and the fallback there is the
+  // BACKING — measured, 21% of the empty pixels within four of the matte came out at the
+  // white cyclorama, and white chroma subsampled back into a dark fringe is the exact
+  // defect this file exists to remove. So the delivered colour is carried outward from
+  // the matte itself, one ring at a time, for as far as 4:2:0 and the browser's downscale
+  // can reach: the mean of whatever neighbours are already filled. Beyond that the
+  // geodesic field stands, because nothing that far out is averaged into anything.
+  clock('bleed', () => {
+    const rings = Math.max(4, Math.round((6 * w) / p.refWidth));
+    const filled = new Uint8Array(n);
+    for (let i = 0; i < n; i++) filled[i] = alpha[i] > 0 ? 1 : 0;
+    const gained: number[] = [];
+    const acc = new Float64Array(4);
+    for (let r = 0; r < rings; r++) {
+      gained.length = 0;
+      const vals: number[] = [];
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const i = y * w + x;
+          if (filled[i]) continue;
+          acc[0] = acc[1] = acc[2] = acc[3] = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            const yy = y + dy;
+            if (yy < 0 || yy >= h) continue;
+            for (let dx = -1; dx <= 1; dx++) {
+              const xx = x + dx;
+              if (xx < 0 || xx >= w) continue;
+              const j = yy * w + xx;
+              if (!filled[j]) continue;
+              acc[0] += out[j * 3];
+              acc[1] += out[j * 3 + 1];
+              acc[2] += out[j * 3 + 2];
+              acc[3]++;
+            }
+          }
+          if (acc[3] === 0) continue;
+          gained.push(i);
+          vals.push(acc[0] / acc[3], acc[1] / acc[3], acc[2] / acc[3]);
+        }
+      }
+      if (gained.length === 0) break;
+      for (let k = 0; k < gained.length; k++) {
+        const i = gained[k];
+        for (let c = 0; c < 3; c++) out[i * 3 + c] = Math.round(vals[k * 3 + c]);
+        filled[i] = 1;
+      }
+    }
+  });
+
+  // THE CLAIM, MEASURED ON WHAT IS ABOUT TO BE WRITTEN. The delivered foreground against
+  // the subject's own colour, in sRGB luminance, by coverage. This is the same audit
+  // `scripts/check-mattes.ts` runs on the shipped file and `_verify_solid_matte` runs in
+  // build-cutouts.py, done here so a keying reports its own quality rather than waiting
+  // for a gate to find out. Only where the prior is really the subject's colour: where it
+  // was substituted with the backing the comparison has no reference to make.
+  const PB: [number, number][] = [
+    [0.02, 0.06],
+    [0.06, 0.12],
+    [0.12, 0.2],
+    [0.2, 0.35],
+    [0.35, 0.55],
+    [0.55, 0.8],
+    [0.8, 0.98]
+  ];
+  const purity: PurityBucket[] = PB.map(([lo, hi]) => ({ lo, hi, n: 0, mean: 0 }));
+  for (let i = 0; i < n; i++) {
+    const a = alpha[i];
+    if (a <= 0.02 || a >= 0.98 || !priorOk[i]) continue;
+    const k = PB.findIndex(([lo, hi]) => a >= lo && a < hi);
+    if (k < 0) continue;
+    const j = i * 3;
+    const got = LUMA[0] * out[j] + LUMA[1] * out[j + 1] + LUMA[2] * out[j + 2];
+    const want = LUMA[0] * Fprior[j] + LUMA[1] * Fprior[j + 1] + LUMA[2] * Fprior[j + 2];
+    purity[k].n++;
+    purity[k].mean += got - want;
+  }
+  for (const b of purity) if (b.n) b.mean /= b.n;
+
   return {
     width: w,
     height: h,
     alpha: alphaOut,
-    ground,
-    delit,
-    delitIsFor: backingIsBright ? 'dark' : 'light',
+    rgb: out,
     backing,
     histogram,
     figureFraction,
     illConditioned,
     medianSeparation,
     medianSnr,
-    edgeBand: { in: edgeIn, out: edgeOut, width: edgeOut - edgeIn },
-    psiMax,
-    psiMean: psiN ? psiSum / psiN : 0,
+    clippedFringe,
+    transfer,
+    coreDepthPx: corePx,
+    purity,
     touchesEdges,
-    agreement,
     timings
   };
 }
