@@ -149,10 +149,48 @@
               decoding="async"
             />
 
-            <!-- Inside the circle: the plain knockout, because the ground
-                 there is sand. -->
+            <!-- Inside the circle: the KEYED matte, not the plain knockout.
+                 This used to be the knockout, on the reasoning that the keyed
+                 variant read as a dark fringe on a light ground. Measured,
+                 that is now the wrong way round, and the knockout was the
+                 faint bright rim around him.
+
+                 The knockout is the client's file matted against a white
+                 cyclorama and never de-spilled in COLOUR, so its fringe still
+                 carries the backdrop: over the pixels that land inside the
+                 disc its foreground runs 235-242 in luminance wherever alpha
+                 is under 0.35, against a plate of 187. Composited, that goes
+                 189.6, 192.8, 196.6, 198.2 as alpha climbs 0.02 -> 0.35 —
+                 ABOVE the plate, which a blend of a 97-luminance figure over
+                 a 187 ground cannot produce at all. At the size he is
+                 actually drawn (450px plate, so 1 CSS px = 3.07 source px)
+                 28.1% of that fringe is brighter than the plate, 16.6% by
+                 more than 10, peaking +53.0; on a 2x screen 33.1% and 20.8%,
+                 peaking +62.8. It traces his whole outline: 31.3% of the
+                 fringe at the ears and temples, 25.1% at the face and beard,
+                 14.4% through the hair.
+
+                 The keyed matte has the cyc taken back out of both its colour
+                 and its matte (scripts/build-cutouts.py, solid_matte), so
+                 `F*a + ground*(1-a)` is right on ANY ground, including this
+                 one. Same measurement: 184.2, 183.4, 181.7, 177.6 — monotone
+                 down from the plate to him, 0.0% of it more than 5 above the
+                 plate, max +2.0 at 1x and +7.5 at 2x. Against a reference
+                 composite (the same de-spilled colour carried at the master's
+                 own coverage) it errs +0.9 to +12.1 LIGHT, never dark, where
+                 the knockout errs +6.3 to +36.2 light. So there is no dark
+                 fringe to avoid; there was, before the choke and the negative
+                 light wrap came out of the pipeline.
+
+                 Both layers now carry the same file, which also takes 323 KB
+                 off the hero: the desktop hero was fetching both cutouts. -->
             <div class="layer layerIn">
-              <img src="/img/john-cutout.webp" alt={home.hero.portraitAlt} width="900" height="900" />
+              <img
+                src="/img/john-cutout-dark.webp"
+                alt={home.hero.portraitAlt}
+                width="900"
+                height="900"
+              />
             </div>
 
             <!-- Outside it: the keyed matte, because the ground there is the
@@ -274,7 +312,7 @@
 <!-- Training and accountability, on the warm ground. -->
 <Section surface="sand" kicker={home.quals.kicker} heading={home.quals.heading}>
   <div class="quals">
-    <ul class="m-0 list-none p-0">
+    <ul class="quallist m-0 list-none p-0">
       {#each home.quals.items as qual (qual.title)}
         <li>
           <span>{qual.title}</span>
@@ -286,17 +324,23 @@
     <div class="bodies">
       <h3 class="t-h3 !text-[19px]">{home.quals.bodies.title}</h3>
 
-      <!-- Each mark sits beside the words it stands for, rather than the text
-           in one block and a rail of marks under it: separated, the reader has
-           to work out which flower belongs to which sentence.
+      <!-- One chip each: the mark, a hairline, then the words it stands for,
+           all on the same white ground. The mark used to sit on its own plate
+           with the text outside it, and the two read as a rail of logos and a
+           separate list of sentences; inside one chip, divided rather than
+           boxed, the flower and the sentence are visibly the same claim.
 
-           The plates are white and all the same size. Every one of these marks
-           is drawn for a white ground, and the Professional Standards
-           Authority's licence asks for its own colour and will not take the
-           monochrome-until-hover treatment the others could. A plate per mark
-           keeps them the same weight without recolouring any of them, and the
-           PSA gets the clear space its licence asks for, at least the height
-           of its own head, inside its plate.
+           Every chip is the height of the tallest, and nobody had to measure
+           the longest line to get it: `grid-auto-rows: 1fr` in a grid with no
+           fixed height makes every row the size of the largest, so the longest
+           note sets the height and the rest follow, at any breakpoint and
+           whatever John types.
+
+           The marks are white-ground artwork and all sit in the same column
+           width, so a wide wordmark and a square flower are the same weight
+           without recolouring either. The Professional Standards Authority's
+           licence asks for its own colour and for clear space at least the
+           height of its own head, and it gets both.
 
            His old site carried two NCPS files: the society lockup, and a
            second one pairing NCPS with the PSA. Those are two claims, not two
@@ -306,12 +350,19 @@
            PSA-accredited register is the real gate. -->
       <ul class="bodylist">
         {#each site.memberships as body (body.abbr + body.name)}
-          <li class="mark-row">
-            <span class="plate">
+          <li class="chip">
+            <span class="chipmark">
               <img src={body.logo} alt="" />
             </span>
-            <span class="min-w-0">
-              <span class="bname">{body.name}</span>
+            <span class="hair" aria-hidden="true"></span>
+            <span class="words">
+              <span class="bname">
+                {#if body.href}
+                  <a href={body.href} rel="noopener">{body.name}</a>
+                {:else}
+                  {body.name}
+                {/if}
+              </span>
               {#if body.note}<span class="bnote">{body.note}</span>{/if}
             </span>
           </li>
@@ -428,84 +479,44 @@
   }
 
   /* ---- the hero arriving ----
-     Four treatments, so they can be compared side by side before one is
-     chosen. The dev studio panel writes `data-hero` on the root element; with
-     no attribute at all the default is the stagger, which is what ships if
-     nobody chooses.
+     The stagger: each part comes up a little after the one above it, in
+     reading order, and John himself last and barely, because a cutout of a
+     person sliding into place is the thing we are trying not to do. Three
+     other treatments were built beside it and compared in the dev panel; this
+     is the one Ole kept, so the others and the panel are gone rather than
+     lingering behind an attribute nothing sets.
 
-     Every one of them is wrapped in `no-preference`, so the resting state is
-     the FINISHED state: with reduced motion, or if these rules never apply,
-     every element is simply present. `both` fill holds the opening state
-     through the delay, so nothing flashes in before its turn. */
+     Wrapped in `no-preference`, so the resting state is the FINISHED state:
+     with reduced motion, or if these rules never apply at all, every element
+     is simply present. `both` fill holds the opening state through the delay,
+     so nothing flashes in before its turn. */
   @media (prefers-reduced-motion: no-preference) {
-    /* A — stagger. Each part comes up a little after the one above it, in
-       reading order, and John himself last and barely: a cutout of a person
-       sliding into place is the thing we are trying not to do. */
-    :global(html:not([data-hero])) .heroCopy > *,
-    :global(html[data-hero='stagger']) .heroCopy > *,
-    :global(html:not([data-hero])) .portrait,
-    :global(html[data-hero='stagger']) .portrait {
+    .heroCopy > *,
+    .portrait {
       animation: rise 620ms var(--ease-brand) both;
     }
-    :global(html:not([data-hero])) .eyebrow,
-    :global(html[data-hero='stagger']) .eyebrow {
+    .eyebrow {
       animation-delay: 60ms;
     }
-    :global(html:not([data-hero])) .heroCopy h1,
-    :global(html[data-hero='stagger']) .heroCopy h1 {
+    .heroCopy h1 {
       animation-delay: 140ms;
     }
-    :global(html:not([data-hero])) .lede,
-    :global(html[data-hero='stagger']) .lede {
+    .lede {
       animation-delay: 260ms;
     }
-    :global(html:not([data-hero])) .aside,
-    :global(html[data-hero='stagger']) .aside {
+    .aside {
       animation-delay: 340ms;
     }
-    :global(html:not([data-hero])) .actions,
-    :global(html[data-hero='stagger']) .actions {
+    .actions {
       animation-delay: 430ms;
     }
-    :global(html:not([data-hero])) .reassure,
-    :global(html[data-hero='stagger']) .reassure {
+    .reassure {
       animation-delay: 510ms;
     }
-    :global(html:not([data-hero])) .portrait,
-    :global(html[data-hero='stagger']) .portrait {
+    .portrait {
       animation-name: settle;
       animation-duration: 900ms;
       animation-delay: 200ms;
-    }
-
-    /* B — one block. The column arrives as a single thing and he follows a
-       beat behind. Quieter, and it does not draw a line under each sentence
-       in turn the way the stagger does. */
-    :global(html[data-hero='block']) .heroCopy {
-      animation: rise 700ms var(--ease-brand) both;
-      animation-delay: 80ms;
-    }
-    :global(html[data-hero='block']) .portrait {
-      animation: settle 900ms var(--ease-brand) both;
-      animation-delay: 260ms;
-    }
-
-    /* C — uncover. Nothing moves at all: the band's own edge travels down and
-       the hero is revealed in place. It is the same idiom as the full-page
-       menu, which also wipes rather than slides, so the site would be using
-       one gesture for "something arrives" throughout. */
-    :global(html[data-hero='uncover']) .heroGrid {
-      animation: uncover 820ms cubic-bezier(0.4, 0, 0.2, 1) both;
-    }
-
-    /* D — none. Only the two pools behind him drift. */
-  }
-  @keyframes uncover {
-    from {
-      clip-path: inset(0 0 100% 0);
-    }
-    to {
-      clip-path: inset(0 0 0 0);
     }
   }
   @keyframes rise {
@@ -676,11 +687,12 @@
       }
     }
   }
-  /* Which matte is correct follows the ground, and the ground changes at the
-     same breakpoint the plate appears at. Below 880px he is full-bleed on the
-     deep gradient and needs the keyed one; on the sand plate he needs the
-     plain knockout, because that keyer treatment reads as a dark fringe on a
-     light ground. */
+  /* One matte on every ground, which is what a straight-alpha cutout with the
+     backdrop taken out of its COLOUR as well as its matte is for. The plain
+     knockout is still the master the geometry is measured from and the input
+     scripts/build-cutouts.py keys, but nothing paints it: its fringe carries
+     the white cyclorama, and over the plate that composites brighter than the
+     plate itself. See the note on .layerIn in the markup for the numbers. */
 
   @keyframes hero-cut-reveal {
     from {
@@ -1173,7 +1185,12 @@
       grid-template-columns: 1.35fr 1fr;
     }
   }
-  .quals li {
+  /* `.quallist li`, not `.quals li`. As `.quals li` it reached past its own
+     list into the membership chips in the next column and overrode their
+     layout — 0,1,1 beats the chips' 0,1,0 — so the chips silently laid out as
+     flex rows with a hairline under each. A descendant selector that names the
+     section rather than the list is a rule aimed at everything below it. */
+  .quallist li {
     padding: 12px 0;
     border-bottom: 1px solid var(--color-line);
     display: flex;
@@ -1181,7 +1198,7 @@
     justify-content: space-between;
     align-items: baseline;
   }
-  .quals .detail {
+  .quallist .detail {
     color: var(--color-gold);
     font-size: 14px;
     font-weight: 600;
@@ -1200,35 +1217,61 @@
     margin: 22px 0 0;
     padding: 0;
     display: grid;
-    gap: 16px;
+    gap: 12px;
+    /* Every chip the height of the tallest, with nobody measuring the longest
+       line to find out what that is. In a grid with no fixed height, `1fr`
+       tracks all resolve to the size of the largest, so the chip with the most
+       text sets the height and the others follow — at any breakpoint, and
+       whatever John types into the CMS. */
+    grid-auto-rows: 1fr;
   }
-  .bodylist li {
+  /* The mark's column. One width for every mark, so a wide wordmark and a
+     square flower carry the same weight; the artwork inside is fitted, never
+     stretched. 104px holds the widest of them at a legible size, and its
+     44px of height is the tallest any of them needs. */
+  .chip {
+    --mark-col: 104px;
     display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 18px;
-  }
-  /* One size for every plate, so three marks drawn at three different aspect
-     ratios carry the same visual weight. `contain` is what makes that work:
-     the mark fits its own way inside a fixed box instead of being stretched
-     to it. */
-  .plate {
-    flex: none;
-    width: 104px;
-    height: 68px;
-    border-radius: 8px;
+    grid-template-columns: var(--mark-col) 1px minmax(0, 1fr);
+    align-items: center;
     background: #fff;
+    border-radius: 10px;
     box-shadow: 0 0 0 1px rgb(15 50 64 / 0.07);
+  }
+  /* `.chipmark`, not `.mark`. `.mark` is taken: it is the alignment
+     principle's marker class, worn by the numbered discs in the steps above,
+     and a second meaning for it stretched those discs into 213px ellipses. A
+     class name is an interface. */
+  .chipmark {
     display: grid;
     place-items: center;
-    padding: 12px 14px;
+    /* The PSA's licence asks for clear space of at least the height of its own
+       head on every side. This padding is that, and the others inherit it. */
+    padding: 14px;
+    height: 100%;
   }
-  .plate img {
-    max-width: 100%;
-    max-height: 100%;
-    width: auto;
-    height: auto;
-    object-fit: contain;
+  /* A fixed box with `contain`, not `max-height` with `auto`. The PSA's mark
+     is an SVG with no intrinsic size, and against `width:auto;height:auto` it
+     resolved to 0x0 and rendered nothing at all. A box the artwork is fitted
+     INTO is also what makes the marks one size: 76 by 44 is the chip's column
+     minus its clear space, and every mark gets the same one whatever its own
+     aspect. */
+  .chipmark img {
     display: block;
+    width: 76px;
+    height: 44px;
+    object-fit: contain;
+  }
+  /* The divider, inset from the chip's own edges so it reads as a rule between
+     two things rather than as a seam between two boxes. */
+  .hair {
+    align-self: stretch;
+    margin-block: 12px;
+    background: var(--color-line);
+  }
+  .words {
+    min-width: 0;
+    padding: 14px 16px;
   }
   .bname {
     display: block;
@@ -1236,6 +1279,18 @@
     font-size: 16px;
     color: var(--color-ink);
     text-wrap: balance;
+  }
+  /* Linked only when John has given the listing a URL. The chip does not
+     become a link: the mark is not the listing, and a whole white card that
+     is clickable in some rows and not in others is a worse promise than a
+     linked name. */
+  .bname a {
+    color: inherit;
+    text-decoration-color: var(--color-line);
+    text-underline-offset: 3px;
+  }
+  .bname a:hover {
+    text-decoration-color: currentcolor;
   }
   .bnote {
     display: block;
