@@ -49,6 +49,8 @@ interface Row {
   right: number;
 }
 
+let alpha: Uint8Array = new Uint8Array(0);
+
 async function silhouette(path: string): Promise<{ w: number; h: number; rows: Row[] }> {
   const image = sharp(path);
   const meta = await image.metadata();
@@ -57,6 +59,9 @@ async function silhouette(path: string): Promise<{ w: number; h: number; rows: R
 
   const { data, info } = await image.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const { width: w, height: h, channels } = info;
+
+  alpha = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) alpha[i] = data[i * channels + channels - 1];
 
   const rows: Row[] = [];
   for (let y = 0; y < h; y++) {
@@ -177,8 +182,35 @@ for (const r of rows) {
 // about, and the width is solved back from it.
 const pushScale = declared(css, /--push-in-scale: ([\d.]+)/, '--push-in-scale');
 const wantedClear = declared(css, /--crown-clear: ([\d.]+)%/, '--crown-clear') / 100;
-const widthForWantedClear = ((1 + wantedClear) / pushScale / (h / w)) * 100;
-const restingClear = pushScale * imgH - 1;
+
+// ---- 3b. the soft bottom edge -----------------------------------------
+// The cutout's last rows never reach full opacity: he was cut off by the
+// bottom of the source frame, so the matte ramps out instead of ending. On a
+// dark band that is invisible, but inside the sand plate the ground shows
+// through them as a rim under his shirt. The fix is to drop the image by that
+// much so the soft rows fall outside the circle's mask, and the drop has to
+// be measured rather than guessed.
+let softRows = 0;
+for (let y = h - 1; y >= 0; y--) {
+  let anyOpaque = false;
+  for (let x = 0; x < w; x++) {
+    if (alpha[y * w + x] >= 250) {
+      anyOpaque = true;
+      break;
+    }
+  }
+  if (anyOpaque) break;
+  softRows++;
+}
+// One row of margin, expressed against the image's own height, which is what
+// a percentage in `translateY` resolves against.
+const matteDrop = (softRows + 1) / h;
+
+// The matte drop pushes him down, so it comes straight off the clearance.
+// Solving for the width has to account for it, or `--crown-clear` names a
+// number the page does not actually show.
+const restingClear = pushScale * imgH - 1 - matteDrop * imgH;
+const widthForWantedClear = ((1 + wantedClear) / (pushScale - matteDrop) / (h / w)) * 100;
 
 // ---- 4. the mask geometry, in the layers' own coordinates --------------
 // Both layers are the IMAGE's box, so neither has a rectangle edge anywhere
@@ -229,6 +261,9 @@ console.log('mask geometry for the two complementary layers, in the image box:')
 console.log(`  --mask-size:     ${pct(tileW)} ${pct(tileH)}`);
 console.log(`  --mask-position: ${pct(posX)} ${pct(posY)}`);
 console.log(`  --layer-pad:     ${pct(layerPad)}  (room for the push-in's overshoot)`);
+console.log(
+  `  --matte-drop:    ${pct(matteDrop)}  (${softRows} soft rows at the bottom of the cutout)`
+);
 console.log('');
 console.log(
   `--crown-clear ${pct(wantedClear)} wants --plate-img-width ${widthForWantedClear.toFixed(2)}%`
