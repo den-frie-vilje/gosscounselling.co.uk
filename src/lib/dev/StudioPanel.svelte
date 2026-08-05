@@ -105,6 +105,15 @@
   // Starts closed: it is a tool, not part of the page being judged.
   let open = $state(false);
   let heroRun = $state(0);
+  let lineup = $state(false);
+
+  // Lifts the head layer above the plate at half opacity and rings the
+  // circle, so the registration is visible rather than inferred.
+  function toggleLineup() {
+    lineup = !lineup;
+    if (lineup) document.documentElement.setAttribute('data-lineup', '');
+    else document.documentElement.removeAttribute('data-lineup');
+  }
 
 
   function applyAccent(id: string) {
@@ -185,6 +194,20 @@
           </li>
         {/each}
       </ul>
+      <p class="head">Debug</p>
+      <ul>
+        <li>
+          <button type="button" class:on={lineup} onclick={toggleLineup}>
+            <span class="txt">
+              <span class="nm">Line up the portrait</span>
+              <span class="nt">
+                Head layer on top at half opacity, with the plate's circle drawn over it.
+              </span>
+            </span>
+          </button>
+        </li>
+      </ul>
+
       <p class="foot">
         Dev only. Choices are remembered here, not committed. Reload to replay the entrance.
       </p>

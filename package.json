@@ -10,14 +10,15 @@
     "build:production": "vite build --mode production",
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && node scripts/check-cms.ts && node scripts/check-contrast.ts",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && node scripts/check-cms.ts && node scripts/check-contrast.ts && node scripts/check-portrait-fit.ts",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "og": "node scripts/gen-og.ts",
     "photos": "node scripts/gen-photos.ts",
     "prebuild": "node scripts/copy-sveltia.ts && node scripts/gen-og.ts && node scripts/gen-photos.ts",
     "check:cms": "node scripts/check-cms.ts",
     "check:cms:selftest": "node scripts/check-cms.ts --self-test",
-    "check:contrast": "node scripts/check-contrast.ts"
+    "check:contrast": "node scripts/check-contrast.ts",
+    "check:portrait": "node scripts/check-portrait-fit.ts"
   },
   "engines": {
     "node": "~25",
