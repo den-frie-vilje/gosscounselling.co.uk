@@ -13,12 +13,12 @@
  */
 import { error } from '@sveltejs/kit';
 import type { EntryGenerator, PageLoad } from './$types';
-import { builtPosts } from '$lib/content';
+import { builtPosts, postSlug } from '$lib/content';
 
-export const entries: EntryGenerator = () => builtPosts.map((post) => ({ slug: post.slug }));
+export const entries: EntryGenerator = () => builtPosts.map((post) => ({ slug: postSlug(post) }));
 
 export const load: PageLoad = ({ params }) => {
-  const post = builtPosts.find((p) => p.slug === params.slug);
+  const post = builtPosts.find((p) => postSlug(p) === params.slug);
   if (!post) error(404, 'Not found');
   return { post };
 };
