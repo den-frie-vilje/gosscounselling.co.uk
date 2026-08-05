@@ -189,12 +189,19 @@ interface Card {
 
 // Card copy. Only the title now: at the size a card is actually shown, the
 // eyebrow, subtitle and CTA pill were text nobody could read taking room the
-// title needed. `?? ''` because a stale CMS save can strip a field, and an
-// empty line beats a crashed build.
+// title needed.
+//
+// The chain matters. `og.title` is a SECOND copy of a headline, written for a
+// picture almost nobody proofreads, so a stale one is invisible in a way a
+// stale heading never is: nothing on the site shows it back to John. Left
+// empty it falls through to the hero's own title, which is the sentence the
+// card is standing in for anyway, and the empty string at the end is for a
+// stale CMS save that strips the field outright — an empty line beats a
+// crashed build.
 const CARDS: Card[] = [
   {
     slug: 'home',
-    title: home.og?.title ?? home.seo?.title ?? ''
+    title: home.og?.title?.trim() || home.hero?.title?.trim() || home.seo?.title?.trim() || ''
   }
 ];
 
