@@ -31,10 +31,12 @@
 #    Contact details. $lib/copy-tokens has the list; scripts/check-contact.ts
 #    refuses an unknown one, and refuses the number written out longhand.
 #
-# 3. A field nothing renders must not exist. `navLabel`, `schema.serviceType`
-#    and the contact block's own `heading` all sat here for months with
-#    nothing reading them; an editor that accepts a change and does nothing
-#    with it teaches him not to trust the ones that work.
+# 3. A field nothing renders must not exist. A page-level `navLabel` reading
+#    "Home", `schema.serviceType` and the contact block's own `heading` all sat
+#    here for months with nothing reading them; an editor that accepts a change
+#    and does nothing with it teaches him not to trust the ones that work.
+#    (The per-section `navLabel` fields below are a different thing and are
+#    read: they are the words in the menu bar. scripts/check-nav.ts gates them.)
 
 backend:
   name: github
@@ -147,6 +149,14 @@ collections:
             fields:
               - { name: kicker, label: Small label above the heading, widget: string }
               - { name: heading, label: Heading, widget: string }
+              - {
+                  name: navLabel,
+                  label: Menu wording,
+                  widget: string,
+                  required: false,
+                  pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
+                  hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "How I can help".'
+                }
               - { name: intro, label: Line under the heading, widget: text }
               - name: items
                 label: Services
@@ -221,6 +231,14 @@ collections:
               - { name: kicker, label: Small label above the heading, widget: string }
               - { name: heading, label: Heading, widget: string }
               - {
+                  name: navLabel,
+                  label: Menu wording,
+                  widget: string,
+                  required: false,
+                  pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
+                  hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "About me".'
+                }
+              - {
                   name: body,
                   label: Body,
                   widget: markdown,
@@ -241,6 +259,14 @@ collections:
             fields:
               - { name: kicker, label: Small label above the heading, widget: string }
               - { name: heading, label: Heading, widget: string }
+              - {
+                  name: navLabel,
+                  label: Menu wording,
+                  widget: string,
+                  required: false,
+                  pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
+                  hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "Fees".'
+                }
               - { name: intro, label: Line under the heading, widget: text }
               - name: rows
                 label: Fee groups
@@ -311,6 +337,14 @@ collections:
             fields:
               - { name: kicker, label: Small label above the heading, widget: string }
               - { name: heading, label: Heading, widget: string }
+              - {
+                  name: navLabel,
+                  label: Menu wording,
+                  widget: string,
+                  required: false,
+                  pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
+                  hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "Questions".'
+                }
               - name: items
                 label: Questions
                 widget: list
@@ -334,6 +368,14 @@ collections:
             fields:
               - { name: kicker, label: Small label above the heading, widget: string }
               - { name: heading, label: Heading, widget: string }
+              - {
+                  name: navLabel,
+                  label: Menu wording,
+                  widget: string,
+                  required: false,
+                  pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
+                  hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "Get in touch".'
+                }
               - { name: intro, label: Line under the heading, widget: text }
 
           - name: seo
