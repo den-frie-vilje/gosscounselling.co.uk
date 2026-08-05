@@ -31,6 +31,7 @@
             <span class="v">{contact.phone}</span>
             <span class="h">{contact.phoneNote}</span>
           </span>
+          <span class="go" aria-hidden="true"><Icon name="arrow" size={20} /></span>
         </a>
       </li>
       <li>
@@ -41,6 +42,7 @@
             <span class="v">{contact.email}</span>
             <span class="h">{contact.emailNote}</span>
           </span>
+          <span class="go" aria-hidden="true"><Icon name="arrow" size={20} /></span>
         </a>
       </li>
       <li>
@@ -51,6 +53,7 @@
             <span class="v">{contact.phone}</span>
             <span class="h">{contact.whatsappNote}</span>
           </span>
+          <span class="go" aria-hidden="true"><Icon name="arrow" size={20} /></span>
         </a>
       </li>
       <li>
@@ -71,41 +74,71 @@
   .kicker-deep {
     color: var(--color-on-deep-kicker);
   }
-  li + li {
-    margin-top: 12px;
+  /* Rows on hairlines, not cards. The rest of the scroll divides its sections
+     with a rule and a change of ground, and boxing the one thing the page is
+     actually for made it the heaviest block on the page. The rules do the
+     dividing here too; the glyph carries the distinction the border used to,
+     and hover fills the row rather than outlining it. */
+  ul {
+    border-top: 1px solid rgb(255 255 255 / 0.16);
+  }
+  li {
+    border-bottom: 1px solid rgb(255 255 255 / 0.16);
   }
   a,
   .place {
     display: flex;
-    align-items: center;
-    gap: 18px;
-    padding: 20px 22px;
+    align-items: baseline;
+    gap: 20px;
+    padding: 22px 4px;
     text-decoration: none;
     color: inherit;
-    background: rgb(255 255 255 / 0.07);
-    border: 1px solid rgb(255 255 255 / 0.18);
-    border-radius: 5px;
+  }
+  /* The fill is pulled out sideways by the container's own gutter, so the
+     text does not move but the highlight breathes, and at narrow widths it
+     runs clean to the screen edge instead of stopping short of it. */
+  a {
+    margin-inline: -16px;
+    padding-inline: 16px;
+    border-radius: 4px;
+    transition: background-color var(--dur-base) var(--ease-brand);
   }
   a:hover {
-    background: rgb(255 255 255 / 0.12);
+    background: rgb(255 255 255 / 0.06);
   }
   a:hover .v {
     text-decoration: underline;
     text-underline-offset: 5px;
   }
+  a:focus-visible {
+    outline-offset: -2px;
+  }
   .ico {
     flex: none;
-    width: 46px;
-    height: 46px;
-    border-radius: 5px;
-    display: grid;
-    place-items: center;
-    background: rgb(23 162 196 / 0.22);
-    border: 1px solid rgb(130 201 220 / 0.5);
-    color: #bfe6f1;
+    color: var(--color-teal-bright);
+    /* Optically aligned to the value's cap height rather than to the label
+       above it, which is where the eye reads the row from. */
+    transform: translateY(6px);
   }
   .txt {
     min-width: 0;
+  }
+  /* The arrow leads, and it is the only thing that moves. A row that goes
+     somewhere reads as horizontal, so nothing here rises or lifts. */
+  .go {
+    flex: none;
+    margin-left: auto;
+    align-self: center;
+    color: var(--color-on-deep-kicker);
+    opacity: 0.55;
+    transition:
+      transform var(--dur-base) var(--ease-brand),
+      opacity var(--dur-base) var(--ease-brand);
+  }
+  a:hover .go,
+  a:focus-visible .go {
+    transform: translateX(4px);
+    opacity: 1;
   }
   .k {
     display: block;
@@ -117,10 +150,11 @@
   }
   .v {
     display: block;
-    margin-top: 5px;
+    margin-top: 6px;
     font-family: var(--font-display);
     font-weight: 600;
-    font-size: clamp(17px, 2.4vw, 21px);
+    font-size: clamp(19px, 2.8vw, 25px);
+    line-height: 1.2;
     color: #fff;
     white-space: nowrap;
     overflow: hidden;
@@ -128,22 +162,18 @@
   }
   .h {
     display: block;
-    margin-top: 4px;
+    margin-top: 6px;
     font-size: 14.5px;
     color: var(--color-on-deep-muted);
   }
   @media (max-width: 479px) {
     .v {
-      font-size: 16.5px;
-    }
-    .ico {
-      width: 40px;
-      height: 40px;
+      font-size: 17.5px;
     }
     a,
     .place {
       gap: 14px;
-      padding: 18px 16px;
+      padding-block: 18px;
     }
   }
 </style>

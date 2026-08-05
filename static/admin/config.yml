@@ -1,0 +1,378 @@
+# Sveltia CMS configuration — single locale (English).
+#
+# Editing happens on STAGING (gosscounselling-co-uk.stage.denfrievilje.dk/admin)
+# against the GitHub backend through the OAuth proxy (Caddy `/auth/*` →
+# sveltia-auth). Prose fields use the `markdown` widget so copy stays flowing
+# prose rather than arrays of bullets, and the toolbar is cut back to what the
+# copy actually needs: a full toolbar invites structure the design has no place
+# for.
+#
+# Two collections:
+#   • General — the things reused across the site (site, contact, testimonials)
+#   • Page    — the home page, which is the whole scroll
+
+backend:
+  name: github
+  repo: den-frie-vilje/gosscounselling.co.uk
+  branch: staging
+  base_url: https://gosscounselling-co-uk.stage.denfrievilje.dk/auth
+  site_domain: gosscounselling-co-uk.stage.denfrievilje.dk
+
+# Staging writes go straight to the staging branch; publishing to production
+# is a separate, deliberate step.
+publish_mode: simple
+
+media_folder: static/img
+public_folder: /img
+
+collections:
+  - name: general
+    label: General
+    # No side preview pane: it renders a generic field dump rather than the
+    # real site. Changes are reviewed on staging instead.
+    editor: { preview: false }
+    files:
+      - name: site
+        label: Site
+        file: src/content/site.json
+        fields:
+          - { name: name, label: Name, widget: string }
+          - { name: tagline, label: Tagline, widget: string }
+          - {
+              name: description,
+              label: Meta description,
+              widget: text,
+              hint: 'About 150 to 160 characters. Used in search results and link previews.'
+            }
+          - {
+              name: footerNote,
+              label: Footer note,
+              widget: string,
+              hint: 'Use {year} for the year; it is filled in automatically.'
+            }
+          - name: schema
+            label: Search & structured data
+            widget: object
+            hint: 'Feeds the Schema.org data search engines read. Not shown on the page.'
+            fields:
+              - { name: jobTitle, label: Job title, widget: string }
+              - { name: bio, label: Bio, widget: text }
+              - { name: serviceType, label: Service type, widget: string }
+              - {
+                  name: knowsAbout,
+                  label: Topics you work with,
+                  widget: list,
+                  field: { name: topic, label: Topic, widget: string }
+                }
+              - {
+                  name: areaServed,
+                  label: Areas served,
+                  widget: list,
+                  field: { name: area, label: Area, widget: string }
+                }
+          - name: memberships
+            label: Membership bodies
+            widget: list
+            summary: '{{fields.abbr}}'
+            hint: 'Shown in the qualifications section and in the structured data.'
+            fields:
+              - { name: name, label: Full name, widget: string }
+              - { name: abbr, label: Abbreviation, widget: string }
+              - {
+                  name: note,
+                  label: Grade,
+                  widget: string,
+                  required: false,
+                  hint: 'e.g. Accredited Member. Leave empty for a plain membership.'
+                }
+              - {
+                  name: href,
+                  label: Register listing,
+                  widget: string,
+                  required: false,
+                  hint: 'Your public listing on their register. Leave empty and the name shows unlinked.'
+                }
+
+      - name: contact
+        label: Contact details
+        file: src/content/contact.json
+        hint: 'Shown in the contact section and the footer, and used by every Call button.'
+        fields:
+          - { name: heading, label: Section heading, widget: string }
+          - { name: email, label: Email, widget: string }
+          - {
+              name: emailHref,
+              label: Email link,
+              widget: string,
+              hint: 'Starts with mailto: — e.g. mailto:info@gosscounselling.co.uk'
+            }
+          - { name: phone, label: Phone as shown, widget: string }
+          - {
+              name: phoneHref,
+              label: Phone link,
+              widget: string,
+              hint: 'International form so a phone can dial it: tel:+447776153426'
+            }
+          - {
+              name: whatsappHref,
+              label: WhatsApp link,
+              widget: string,
+              hint: 'https://wa.me/ followed by the number, no plus and no spaces.'
+            }
+          - { name: location, label: Where you work, widget: string }
+          - { name: locationNote, label: Location note, widget: string }
+          - {
+              name: phoneNote,
+              label: Note under the phone number,
+              widget: string,
+              hint: 'Keep this to what the visitor can do. Anything about how quickly you reply is a promise the page will keep making.'
+            }
+          - { name: emailNote, label: Note under the email address, widget: string }
+          - { name: whatsappNote, label: Note under WhatsApp, widget: string }
+
+      - name: testimonials
+        label: Testimonials
+        file: src/content/testimonials.json
+        hint: >
+          The section only appears once there is at least one testimonial; an empty list shows
+          nothing at all, so it is safe to leave until you have one. Worth knowing before you
+          start: the NCPS and COSRT expect care here. A current or recent client cannot freely
+          consent to being quoted by their therapist, and identifying detail is the risk even
+          when a name is not used. Supervisees and colleagues are the safer source. There are no
+          star ratings on this site, deliberately.
+        fields:
+          - { name: kicker, label: Kicker, widget: string }
+          - { name: heading, label: Heading, widget: string }
+          - {
+              name: note,
+              label: Standing note,
+              widget: string,
+              required: false,
+              hint: 'Optional line under the heading, e.g. how these were gathered. Leave empty to hide it.'
+            }
+          - name: items
+            label: Testimonials
+            widget: list
+            summary: '{{fields.name}}'
+            fields:
+              - { name: quote, label: Quote, widget: text }
+              - {
+                  name: name,
+                  label: Attribution,
+                  widget: string,
+                  hint: 'Anonymised for client work, e.g. "Supervisee, 2025". A name only where the person is a colleague and has agreed to it.'
+                }
+              - {
+                  name: detail,
+                  label: Role or context,
+                  widget: string,
+                  required: false
+                }
+
+  - name: page
+    label: Page
+    editor: { preview: false }
+    files:
+      - name: home
+        label: Home — the whole scroll
+        file: src/content/home.json
+        fields:
+          - { name: navLabel, label: Navigation label, widget: string }
+
+          - name: hero
+            label: Top of the page
+            widget: object
+            fields:
+              - { name: eyebrow, label: Eyebrow, widget: string }
+              - { name: title, label: Headline, widget: string }
+              - { name: lead, label: Lead, widget: text }
+              - {
+                  name: reassure,
+                  label: Line under the buttons,
+                  widget: markdown,
+                  buttons: [bold, italic, link],
+                  editor_components: [],
+                  modes: [rich_text]
+                }
+              - { name: ctaPrimary, label: First button, widget: string }
+              - { name: ctaSecondary, label: Second button, widget: string }
+              - { name: portraitAlt, label: Photo description, widget: string }
+
+          - name: steps
+            label: What happens when you get in touch
+            widget: object
+            fields:
+              - { name: kicker, label: Kicker, widget: string }
+              - { name: heading, label: Heading, widget: string }
+              - { name: intro, label: Intro, widget: text }
+              - name: items
+                label: Steps
+                widget: list
+                summary: '{{fields.title}}'
+                fields:
+                  - { name: title, label: Title, widget: string }
+                  - { name: body, label: Body, widget: text }
+
+          - name: services
+            label: How I can help
+            widget: object
+            fields:
+              - { name: kicker, label: Kicker, widget: string }
+              - { name: heading, label: Heading, widget: string }
+              - { name: intro, label: Intro, widget: text }
+              - name: items
+                label: Services
+                widget: list
+                summary: '{{fields.title}}'
+                fields:
+                  - {
+                      name: slug,
+                      label: Short name,
+                      widget: string,
+                      hint: 'Lowercase, hyphens, no spaces. Used internally; changing it is safe today but will become the page address later.'
+                    }
+                  - { name: title, label: Title, widget: string }
+                  - { name: who, label: Who it is for, widget: string }
+                  - {
+                      name: body,
+                      label: Body,
+                      widget: markdown,
+                      buttons: [bold, italic, link],
+                      editor_components: [],
+                      modes: [rich_text]
+                    }
+
+          - name: about
+            label: About me
+            widget: object
+            fields:
+              - { name: kicker, label: Kicker, widget: string }
+              - { name: heading, label: Heading, widget: string }
+              - {
+                  name: body,
+                  label: Body,
+                  widget: markdown,
+                  buttons: [bold, italic, link, bulleted-list],
+                  editor_components: [],
+                  modes: [rich_text]
+                }
+              - { name: photoAlt, label: Photo description, widget: string }
+
+          - name: fees
+            label: Fees
+            widget: object
+            fields:
+              - { name: kicker, label: Kicker, widget: string }
+              - { name: heading, label: Heading, widget: string }
+              - { name: intro, label: Intro, widget: text }
+              - name: rows
+                label: Fee groups
+                widget: list
+                summary: '{{fields.title}}'
+                fields:
+                  - { name: title, label: Group, widget: string }
+                  - name: lines
+                    label: Lines
+                    widget: list
+                    summary: '{{fields.label}} — {{fields.value}}'
+                    fields:
+                      - {
+                          name: label,
+                          label: What it is,
+                          widget: string,
+                          hint: 'e.g. In person, 50 minutes'
+                        }
+                      - { name: value, label: Fee, widget: string, hint: 'e.g. £70–90' }
+              - name: note
+                label: Low-income note
+                widget: object
+                fields:
+                  - { name: title, label: Title, widget: string }
+                  - {
+                      name: body,
+                      label: Body,
+                      widget: markdown,
+                      buttons: [bold, italic, link],
+                      editor_components: [],
+                      modes: [rich_text]
+                    }
+
+          - name: quals
+            label: Qualifications and membership
+            widget: object
+            fields:
+              - { name: kicker, label: Kicker, widget: string }
+              - { name: heading, label: Heading, widget: string }
+              - name: items
+                label: Qualifications
+                widget: list
+                summary: '{{fields.title}} ({{fields.detail}})'
+                fields:
+                  - { name: title, label: Qualification, widget: string }
+                  - {
+                      name: detail,
+                      label: Year,
+                      widget: string,
+                      hint: 'The year, or "studying" if it is in progress.'
+                    }
+              - name: bodies
+                label: Membership bodies
+                widget: object
+                fields:
+                  - { name: title, label: Title, widget: string }
+                  - {
+                      name: body,
+                      label: Body,
+                      widget: markdown,
+                      buttons: [bold, italic, link],
+                      editor_components: [],
+                      modes: [rich_text]
+                    }
+
+          - name: faq
+            label: Questions people ask
+            widget: object
+            fields:
+              - { name: kicker, label: Kicker, widget: string }
+              - { name: heading, label: Heading, widget: string }
+              - name: items
+                label: Questions
+                widget: list
+                summary: '{{fields.q}}'
+                hint: 'These also feed the FAQ answers Google can show directly in search results.'
+                fields:
+                  - { name: q, label: Question, widget: string }
+                  - {
+                      name: a,
+                      label: Answer,
+                      widget: markdown,
+                      buttons: [bold, italic, link, bulleted-list],
+                      editor_components: [],
+                      modes: [rich_text]
+                    }
+
+          - name: contact
+            label: Get in touch
+            widget: object
+            hint: 'The heading and intro only. The phone number, email and WhatsApp link live under General → Contact details.'
+            fields:
+              - { name: kicker, label: Kicker, widget: string }
+              - { name: heading, label: Heading, widget: string }
+              - { name: intro, label: Intro, widget: text }
+
+          - name: seo
+            label: Search
+            widget: object
+            fields:
+              - { name: title, label: Page title, widget: string, hint: 'Browser tab and search result.' }
+              - { name: description, label: Meta description, widget: text }
+
+          - name: og
+            label: Social-share card
+            widget: object
+            hint: 'The card shown when someone shares this page in a chat or on social media. Rebuilt automatically on the next deploy.'
+            fields:
+              - { name: eyebrow, label: Eyebrow, widget: string }
+              - { name: title, label: Title, widget: string }
+              - { name: subtitle, label: Subtitle, widget: string }
+              - { name: cta, label: Button text, widget: string }

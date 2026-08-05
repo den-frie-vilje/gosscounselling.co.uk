@@ -132,6 +132,55 @@
 </div>
 
 <style>
+  /* ---- the header arriving ----
+     The parts settle in from above, left to right, once, on first paint. It
+     is over inside 900ms and never happens again: an in-page nav that
+     re-animated would be a distraction on every anchor jump.
+
+     `no-preference` wraps the whole thing, so the resting state is the
+     finished one. With reduced motion, or if these rules never apply, the
+     header is simply there. */
+  @media (prefers-reduced-motion: no-preference) {
+    .brand,
+    nav li,
+    .barcta,
+    .burgerbtn {
+      animation: settle-down 500ms var(--ease-brand) both;
+    }
+    nav li:nth-child(1) {
+      animation-delay: 110ms;
+    }
+    nav li:nth-child(2) {
+      animation-delay: 165ms;
+    }
+    nav li:nth-child(3) {
+      animation-delay: 220ms;
+    }
+    nav li:nth-child(4) {
+      animation-delay: 275ms;
+    }
+    nav li:nth-child(5) {
+      animation-delay: 330ms;
+    }
+    /* The call button is the last thing in, in both layouts, because it is
+       the one thing on the page we would like read last and remembered. */
+    nav li:last-child,
+    .barcta,
+    .burgerbtn {
+      animation-delay: 400ms;
+    }
+  }
+  @keyframes settle-down {
+    from {
+      opacity: 0;
+      transform: translate3d(0, -6px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
   .brand {
     font-family: var(--font-display);
     font-size: 19px;
@@ -160,7 +209,12 @@
     }
   }
 
+  /* The rule under a nav link wipes in from the left rather than appearing
+     all at once, so the link reads as being underlined by the pointer. Drawn
+     as a pseudo-element and scaled, which the compositor can do on its own;
+     a transition on border-colour cannot express direction. */
   .navlink {
+    position: relative;
     font-family: var(--font-sans);
     font-size: 16px;
     font-weight: 700;
@@ -169,11 +223,22 @@
     text-decoration: none;
     white-space: nowrap;
     padding-block: 10px;
-    border-bottom: 3px solid transparent;
-    transition: border-color var(--dur-base) var(--ease-brand);
   }
-  .navlink:hover {
-    border-bottom-color: var(--color-teal);
+  .navlink::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: var(--color-teal);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform var(--dur-base) var(--ease-brand);
+  }
+  .navlink:hover::after,
+  .navlink:focus-visible::after {
+    transform: scaleX(1);
   }
 
   .barcta {

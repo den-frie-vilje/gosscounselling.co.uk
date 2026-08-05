@@ -67,9 +67,31 @@
     height: 14px;
     background: var(--color-teal);
   }
-  details[open] summary::before {
-    display: none;
+  /* The upright collapses into the crossbar rather than disappearing, so the
+     plus becoming a minus is one movement instead of a swap. */
+  summary::before {
+    transform-origin: center;
+    transition: transform var(--dur-base) var(--ease-brand);
   }
+  details[open] summary::before {
+    transform: scaleY(0);
+  }
+
+  /* The answer opens to its own height. `interpolate-size` is what makes a
+     transition to `auto` possible at all; without it (Firefox, older Safari)
+     the answer simply appears, which is the behaviour a <details> has always
+     had and is not a regression. No JavaScript measures anything. */
+  details::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition:
+      block-size var(--dur-base) var(--ease-brand),
+      content-visibility var(--dur-base) allow-discrete;
+  }
+  details[open]::details-content {
+    block-size: auto;
+  }
+
   .body {
     padding-bottom: 24px;
   }
