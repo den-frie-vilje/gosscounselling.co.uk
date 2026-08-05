@@ -77,6 +77,16 @@
 
   a {
     color: #d3e6ea;
+    /* 24px of height, which these did not have. WCAG 2.5.8 asks for a 24 by 24
+       target, and exempts a link sitting INSIDE a sentence, where the line
+       already constrains it. These two are not in a sentence: they are the
+       phone number and the address, side by side with a middot between them,
+       which is a pair of adjacent targets — and adjacent is exactly the case
+       the spacing exception does not save. At 14.5px they measured 18 high.
+       The padding is on the anchor rather than the line, so the text does not
+       move; only the box it can be hit by grows. */
+    display: inline-block;
+    padding-block: 3px;
   }
   a:hover {
     color: #fff;
