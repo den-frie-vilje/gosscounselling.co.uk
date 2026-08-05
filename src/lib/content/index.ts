@@ -21,9 +21,15 @@ export interface Membership {
   /** Qualifier such as "Accredited Member". Null where the body is a plain
    *  membership rather than a graded one. */
   note: string | null;
+  /** The mark, shown on its own white plate beside the name. */
+  logo: string;
   /** The public register listing. Null until John supplies it; the component
    *  renders the name unlinked rather than guessing a URL. */
   href: string | null;
+  /** True where John is a member. The Professional Standards Authority is not
+   *  a body he belongs to, it is the body that accredits the register he is
+   *  on, so it appears in this list but must never be emitted as `memberOf`. */
+  isMembership: boolean;
 }
 
 export interface Site {
@@ -50,6 +56,9 @@ export interface Contact {
   whatsappHref: string;
   location: string;
   locationNote: string;
+  /** Heading over the contact block in the full-page menu. In content rather
+   *  than hardcoded, so it is editable with the rest of the copy. */
+  menuHeading: string;
   /* The three notes under the contact rows. Kept deliberately free of any
      claim about how John's practice runs at his end: an earlier draft said
      visitors would not reach a receptionist and would get a call back, and
@@ -121,7 +130,9 @@ export interface Home {
     kicker: string;
     heading: string;
     items: Qualification[];
-    bodies: { title: string; body: string };
+    /** Just the heading: the bodies themselves come from site.memberships, so
+     *  the names are not typed twice. */
+    bodies: { title: string };
   };
   faq: { kicker: string; heading: string; items: FaqItem[] };
   contact: { kicker: string; heading: string; intro: string };

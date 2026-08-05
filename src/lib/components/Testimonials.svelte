@@ -29,7 +29,7 @@
       <ul class="border-line-cool mt-12 list-none border-t p-0">
         {#each testimonials.items as item, i (item.quote)}
           <li class="border-line-cool border-b">
-            <figure class="quotefig">
+            <figure class="quotefig mark-row">
               <p class="num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</p>
               <blockquote class="quote">{item.quote}</blockquote>
               <figcaption class="cap">
@@ -70,7 +70,6 @@
   .num {
     grid-area: num;
     margin: 0;
-    padding-top: 6px;
     font-family: var(--font-display);
     font-weight: 600;
     font-size: 15px;

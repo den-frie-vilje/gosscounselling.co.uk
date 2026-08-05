@@ -57,7 +57,9 @@ function siteGraph(): object[] {
       url: `${SITE_URL}/`,
       telephone: contact.phone,
       email: contact.email,
-      priceRange: '££',
+      // Derived from the fee rows actually published on the page, rather
+      // than a hand-picked band nobody chose.
+      priceRange: '£45-£110',
       serviceType: site.schema.serviceType,
       areaServed: site.schema.areaServed.map((name) => ({ '@type': 'Place', name })),
       availableLanguage: 'en-GB',
@@ -77,11 +79,17 @@ function siteGraph(): object[] {
       knowsLanguage: 'en-GB',
       worksFor: { '@id': PRACTICE_ID },
       ...(personSameAs.length ? { sameAs: personSameAs } : {}),
-      memberOf: site.memberships.map((m) => ({
-        '@type': 'Organization',
-        name: m.name,
-        ...(m.href ? { url: m.href } : {})
-      }))
+      // Only the bodies he actually belongs to. The Professional Standards
+      // Authority accredits the register; it is not somewhere he is a member,
+      // and claiming otherwise to a search engine would be a small lie about
+      // a counsellor's credentials.
+      memberOf: site.memberships
+        .filter((m) => m.isMembership)
+        .map((m) => ({
+          '@type': 'Organization',
+          name: m.name,
+          ...(m.href ? { url: m.href } : {})
+        }))
     }
   ];
 }

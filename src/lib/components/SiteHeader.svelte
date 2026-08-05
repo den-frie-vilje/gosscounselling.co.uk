@@ -122,7 +122,7 @@
     </ul>
 
     <div class="menucontact">
-      <p class="k">Speak to John</p>
+      <p class="k">{contact.menuHeading}</p>
       <a href={contact.phoneHref} onclick={close}>{contact.phone}</a>
       <a href={contact.emailHref} onclick={close}>{contact.email}</a>
       <a href={contact.whatsappHref} onclick={close}>WhatsApp</a>
@@ -132,55 +132,6 @@
 </div>
 
 <style>
-  /* ---- the header arriving ----
-     The parts settle in from above, left to right, once, on first paint. It
-     is over inside 900ms and never happens again: an in-page nav that
-     re-animated would be a distraction on every anchor jump.
-
-     `no-preference` wraps the whole thing, so the resting state is the
-     finished one. With reduced motion, or if these rules never apply, the
-     header is simply there. */
-  @media (prefers-reduced-motion: no-preference) {
-    .brand,
-    nav li,
-    .barcta,
-    .burgerbtn {
-      animation: settle-down 500ms var(--ease-brand) both;
-    }
-    nav li:nth-child(1) {
-      animation-delay: 110ms;
-    }
-    nav li:nth-child(2) {
-      animation-delay: 165ms;
-    }
-    nav li:nth-child(3) {
-      animation-delay: 220ms;
-    }
-    nav li:nth-child(4) {
-      animation-delay: 275ms;
-    }
-    nav li:nth-child(5) {
-      animation-delay: 330ms;
-    }
-    /* The call button is the last thing in, in both layouts, because it is
-       the one thing on the page we would like read last and remembered. */
-    nav li:last-child,
-    .barcta,
-    .burgerbtn {
-      animation-delay: 400ms;
-    }
-  }
-  @keyframes settle-down {
-    from {
-      opacity: 0;
-      transform: translate3d(0, -6px, 0);
-    }
-    to {
-      opacity: 1;
-      transform: translate3d(0, 0, 0);
-    }
-  }
-
   .brand {
     font-family: var(--font-display);
     font-size: 19px;

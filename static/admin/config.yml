@@ -71,13 +71,28 @@ collections:
                   field: { name: area, label: Area, widget: string }
                 }
           - name: memberships
-            label: Membership bodies
+            label: Membership and registration
             widget: list
             summary: '{{fields.abbr}}'
-            hint: 'Shown in the qualifications section and in the structured data.'
+            hint: 'Shown as a row each, mark beside name, in the qualifications section, and in the structured data.'
             fields:
               - { name: name, label: Full name, widget: string }
               - { name: abbr, label: Abbreviation, widget: string }
+              - {
+                  name: logo,
+                  label: Mark,
+                  widget: image,
+                  media_folder: '/static/img/logos',
+                  public_folder: '/img/logos',
+                  hint: 'Shown on a white plate beside the name. All the plates are the same size, so the mark does not have to be.'
+                }
+              - {
+                  name: isMembership,
+                  label: You are a member of this body,
+                  widget: boolean,
+                  default: true,
+                  hint: 'Off for a body that accredits rather than admits, such as the Professional Standards Authority. Only the ones you belong to are declared as memberships to search engines.'
+                }
               - {
                   name: note,
                   label: Grade,
@@ -128,6 +143,11 @@ collections:
               hint: 'Keep this to what the visitor can do. Anything about how quickly you reply is a promise the page will keep making.'
             }
           - { name: emailNote, label: Note under the email address, widget: string }
+          - {
+              name: menuHeading,
+              label: Heading over the contact block in the menu,
+              widget: string
+            }
           - { name: whatsappNote, label: Note under WhatsApp, widget: string }
 
       - name: testimonials
@@ -136,10 +156,13 @@ collections:
         hint: >
           The section only appears once there is at least one testimonial; an empty list shows
           nothing at all, so it is safe to leave until you have one. Worth knowing before you
-          start: the NCPS and COSRT expect care here. A current or recent client cannot freely
-          consent to being quoted by their therapist, and identifying detail is the risk even
-          when a name is not used. Supervisees and colleagues are the safer source. There are no
-          star ratings on this site, deliberately.
+          start: neither the NCPS nor the COSRT code addresses testimonials directly, so the
+          general duties apply, which are honest advertising, not exploiting the position of
+          trust, and confidentiality. The BACP allows client testimonials on its own directory
+          listings where you have the person's permission. If you would rather not quote current
+          or recent clients, supervisees and colleagues are the safer source. Identifying detail
+          is the risk even when a name is not used. There are no star ratings on this site,
+          deliberately.
         fields:
           - { name: kicker, label: Kicker, widget: string }
           - { name: heading, label: Heading, widget: string }
@@ -322,18 +345,11 @@ collections:
                       hint: 'The year, or "studying" if it is in progress.'
                     }
               - name: bodies
-                label: Membership bodies
+                label: Membership and registration
                 widget: object
+                hint: 'Just the heading. The bodies themselves are edited under General → Site, so their names are not typed twice.'
                 fields:
                   - { name: title, label: Title, widget: string }
-                  - {
-                      name: body,
-                      label: Body,
-                      widget: markdown,
-                      buttons: [bold, italic, link],
-                      editor_components: [],
-                      modes: [rich_text]
-                    }
 
           - name: faq
             label: Questions people ask
@@ -345,7 +361,7 @@ collections:
                 label: Questions
                 widget: list
                 summary: '{{fields.q}}'
-                hint: 'These also feed the FAQ answers Google can show directly in search results.'
+                hint: 'These also feed the FAQPage structured data that search engines read. Google no longer shows FAQ answers directly in its results, so this is for machines rather than for a rich result.'
                 fields:
                   - { name: q, label: Question, widget: string }
                   - {

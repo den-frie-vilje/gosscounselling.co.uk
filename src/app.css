@@ -53,6 +53,19 @@
   /* Warm accent — kickers and numerals, one at a time */
   --color-gold: #855508;
 
+  /* The second accent: light, saturated, and used at very low frequency.
+     Structural marks only, never text and never a large field. It is the one
+     colour on the page that is allowed to be loud, which only works if it is
+     almost never used.
+
+     sRGB here; the wide-gamut value is set in the @supports block below, so
+     a P3 display gets the saturated one and everything else degrades to this
+     without a fallback chain in every rule.
+
+     Contrast, computed: 11.21:1 on the deep ground. On the light grounds it
+     is 1.32:1, which is why it may not carry text there. */
+  --color-accent: #53fb53;
+
   /* Text on the dark bands */
   --color-on-deep: #e9f2f4;
   --color-on-deep-muted: #c2d7dd;
@@ -74,6 +87,58 @@
   --breakpoint-navcall: 32.5rem;
   --breakpoint-navwide: 53.75rem;
   --breakpoint-navfull: 62.5rem;
+}
+
+/* Wide gamut. The OKLCH value pushes chroma past what sRGB can hold, so a P3
+   display renders it properly saturated and an sRGB one falls back to the
+   hex above rather than being handed a gamut-mapped mud. */
+@supports (color: oklch(0.87 0.25 143)) {
+  :root {
+    --color-accent: oklch(0.87 0.25 143);
+  }
+}
+
+/* ---- Alignment principle ----
+   A marker and the thing it marks align on their TYPE, not on their boxes.
+
+   A numeral, disc, bullet or glyph set beside a heading shares that heading's
+   baseline. Never `align-items: start`, which lines the top of a 34px disc up
+   with the top of a line box and leaves the numeral floating above the word it
+   belongs to. The eye reads the relationship off the letterforms, so the
+   letterforms are what have to agree.
+
+   `.mark-row` is the whole implementation, and it is deliberately arithmetic-
+   free. Two earlier attempts are worth not repeating:
+
+   A calc over `1lh`, `1cap` and `1ex` cannot do this. Font units resolve
+   against the element that USES them, so an offset written on a 15px numeral
+   measures the numeral and not the 20px heading. Hoisting the calc into a
+   custom property on the row does fix that, since a custom property is
+   computed where it is declared, but the expression
+   `(1lh - 1cap)/2 + (1cap - 1ex)/2 + 1ex/2` then simplifies to `1lh/2`: the
+   cap and x-height terms cancel, and what looks like x-height alignment is
+   line-box centring wearing a costume. It measured 5.47px out.
+
+   What actually works is to stop treating the marker as a shape. A grid or
+   flex box that centres its children offers its parent no baseline, so the
+   parent synthesises one from the bottom of the margin box and the disc hangs
+   below the line. Give the marker a real text baseline instead: lay the
+   numeral out as ordinary inline text in a box whose line-height IS the disc,
+   and the browser aligns the two baselines itself, in each element's own
+   metrics, at any size and through any change of typeface. */
+.mark-row {
+  align-items: baseline;
+}
+/* A round marker with a numeral in it. Centred by line-height and text-align
+   rather than by `place-items`, precisely so it keeps the baseline that makes
+   `.mark-row` work. */
+.mark-disc {
+  display: inline-block;
+  width: var(--mark-size, 34px);
+  line-height: var(--mark-size, 34px);
+  text-align: center;
+  border-radius: 50%;
+  font-variant-numeric: tabular-nums;
 }
 
 :root {

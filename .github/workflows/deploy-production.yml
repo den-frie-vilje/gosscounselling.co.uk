@@ -1,0 +1,29 @@
+# Push to `main` builds, pushes and Sigstore-signs the production image, with
+# the editor stripped out of it.
+#
+# Content-only pushes are the CMS saving; they skip the signature check and
+# the reviewer gate, because an editor cannot sign a commit. Anything that
+# touches code needs both.
+
+name: Deploy to production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: den-frie-vilje/nas-sites/.github/workflows/build-and-sign.yml@main
+    with:
+      environment: production
+      dockerfile: deploy/Dockerfile
+      image-name: ghcr.io/den-frie-vilje/gosscounselling
+      platforms: linux/amd64
+      build-args: |
+        VITE_MODE=production
+        STRIP_EDITOR=true
+        PUBLIC_GIT_SHA=${{ github.sha }}
+        PUBLIC_BUILD_TIME=${{ github.event.head_commit.timestamp }}
+        PUBLIC_GITHUB_REPO=${{ github.repository }}
+      verify-url: https://gosscounselling.co.uk/
