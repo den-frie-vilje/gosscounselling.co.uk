@@ -9,9 +9,11 @@
   Set as a quotation rather than as content in a box. No cards, because
   nothing on this page is a card; no index numbers, because a quote is not an
   item in a sequence; and no star ratings, because nobody has given John a
-  score and inventing one would be a lie. What is left is the sentence
-  someone said, centred, in the display face, at a size that says it is worth
-  reading.
+  score and inventing one would be a lie.
+
+  No heading and no standing note: a quotation introduced by a sentence telling
+  you it is a quotation is weaker than the quotation. The kicker stays, because
+  every other section on the page has one and it labels rather than introduces.
 
   With one testimonial there are no controls at all. They appear only when
   there is somewhere to go, which is the same principle as the section itself.
@@ -44,13 +46,7 @@
 {#if items.length > 0}
   <section id="testimonials" class="section-y bg-mist text-ink">
     <div class="container-page">
-      <div class="head">
-        <p class="t-kicker m-0 mb-3.5">{testimonials.kicker}</p>
-        <h2 class="t-h2">{testimonials.heading}</h2>
-        {#if testimonials.note}
-          <p class="text-muted mt-4 mb-0 text-[18px]">{testimonials.note}</p>
-        {/if}
-      </div>
+      <p class="t-kicker kick">{testimonials.kicker}</p>
 
       <!-- `aria-roledescription` names the pattern for screen readers, and the
            live region announces the new quote when the controls move it.
@@ -63,7 +59,7 @@
         class="quotes"
         role="group"
         aria-roledescription="carousel"
-        aria-label={testimonials.heading}
+        aria-label={testimonials.kicker}
       >
         <div class="viewport" aria-live="polite" aria-atomic="true">
           {#each items as item, i (item.quote)}
@@ -139,17 +135,14 @@
 {/if}
 
 <style>
-  /* The head is centred with the quotes rather than ranged left like every
-     other section head on the page: a left-ranged head over a centred quote
-     reads as a mistake rather than as a decision. */
-  .head {
-    max-width: 58ch;
-    margin-inline: auto;
+  /* Centred with the quotes rather than ranged left like the other section
+     kickers: a left-ranged label over a centred quote reads as a mistake. */
+  .kick {
+    margin: 0;
     text-align: center;
   }
-
   .quotes {
-    margin-top: 44px;
+    margin-top: 28px;
   }
 
   /* The quotes are stacked in one grid cell rather than laid side by side, so
@@ -183,11 +176,11 @@
     }
   }
 
-  /* The display face, at reading size rather than display size. It was
-     clamping to 38px, against the section heading's own 42px, which put a
-     quotation almost level with the h2 it sits under and made the section
-     shout. It now tops out a little above the lead, which is where a quote
-     belongs: larger than body copy, plainly smaller than the heading.
+  /* The display face, at reading size. It has come down twice: from 38px,
+     which put a quotation almost level with the h2 above it, and then from
+     26px, which still read as a heading in its own right. It now tops out
+     just under the lead, so a quote is plainly a voice inside the page rather
+     than a section announcing itself.
 
      The measure widens as the size comes down, so the line count stays
      roughly where it was rather than the quote becoming a narrow column.
@@ -195,9 +188,12 @@
      being made bold. */
   blockquote {
     margin: 0 auto;
-    max-width: 34ch;
+    max-width: 42ch;
     font-family: var(--font-display);
-    font-size: clamp(19px, 2.1vw, 26px);
+    font-size: clamp(19px, 1.8vw, 23px);
+    /* Book italic: Fraunces' drawn italic at its regular weight, loaded as a
+       real face in app.css rather than left to the browser to shear. */
+    font-style: italic;
     font-weight: 400;
     line-height: 1.42;
     letter-spacing: -0.01em;

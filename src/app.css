@@ -4,6 +4,12 @@
    never talks to a third party to read a therapy website. Fraunces carries
    the display line, Inter the reading. */
 @import '@fontsource-variable/fraunces';
+/* Fraunces' REAL italic, on the same wght axis as the upright above. The
+   package's default entry is the upright axis only, so `font-style: italic`
+   against it gets a browser-synthesised slant: the same letterforms sheared
+   over, not the drawn italic. On a display serif that is very visible, and it
+   is the difference between a quotation and a quotation that looks wrong. */
+@import '@fontsource-variable/fraunces/wght-italic.css';
 @import '@fontsource-variable/inter';
 
 /*
@@ -58,11 +64,12 @@
      the page allowed to be loud, which only works because it is almost never
      used.
 
-     Lime straw: warm enough to sit with the sand and the gold rather than
-     fighting them, and still saturated enough to be the one loud thing.
+     Acid lime, chosen off the studio panel after living with the warmer
+     candidates: greener and brighter than the straw, and it is the one colour
+     on the page that is allowed to shout.
 
      It comes in a pair, and that is not a nicety. The light value measures
-     12.03:1 on the deep ground and about 1:1 against the sand, so the same
+     12.67:1 on the deep ground and about 1:1 against the sand, so the same
      rule that sings on the dark band would be invisible in the qualifications
      section. The light value is for dark grounds; `--color-accent-ink` is its
      darker sibling for light ones, same hue family, held above 3:1 against all
@@ -74,8 +81,8 @@
 
      Contrast is computed and gated by scripts/check-contrast.ts, which knows
      that a graphic mark's floor is 3:1 (WCAG 1.4.11) and not 4.5:1. */
-  --color-accent: #ebeb00;
-  --color-accent-ink: #826e00;
+  --color-accent: #cdfa16;
+  --color-accent-ink: #857100;
 
   /* Text on the dark bands */
   --color-on-deep: #e9f2f4;
@@ -99,20 +106,23 @@
 
   /* Header breakpoints, each admitting the next thing:
        navcall  (32.5rem/520px) — the call button joins the burger
-       navwide  (53.75rem/860px) — its label grows to the full number
-       navfull  (62.5rem/1000px) — the inline nav replaces the burger */
+       navfull  (62.5rem/1000px) — the inline nav replaces the burger
+
+     There is no breakpoint for the call button's label. It grew to the full
+     number at 860px and the row overflowed at 1008px, because the width that
+     fits depends on how many links are in the bar, and that is content. The
+     header measures it instead. */
   --breakpoint-navcall: 32.5rem;
-  --breakpoint-navwide: 53.75rem;
   --breakpoint-navfull: 62.5rem;
 }
 
 /* Wide gamut. The OKLCH value pushes chroma past what sRGB can hold, so a P3
    display renders it properly saturated and an sRGB one falls back to the
    hex above rather than being handed a gamut-mapped mud. */
-@supports (color: oklch(0.91 0.2 110)) {
+@supports (color: oklch(0.92 0.22 122)) {
   :root {
-    --color-accent: oklch(0.91 0.2 110);
-    --color-accent-ink: oklch(0.54 0.14 98);
+    --color-accent: oklch(0.92 0.22 122);
+    --color-accent-ink: oklch(0.55 0.14 100);
   }
 }
 
