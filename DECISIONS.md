@@ -252,3 +252,60 @@ which a top-level import of the same file would not be.
 Every string in those files carries the sentinel `MOCKONLY-8f3a1c`, and
 `scripts/check-mock.ts` greps the built output for it. Both halves matter: a mock file
 without the sentinel would be invisible to the grep, so an unmarked file is itself a failure.
+
+## 24. The keyer is measured against the photograph, not against his photograph
+`scripts/keyer.ts` pulls a matte from an evenly-lit backing with nothing about John's
+plate written into it. The backing colour is a robust plane fit to the border band, so
+"reasonably even" stops being a judgement and becomes two measured numbers — a tilt across
+the frame and a residual sigma — that the keyer refuses on. Every spatial constant is a
+fraction of a reference width. `scripts/gen-cutouts.ts --self-test` keys five synthetic
+frames whose answer is known exactly (white cyclorama, warm cream at 0.6x, mid grey at
+1.35x, a dark wall with a light subject, and one at the very edge of the gradient and grain
+tolerances) and refuses five more.
+
+The one thing that had to change to survive those five was the window over which the
+known-backing solve is believed. It was an absolute distance in linear light, 0.3 to 0.6,
+and that is a white-backdrop assumption in disguise: linear light compresses the bottom of
+the scale elevenfold, so a light subject on a dark studio wall measured a separation of 380
+times the noise in the plate and was refused as "the same colour as the background". It is
+now a signal-to-noise ratio against the measured backing noise, 8x to 20x, because the
+solve's error in alpha is about 1/SNR — 20x is 5% and 8x is 12.5%. John's own plate sits at
+65x, so his cut-out is unchanged by the switch (ill-conditioned fringe 2.5% → 2.1%,
+everything else identical to three figures).
+
+Against the committed hand-tuned pair, the automatic key agrees to a mean 1.4 of 255 levels
+of alpha and 0.03 levels over the solid core. The whole difference is at the edge, and it is
+the one that was put there on purpose: the keyed silhouette sits 0.09px INSIDE the light
+matte and 0.37px OUTSIDE the dark one, which is DECISIONS §12's choke, measured back out of
+the asset. What it does not reproduce is the reconstructed crown of §11, and it says so
+rather than inventing one — a photograph that clips the top of the head still needs a person.
+
+## 25. One gate for every expensive step, keyed on content and committed
+`scripts/build-gate.ts` is the mechanism and `scripts/gen-assets.ts` is the list: keying the
+portrait, solving the hero geometry, rendering the OG cards. Each declares what it reads and
+what it writes; the gate hashes both, records them in `src/lib/generated/build-manifest.json`
+and runs a step only when something it actually depends on moved. A warm build is 0.08s
+against 10.2s cold, and an edit to `src/content/home.json` re-renders the cards without
+re-keying the portrait.
+
+Three properties are load-bearing, and each is there because of a way this kind of cache
+fails.
+
+A step's own SOURCE is one of its inputs, so editing the renderer re-renders. Otherwise a
+fix ships everywhere except in the artefact it was written for.
+
+OUTPUTS ARE VERIFIED, not assumed: recorded, re-hashed, and re-run if they are missing or
+have been touched. That is what makes the git-ignored `static/img/og/` self-healing in a
+fresh CI checkout, and what stops a hand-edited generated file surviving a build.
+
+OUTPUTS ARE DATA. A step names them as a directory and a pattern, not as filenames, and
+what it delivered is whatever was there afterwards. The delivered cut-out is being reworked
+from a light/dark pair into a single asset; a gate that hard-coded two filenames would have
+been wrong within the day, and wrong silently.
+
+The manifest is COMMITTED, because mtimes do not survive a clone and CI has to reach the
+same answer as a laptop. A declared input that has gone missing is a failure, not a rebuild:
+a step whose dependency list no longer matches the tree cannot be gated honestly. Inputs
+that are legitimately absent — John has not uploaded a photograph yet — are declared
+optional, and their absence is itself recorded, so the day one appears the key changes and
+the keyer runs.
