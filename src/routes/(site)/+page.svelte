@@ -1026,6 +1026,33 @@
     font-weight: 500;
     color: var(--color-muted);
   }
+  /* Hung under the body rather than beside the title, so the row is read as
+     summary first and the link is where the reader arrives having decided
+     they want more. The arrow leads and is the only thing that moves, as in
+     the contact rows. */
+  .moreabout {
+    margin: 18px 0 0;
+    font-size: 16px;
+  }
+  .moreabout a {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--color-teal);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .moreabout a:hover {
+    color: var(--color-deep);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .moreabout a :global(svg) {
+    transition: transform var(--dur-base) var(--ease-brand);
+  }
+  .moreabout a:hover :global(svg) {
+    transform: translateX(4px);
+  }
 
   /* ---- about ---- */
   .aboutGrid {

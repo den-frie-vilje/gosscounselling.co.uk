@@ -13,9 +13,8 @@
   (docs/information-architecture.md, "Internal linking").
 -->
 <script lang="ts">
-  import { site } from '$lib/content';
+  import { home, servicePath, site } from '$lib/content';
   import { buildPageSeo } from '$lib/seo/structured-data';
-  import { servicePath } from '$lib/content';
   import { firstParagraph } from '$lib/markdown';
   import SeoHead from '$lib/components/SeoHead.svelte';
   import Section from '$lib/components/Section.svelte';
@@ -52,9 +51,12 @@
   <Prose md={body} class="prose-lead mt-10" />
 
   <p class="back">
+    <!-- Labelled with the section's own heading from the content, so the
+         link back says what the reader will find and nobody has written a
+         second name for it. -->
     <a href="/#help">
       <span class="arrow" aria-hidden="true"><Icon name="arrow" size={18} /></span>
-      All the ways I work
+      {home.services.heading}
     </a>
   </p>
 </Section>
