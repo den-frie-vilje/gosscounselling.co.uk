@@ -34,7 +34,7 @@
 </script>
 
 {#if shown.length}
-  <Section surface="mist" heading="From the blog">
+  <Section id="blog" surface="mist" heading="From the blog">
     <div
       class="feed"
       class:one={shown.length === 1}

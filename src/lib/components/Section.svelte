@@ -11,6 +11,7 @@
 -->
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { registerSection } from '$lib/nav-sections.svelte';
 
   interface Props {
     id?: string;
@@ -38,6 +39,11 @@
     children
   }: Props = $props();
 
+  // A section that is on the page says so, handing over its own element, and
+  // the header reads both which sections exist and what order they are in off
+  // that. See nav-sections.svelte.ts.
+  const register = $derived(id ? registerSection(id) : () => {});
+
   const grounds: Record<string, string> = {
     paper: 'bg-paper text-ink',
     mist: 'bg-mist text-ink',
@@ -46,7 +52,7 @@
   };
 </script>
 
-<section {id} class="section-y {grounds[surface]} {klass}">
+<section {id} {@attach register} class="section-y {grounds[surface]} {klass}">
   <div class="container-page">
     {#if rule}
       <hr class="rule mb-14" />

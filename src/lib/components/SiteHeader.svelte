@@ -4,19 +4,23 @@
   Bold, because that is what John singled out in the prototype he chose: the
   nav sits in the display face at full weight, and the call button is solid
   teal rather than an outline. It never wraps. The brand, the links and the
-  button are all `nowrap`, and the parts arrive one breakpoint at a time:
+  button are all `nowrap`, and the parts arrive one at a time:
 
     < 520px   brand + burger. The number would cost the brand its second line.
     >= 520px  + the call button, labelled "Call"
-    >= 860px  + the button's label grows to the full number
     >= 1000px the inline nav replaces the burger
+
+  The button's label is the exception: it grows from "Call" to the whole
+  number when the number measurably fits, not at a width someone typed. See
+  `fitCallLabel`.
 
   Below 1000px the menu is a full-page panel carrying the contact details as
   well as the links, because on a phone "how do I reach him" and "where do I
   go" are the same question.
 -->
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { flushSync, onMount } from 'svelte';
+  import { inPageOrder, sectionEl, warnUnregistered } from '$lib/nav-sections.svelte';
   import { blogNavItem, contact, livePosts, nav, site } from '$lib/content';
   import { publishClock } from '$lib/publish-clock.svelte';
   import Icon from './Icon.svelte';
@@ -25,16 +29,12 @@
   // it arrives on the same clock the listings use, so a post published for a
   // future date brings its link with it rather than waiting for a rebuild.
   const clock = publishClock();
-  const items = $derived(
-    livePosts(clock.value).length ? [...nav, blogNavItem] : nav
-  );
-
-  /** The element a nav href points at, or '' for a link to another page.
-   *  The hrefs are `/#section` so they work from a post or a service page,
-   *  which is why this is not just `href.slice(1)`. */
-  function anchorId(href: string): string {
-    return href.includes('#') ? href.slice(href.indexOf('#') + 1) : '';
-  }
+  const listed = $derived(livePosts(clock.value).length ? [...nav, blogNavItem] : nav);
+  // In the order the page puts them, not the order they were typed in. The
+  // blog sat last in the bar while its section sits above the contact band;
+  // sorting by the real document positions means that particular mistake is
+  // no longer available. See nav-sections.svelte.ts.
+  const items = $derived(inPageOrder(listed));
 
   interface Props {
     /** Bound out so the layout can `inert` the page behind an open menu. */
@@ -44,6 +44,30 @@
   let { open = $bindable(false) }: Props = $props();
   let toggleBtn = $state<HTMLButtonElement | undefined>();
   let panel = $state<HTMLElement | undefined>();
+
+  // ---- the call button's label ----
+  // "Call" or the whole number, decided by whether the number fits rather than
+  // by a width someone typed. It was a breakpoint twice, and it was wrong both
+  // times: the bar carries a variable number of links (the blog joins it the
+  // day John publishes), the brand is his own name, and the number is his to
+  // change, so no fixed px can be right for every combination of the three. At
+  // 1008px the row overflowed by 33px while the label still read as the full
+  // number, which is the bug that ended this argument.
+  //
+  // So: try the long label, look at the row, and keep it only if nothing
+  // overflowed. The starting state is the short one, which means the label
+  // before hydration, and forever without JavaScript, is the one that always
+  // fits. Growing it is the enhancement.
+  let row = $state<HTMLElement | undefined>();
+  let numberFits = $state(false);
+
+  function fitCallLabel() {
+    if (!row) return;
+    numberFits = true;
+    flushSync();
+    // Sub-pixel layout rounds; a whole pixel of overflow is a real one.
+    if (row.scrollWidth > row.clientWidth + 1) numberFits = false;
+  }
 
   function close() {
     open = false;
@@ -74,35 +98,46 @@
   // travel in from the left edge on load.
   let barPlaced = $state(false);
 
-  function linkRef(node: HTMLAnchorElement, index: number) {
-    links[index] = node;
-    return {
-      destroy() {
-        delete links[index];
-      }
+  // An attachment, not an action: the bar can reorder, and an attachment
+  // re-runs with the new index where `use:` would have held the old one.
+  function linkRef(index: number) {
+    return (node: Element) => {
+      links[index] = node as HTMLAnchorElement;
+      return () => {
+        if (links[index] === node) delete links[index];
+      };
     };
   }
 
   /** Which section the reader is in: the last one whose top has crossed a
-   *  line a quarter of the way down the viewport.
+   *  line two thirds of the way down the viewport.
    *
-   *  Not the sticky header's own edge, where the bar only moved once the
-   *  previous section had left the screen entirely and the nav read as lagging
-   *  behind the page. Not three quarters down either, which handed over as
-   *  soon as a section appeared at the bottom, long before anyone was reading
-   *  it. A quarter down is roughly where the eye is.
+   *  Tuned from both ends. The sticky header's own edge meant the bar only
+   *  moved once the previous section had left the screen entirely, and the nav
+   *  read as lagging behind the page. Three quarters down handed over as soon
+   *  as a section appeared at the bottom, before anyone was reading it. A
+   *  quarter down was late again: you had to scroll a section almost to the
+   *  top before the nav admitted you were in it. Two thirds is Ole's call, and
+   *  it means a section takes the bar once it is a third of the way onto the
+   *  screen.
    *
    *  Read from the sections themselves rather than from a scroll offset, so it
    *  stays right whatever the content does. */
-  const HANDOVER = 0.25;
+  const HANDOVER = 0.66;
 
   function readSection() {
     const line = (window.innerHeight || document.documentElement.clientHeight) * HANDOVER;
     let found = -1;
     for (let i = 0; i < items.length; i++) {
-      const id = anchorId(items[i].href);
+      const id = items[i].id;
+      // Only sections that actually registered, and the element comes from
+      // the registry rather than from `getElementById`, so there is one
+      // answer to "where is this section" and the bar cannot be reading a
+      // different one from the sorter. A nav item whose section is not on
+      // this page has nothing to track; it does not silently match nothing,
+      // which is what the old href-slicing did.
       if (!id) continue;
-      const el = document.getElementById(id);
+      const el = sectionEl(id);
       if (el && el.getBoundingClientRect().top <= line) found = i;
     }
     active = found;
@@ -132,9 +167,21 @@
   });
 
   onMount(() => {
+    // After the sections have mounted and registered. In dev this is the only
+    // thing standing between a drifted nav and nobody noticing for a week.
+    warnUnregistered(items.map((i) => i.id).filter((id): id is string => Boolean(id)));
+    fitCallLabel();
     readSection();
     place();
     requestAnimationFrame(() => (barPlaced = true));
+
+    // Measured again once the real faces are in. Until then the row is laid
+    // out in the fallback metrics, and Inter is wider than what the system
+    // substitutes, so a label that fit during the swap can stop fitting.
+    document.fonts?.ready.then(() => {
+      fitCallLabel();
+      place();
+    });
   });
 
   // The panel is `display: none` from navfull up, so a viewport that grows
@@ -142,6 +189,7 @@
   // on a control nobody can see.
   function onResize() {
     if (open && window.matchMedia('(min-width: 62.5rem)').matches) open = false;
+    fitCallLabel();
     readSection();
     place();
   }
@@ -159,7 +207,10 @@
   class="border-line bg-paper sticky top-0 z-60 border-b"
   class:menu-open={open}
 >
-  <div class="container-page flex min-h-[72px] flex-nowrap items-center gap-5">
+  <div
+    bind:this={row}
+    class="container-page flex min-h-[72px] flex-nowrap items-center gap-5"
+  >
     <a href="/#top" class="brand" onclick={close}>
       {site.name}
       <span>{site.tagline}</span>
@@ -182,7 +233,7 @@
         {#each items as item, i (item.href)}
           <li>
             <a
-              use:linkRef={i}
+              {@attach linkRef(i)}
               href={item.href}
               class="navlink"
               aria-current={active === i ? 'true' : undefined}
@@ -195,9 +246,10 @@
           </li>
         {/each}
         <li>
-          <a href={contact.phoneHref} class="btn btn-primary !px-5 !py-3 !text-[15.5px]">
+          <a href={contact.phoneHref} class="btn btn-primary callbtn !px-5 !py-3 !text-[15.5px]">
             <Icon name="phone" size={17} />
-            {contact.phone}
+            <span class:hidden={numberFits}>Call</span>
+            <span class="num" class:hidden={!numberFits}>{contact.phone}</span>
           </a>
         </li>
       </ul>
@@ -209,8 +261,8 @@
       class="btn btn-primary barcta ml-auto !px-[18px] !py-[11px] !text-[15.5px] navfull:!hidden"
     >
       <Icon name="phone" size={17} />
-      <span class="navwide:hidden">Call</span>
-      <span class="hidden navwide:inline">{contact.phone}</span>
+      <span class:hidden={numberFits}>Call</span>
+      <span class="num" class:hidden={!numberFits}>{contact.phone}</span>
     </a>
 
     <button
@@ -347,8 +399,21 @@
       opacity var(--dur-fast) linear;
   }
 
+  /* A phone number is one thing. It never breaks across lines, in either
+     button: half a number is not a number, and a wrapped one also drags the
+     header's height around. Below the width where the whole thing fits, the
+     button says "Call" instead, which is the collapse the staggered header
+     was always meant to do. */
+  .num {
+    white-space: nowrap;
+  }
+  .callbtn {
+    white-space: nowrap;
+  }
+
   .barcta {
     display: none;
+    white-space: nowrap;
   }
   @media (min-width: 32.5rem) {
     .barcta {
