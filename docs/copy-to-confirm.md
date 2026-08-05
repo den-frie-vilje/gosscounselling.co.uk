@@ -75,3 +75,17 @@ current before either goes live:
 Worth saying plainly to him: a directory listing that undercuts his own published fee is the kind
 of inconsistency that costs an enquiry, and search engines read the disagreement too.
 
+## 5. Three interface labels that are ours
+
+Everything else on the site is his words or derived from them. These three are not, because they
+name a thing rather than say anything, and there was nothing of his to derive them from:
+
+- **"From the blog"**, the heading over the latest posts on the home page
+- **"Blog"**, the index's own heading and its nav entry
+- **"Read the blog"**, the link from the home page to the index
+
+If he calls his writing something else, and plenty of therapists do, these are the three strings
+to change. The rest is already derived: the link to a service page uses that service's own title,
+the way back from one uses his "How I can help" heading, and the blog index's meta description
+falls back to his own site description, because a standfirst for a blog is copy and copy is his.
+

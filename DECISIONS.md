@@ -197,3 +197,58 @@ inside a `wa.me` link; his email twice, as the address and as a `mailto:`. That 
 should be typing either, and three copies of one fact drift the moment he changes it. He types
 the number once and the links are built from it.
 
+
+## 21. Detail pages are prepared, not written, and the summary is written once
+Each service can carry a `detail` body. Its presence is what creates the page: with none,
+the home row renders exactly as it always has and there is no link, which is what ships. The
+four services have no `detail`, because writing their copy is John's job and inventing it is
+the failure §19 records.
+
+Two things follow, and both are about not making him keep two things in step.
+
+The URL is derived in code from the slug the content already carries: `/counselling/<slug>`
+for client work, `/supervision` at the top level because it is a different audience
+(docs/information-architecture.md). There is no `path` field. He may write EXTERNAL links,
+which are genuinely his, and never a link into his own site.
+
+The detail page opens with the SAME `body` the home page shows, then adds `detail.body`. So
+the summary exists in one place, the front page and the top of the detail page cannot drift
+apart, and the longer material is written without touching what is already published.
+
+One route serves all of them, `[...service]`, with `entries()` over the services that have a
+`detail`. A static `/supervision/+page.svelte` would prerender and appear in the sitemap on
+the day he has not written it; a rest parameter that enumerates nothing produces nothing.
+
+## 22. Drafts are removed at build time; a scheduled post is gated in the browser
+A post carries `status` and `publishAt`, and the two states are different in kind.
+
+A DRAFT is private. It is stripped in `vite.config.ts`, on the JSON's way into the bundle,
+and that is not where it started: filtering in `$lib/content` left the draft's title, summary
+and body inside `_app/immutable/chunks/*.js` on every page, because a bundler cannot drop
+array entries that only the data says are unused. The repository is public, so a draft that
+reached the build would have been published twice over.
+
+A post PUBLISHED with a date in the future is not private, it is early. It is in the build
+deliberately, and the listings hide it until its moment passes, in the browser. That is a
+decision taken with the cost known: its text is in the HTML from the day it is written. What
+it buys is that a post appears at the time it says, without a deploy and without anyone being
+at a keyboard.
+
+The clock starts at `PUBLIC_BUILD_TIME` and moves to the real time on mount, so the server
+and the browser's first render agree, and the set of visible posts can only grow. A reader
+sees a post appear and never sees one appear and then vanish.
+
+`scripts/check-posts.ts` is the proof, run against the built output after every build in the
+image and on the static host. It proves itself against a canary on every run, in both
+directions: a draft's words must be caught, a scheduled post's words must not.
+
+## 23. Mock content, visible in dev and eliminated from the build
+John has no posts and no service pages, so the blog index, the featured section on the home
+page and a detail page were layouts nobody could look at. `src/content/mock/` holds stand-ins
+in the same shapes, loaded through a dynamic import inside an `import.meta.env.DEV` branch:
+Vite substitutes the literal `false` into a build and the branch and its import are removed,
+which a top-level import of the same file would not be.
+
+Every string in those files carries the sentinel `MOCKONLY-8f3a1c`, and
+`scripts/check-mock.ts` greps the built output for it. Both halves matter: a mock file
+without the sentinel would be invisible to the grep, so an unmarked file is itself a failure.

@@ -1,0 +1,72 @@
+# A daily rebuild of staging, so the deployed site does not drift from what
+# the repository says.
+#
+# It is NOT how scheduled posts appear. A post published with a date in the
+# future is already in the build, and the listings reveal it in the browser at
+# the moment its time passes (DECISIONS.md §22). Nothing here is load-bearing
+# for that; if this workflow were deleted, a scheduled post would still turn
+# up on the day. What the daily build does is smaller and still worth having:
+# it moves the copyright year on at midnight, it puts a post that has gone
+# live into the sitemap, it refreshes the build stamp in the footer, and it
+# proves every day that the repository still builds.
+#
+# It calls the reusable workflow DIRECTLY rather than dispatching
+# deploy-staging.yml, and that is a GitHub constraint rather than a
+# preference: a `workflow_dispatch` sent with the default GITHUB_TOKEN does
+# not start another workflow run, so a job that "triggers the deploy" would
+# succeed every night and deploy nothing. The inputs below are therefore the
+# same ones deploy-staging.yml passes, with one difference, marked.
+#
+# Production is untouched by design. Staging is where the editor writes and
+# where a rebuild is free; promoting to production stays a deliberate act.
+
+name: Scheduled rebuild
+
+on:
+  schedule:
+    # 05:40 UTC daily. Cron on GitHub is always UTC, so this is 06:40 in
+    # British Summer Time and 05:40 in winter: before the working day either
+    # way, so anything dated "today" is live before anyone in the UK is
+    # likely to look for it. Not on the hour, because that is when GitHub's
+    # scheduler is most congested and a queued run can be an hour late.
+    - cron: '40 5 * * *'
+  workflow_dispatch:
+
+concurrency:
+  # A scheduled run must never race a push to staging: the later one wins and
+  # the earlier is dropped rather than both building the same branch.
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  # The build stamp has to be NOW, and this is the only reason this job
+  # exists. deploy-staging.yml uses `github.event.head_commit.timestamp`,
+  # which a schedule event does not have, and GitHub expressions have no
+  # notion of the current time. So one tiny job produces it and the reusable
+  # workflow is given it as an input.
+  stamp:
+    runs-on: ubuntu-latest
+    outputs:
+      now: ${{ steps.now.outputs.now }}
+    steps:
+      - id: now
+        run: echo "now=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: stamp
+    uses: den-frie-vilje/nas-sites/.github/workflows/build-and-sign.yml@main
+    with:
+      environment: staging
+      dockerfile: deploy/Dockerfile
+      image-name: ghcr.io/den-frie-vilje/gosscounselling
+      platforms: linux/amd64
+      build-args: |
+        VITE_MODE=staging
+        PUBLIC_GIT_SHA=${{ github.sha }}
+        PUBLIC_BUILD_TIME=${{ needs.stamp.outputs.now }}
+        PUBLIC_GITHUB_REPO=${{ github.repository }}
+      # The page names its own commit in <meta name="git-sha">, and pull-only
+      # deployment means CI never sees the rollout, so the page is the witness.
+      # On a scheduled run the sha is unchanged from the last deploy, so this
+      # confirms the site is up rather than that anything moved.
+      verify-url: https://gosscounselling-co-uk.stage.denfrievilje.dk/
