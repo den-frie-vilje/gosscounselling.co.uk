@@ -181,12 +181,13 @@ export interface Home {
     portraitAlt: string;
   };
   steps: { kicker: string; heading: string; intro: string; items: Step[] };
-  services: { kicker: string; heading: string; intro: string; items: Service[] };
-  about: { kicker: string; heading: string; body: string; photoAlt: string };
+  services: { kicker: string; heading: string; intro: string; navLabel?: string; items: Service[] };
+  about: { kicker: string; heading: string; body: string; navLabel?: string; photoAlt: string };
   fees: {
     kicker: string;
     heading: string;
     intro: string;
+    navLabel?: string;
     rows: FeeRow[];
     /** `body` is markdown and carries `{mailto}`. */
     note: { title: string; body: string };
@@ -199,8 +200,8 @@ export interface Home {
      *  the names are not typed twice. */
     bodies: { title: string };
   };
-  faq: { kicker: string; heading: string; items: FaqItem[] };
-  contact: { kicker: string; heading: string; intro: string };
+  faq: { kicker: string; heading: string; navLabel?: string; items: FaqItem[] };
+  contact: { kicker: string; heading: string; intro: string; navLabel?: string };
   /** `description` is NOT in home.json and is not a field: see `home` below. */
   seo: { title: string; description: string };
   /** The share card. Only the title is John's to write here: the card also
@@ -530,16 +531,43 @@ export function sectionHref(id: string): string {
  * shouts in dev if the home page ever disagrees with it. Same shape as every
  * other invariant in this repo: state it, then gate it.
  */
+/**
+ * How long a menu word may be.
+ *
+ * Measured, not chosen. At 1000px, where the bar replaces the burger, it has
+ * 722.5px to live in — 1000 less the container's 56px of gutter, the brand's
+ * 201.5px and the 20px between them — and today's six labels plus the call
+ * button use 709.5 of it. Thirteen pixels of slack, about a character and a
+ * half in Inter bold at 16px, where the mean advance over the alphabet John
+ * can type is 9.76px.
+ *
+ * So the cap is not really per label, it is a budget across all of them, and
+ * `scripts/check-nav.ts` gates the budget. This number is the per-field limit
+ * the CMS shows him while he is typing, and it is deliberately a little
+ * generous of the longest label he has now, "How I can help" at 14: a cap that
+ * refuses the wording already on the site would be a cap that is wrong.
+ */
+export const NAV_LABEL_MAX = 18;
+
+/** The bar's wording, as John writes it, falling back to what it says today. */
+function navLabel(written: string | undefined, fallback: string): string {
+  const trimmed = written?.trim();
+  return trimmed || fallback;
+}
+
 export const nav: NavItem[] = [
-  { id: 'help', href: sectionHref('help'), label: 'How I can help' },
-  { id: 'about', href: sectionHref('about'), label: 'About me' },
-  { id: 'fees', href: sectionHref('fees'), label: 'Fees' },
-  { id: 'faq', href: sectionHref('faq'), label: 'Questions' },
+  { id: 'help', href: sectionHref('help'), label: navLabel(home.services?.navLabel, 'How I can help') },
+  { id: 'about', href: sectionHref('about'), label: navLabel(home.about?.navLabel, 'About me') },
+  { id: 'fees', href: sectionHref('fees'), label: navLabel(home.fees?.navLabel, 'Fees') },
+  { id: 'faq', href: sectionHref('faq'), label: navLabel(home.faq?.navLabel, 'Questions') },
   // Its href is a page of its own; its id is the teaser section on the home
   // page, which is both what gets highlighted and what puts it here rather
   // than after Get in touch. See NavItem.id.
+  // The only label John cannot rewrite, because the blog is a page rather
+  // than a section he authors and there is no content block to hang the field
+  // on. Inventing one to hold a single word would cost more than it saves.
   { id: 'blog', href: BLOG_PATH, label: 'Blog' },
-  { id: 'contact', href: sectionHref('contact'), label: 'Get in touch' }
+  { id: 'contact', href: sectionHref('contact'), label: navLabel(home.contact?.navLabel, 'Get in touch') }
 ];
 
 /** The bar minus the blog, for the days before John has published anything.

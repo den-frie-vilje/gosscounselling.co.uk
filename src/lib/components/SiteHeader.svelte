@@ -61,13 +61,61 @@
   let row = $state<HTMLElement | undefined>();
   let numberFits = $state(false);
 
-  function fitCallLabel() {
+  /**
+   * And the same question about the bar itself.
+   *
+   * At 1000px, where the inline bar replaces the burger, it uses 709.5px of
+   * the 722.5px there is — thirteen pixels of slack, about a character and a
+   * half. John can now write his own menu wording in the CMS, so the labels
+   * are content, and content is not something a breakpoint can be chosen
+   * against in advance: one longer word, or one more section, and a bar sized
+   * by a fixed number would simply overflow the header.
+   *
+   * So the breakpoint admits the bar and the measurement keeps it. If the row
+   * does not fit with the bar in it, the burger comes back — the menu is
+   * still there, still complete, and the header is never broken by a word
+   * somebody typed. `scripts/check-nav.ts` warns him long before it comes to
+   * this; this is what makes the warning unnecessary rather than load-bearing.
+   */
+  let barFits = $state(true);
+
+  /**
+   * Both fits, measured together, because they are not independent: the bar
+   * appearing is what leaves the call button no room.
+   *
+   * Tried in the order they should be given up — the number first, since a
+   * button that says "Call" is a smaller loss than a whole menu bar
+   * collapsing into a burger.
+   */
+  function fitHeader() {
     if (!row) return;
+    // Sub-pixel layout rounds, so half a pixel is noise. A whole one is not:
+    // at 1040px the row measured exactly 1px wider than its box with the full
+    // number showing, and a tolerance of 1 let that through as "fits" — one
+    // pixel of horizontal overflow on the document, which is how a page gets
+    // a scrollbar it should not have.
+    const overflows = () => row!.scrollWidth > row!.clientWidth + 0.5;
+
+    barFits = true;
     numberFits = true;
     flushSync();
-    // Sub-pixel layout rounds; a whole pixel of overflow is a real one.
-    if (row.scrollWidth > row.clientWidth + 1) numberFits = false;
+    if (!overflows()) return;
+
+    numberFits = false;
+    flushSync();
+    if (!overflows()) return;
+
+    barFits = false;
+    flushSync();
+    // Nothing left to give: the burger is the last state, and it is the one
+    // the markup starts in below this breakpoint anyway. It has to be brought
+    // BACK deliberately, though — above 1000px a utility hides it, so cutting
+    // the bar without this left the site with no menu at all, which the first
+    // test of this caught.
   }
+
+  // The old name, kept where it is called from.
+  const fitCallLabel = fitHeader;
 
   function close() {
     open = false;
@@ -270,8 +318,12 @@
       <span>{site.tagline}</span>
     </a>
 
-    <!-- The inline bar, from 1000px up. -->
-    <nav class="ml-auto hidden navfull:block" aria-label="Sections">
+    <!-- The inline bar, from 1000px up AND only while it fits. -->
+    <nav
+      class="ml-auto hidden navfull:block"
+      class:barcut={!barFits}
+      aria-label="Sections"
+    >
       <ul
         bind:this={navList}
         class="relative flex list-none items-center gap-7 p-0"
@@ -313,7 +365,8 @@
     <!-- The call button that rides alongside the burger below 1000px. -->
     <a
       href={contact.phoneHref}
-      class="btn btn-primary barcta ml-auto !px-[18px] !py-[11px] !text-[15.5px] navfull:!hidden"
+      class="btn btn-primary barcta ml-auto !px-[18px] !py-[11px] !text-[15.5px]"
+      class:barcut={!barFits}
     >
       <Icon name="phone" size={17} />
       <span class:hidden={numberFits}>Call</span>
@@ -324,6 +377,7 @@
       bind:this={toggleBtn}
       type="button"
       class="burgerbtn navfull:hidden"
+      class:barcut={!barFits}
       aria-expanded={open}
       aria-controls="site-menu"
       aria-label="Menu"
@@ -414,6 +468,25 @@
      It matters more here than anywhere: on a phone the bar is the only thing
      on screen that says what he does, and "John Goss" alone does not. */
 
+  /* The bar gives way rather than overflowing. Set from `fitHeader`, which
+     has already tried shortening the call button first.
+
+     `display: none` and not `visibility`, because the row is a flex line and
+     a hidden-but-present bar would still take its width, which is the whole
+     thing being avoided. Scoped, so it outranks the utility that put the bar
+     on screen at this breakpoint. */
+  nav.barcut {
+    display: none;
+  }
+  /* And the other half of the same swap: above 1000px a utility hides the
+     burger, so the bar giving way has to hand the menu back to it explicitly.
+     Scoped, so it outranks that utility — the same specificity fight that once
+     put a burger BESIDE the inline bar, used deliberately this time. */
+  button.barcut {
+    display: inline-flex;
+  }
+
+
   .navlink {
     position: relative;
     font-family: var(--font-sans);
@@ -481,14 +554,36 @@
     white-space: nowrap;
   }
 
+  /* When this button is on screen, in one place rather than split between a
+     utility class and here.
+     
+     It used to end with Tailwind's `navfull:!hidden` doing the last step, and
+     that could not be overridden from in here at all: `!important` REVERSES
+     the cascade's layer order, so an important declaration in Tailwind's
+     `@layer utilities` beats an important unlayered one no matter how
+     specific. The bar giving way could not hand the button back, and the site
+     lost its call to action at exactly the width where it had lost its menu
+     too. Owning all four states here costs three extra lines and no fights. */
   .barcta {
     display: none;
     white-space: nowrap;
   }
+  /* 520px: it joins the burger. */
   @media (min-width: 32.5rem) {
     .barcta {
       display: inline-flex;
     }
+  }
+  /* 1000px: the inline bar arrives, carrying its own copy of this button. */
+  @media (min-width: 62.5rem) {
+    .barcta {
+      display: none;
+    }
+  }
+  /* Unless the bar could not fit and gave way — then this one comes back with
+     the burger. Last, and more specific, so it wins at every width. */
+  a.barcta.barcut {
+    display: inline-flex;
   }
 
   /* No frame, no border, no circle: the mark alone. The 46px box is only the
