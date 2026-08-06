@@ -6,6 +6,8 @@
       "publishAt": "2026-07-28T09:00:00Z",
       "status": "published",
       "excerpt": "Mock excerpt MOCKONLY-8f3a1c. Two or three lines of stand-in text, long enough to show how an excerpt wraps in the feed and on the index.",
+      "image": "/mock-img/lane.webp",
+      "imageAlt": "Bridleway to Brickhill MOCKONLY-8f3a1c",
       "body": "Mock body MOCKONLY-8f3a1c. This paragraph exists so the post page has something to set, and for no other reason.\n\n## A mock heading MOCKONLY-8f3a1c\n\nMock paragraph MOCKONLY-8f3a1c, to check that a second-level heading inside a body is spaced the way the rest of the site's prose is.\n\n- Mock list item one MOCKONLY-8f3a1c\n- Mock list item two MOCKONLY-8f3a1c\n\nMock closing paragraph MOCKONLY-8f3a1c.",
       "seo": {
         "title": "Mock post title for search MOCKONLY-8f3a1c",
@@ -26,6 +28,8 @@
       "publishAt": "2026-05-02T09:00:00Z",
       "status": "published",
       "excerpt": "Mock excerpt MOCKONLY-8f3a1c. The title above is long on purpose: three of these sit side by side on the home page and the row has to survive one of them wrapping.",
+      "image": "/mock-img/canal.webp",
+      "imageAlt": "Canal from a bridge at Mill Lane MOCKONLY-8f3a1c",
       "body": "Mock body MOCKONLY-8f3a1c.\n\nMock second paragraph MOCKONLY-8f3a1c."
     },
     {

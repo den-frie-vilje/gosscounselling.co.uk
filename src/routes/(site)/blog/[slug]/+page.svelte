@@ -7,7 +7,8 @@
   site rather than the home page.
 -->
 <script lang="ts">
-  import { BLOG_PATH, postPath, site } from '$lib/content';
+  import { BLOG_PATH, livePosts, postPath, postSlug, site } from '$lib/content';
+  import { publishClock } from '$lib/publish-clock.svelte';
   import { blogPostingNode, buildPageSeo } from '$lib/seo/structured-data';
   import { dateAttr, formatDate } from '$lib/date';
   import SeoHead from '$lib/components/SeoHead.svelte';
@@ -19,6 +20,27 @@
   let { data } = $props();
 
   const post = $derived(data.post);
+
+  /**
+   * The post before and after this one, on the same clock the listings use.
+   *
+   * `livePosts` and not the whole set, so a post scheduled for next week is
+   * not linked to from here before it exists — it would 404 for a reader and
+   * be a dead link for a crawler. It is a `$derived` on the clock for the same
+   * reason the listings are: the moment a scheduled post's time passes, it
+   * joins the sequence without a rebuild.
+   *
+   * `builtPosts` is newest first, so the NEXT post in the array is the older
+   * one. The labels say "Older" and "Newer" rather than "Previous" and "Next",
+   * because previous and next are ambiguous about which way time runs and a
+   * reader should not have to work it out.
+   */
+  const around = $derived.by(() => {
+    const posts = livePosts(publishClock().value);
+    const i = posts.findIndex((p) => postSlug(p) === postSlug(post));
+    if (i < 0) return { newer: null, older: null };
+    return { newer: posts[i - 1] ?? null, older: posts[i + 1] ?? null };
+  });
 
   const seo = $derived(
     buildPageSeo({
@@ -74,17 +96,96 @@
 
   <Prose md={post.body} class="prose-lead mt-9" />
 
-  <p class="back">
-    <a href={BLOG_PATH}>
-      <span class="arrow" aria-hidden="true"><Icon name="arrow" size={18} /></span>
-      All posts
-    </a>
-  </p>
+  <!-- After the content, which is where a reader who has finished is. A real
+       <nav> with a name, so someone using a screen reader can reach it as a
+       landmark rather than finding three loose links at the end of an
+       article. -->
+  <nav class="after" aria-label="More posts">
+    <p class="back">
+      <a href={BLOG_PATH}>
+        <span class="arrow" aria-hidden="true"><Icon name="arrow" size={18} /></span>
+        All posts
+      </a>
+    </p>
+
+    {#if around.newer || around.older}
+      <ul class="sequence">
+        {#if around.older}
+          <li class="older">
+            <a href={postPath(around.older)}>
+              <span class="dir">Older post</span>
+              <span class="what">{around.older.title}</span>
+            </a>
+          </li>
+        {/if}
+        {#if around.newer}
+          <li class="newer">
+            <a href={postPath(around.newer)}>
+              <span class="dir">Newer post</span>
+              <span class="what">{around.newer.title}</span>
+            </a>
+          </li>
+        {/if}
+      </ul>
+    {/if}
+  </nav>
 </Section>
 
 <ContactBand />
 
 <style>
+  .after {
+    margin-top: 44px;
+    padding-top: 28px;
+    border-top: 1px solid var(--color-line);
+  }
+  /* Two links, and the newer one is on the right whether or not there is an
+     older one to its left — `margin-left: auto` on the item rather than
+     `space-between` on the list, which would centre a lone link. The first and
+     last posts each have only one neighbour, and that is the ordinary case at
+     the ends of a short blog rather than an edge case. */
+  .sequence {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 40px;
+    margin: 24px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .sequence .newer {
+    margin-left: auto;
+    text-align: right;
+  }
+  .sequence a {
+    display: block;
+    max-width: 34ch;
+    text-decoration: none;
+    color: inherit;
+  }
+  .dir {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-gold);
+  }
+  .what {
+    display: block;
+    margin-top: 6px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 18px;
+    line-height: var(--leading-heading-small);
+    color: var(--color-ink);
+  }
+  .sequence a:hover .what {
+    color: var(--color-teal);
+    text-decoration: underline;
+    text-underline-offset: 5px;
+  }
+
   .shot {
     /* `margin: 0` here silently beat the `mt-9` on the element — a scoped
        class outranks a utility — and left the picture jammed against the date
@@ -111,6 +212,18 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+  /* On a phone the measure is the screen, so the picture is simply full width.
+     The margin is the room to the date and the title above it — 36px was set
+     against a picture inset in a column, and reads tight once it runs edge to
+     edge. */
+  @media (max-width: 640px) {
+    .shot {
+      margin-top: 28px;
+      max-width: none;
+      border-radius: 8px;
+      aspect-ratio: 16 / 9;
+    }
   }
 
   .posted {
