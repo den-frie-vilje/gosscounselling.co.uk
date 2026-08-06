@@ -78,6 +78,14 @@
     min-width: 0;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    /* Rows at the TOP, not spread down the cell. Side by side, the columns
+       stretch to the tallest post, and `align-content` defaults to `normal`,
+       which for auto-sized rows behaves as `stretch`: the spare height gets
+       shared out between the date, the title and the summary, so a short post
+       next to a long one had its three lines drifting apart and reading as
+       vertically centred. The extra room belongs at the bottom, where the
+       hairline is, so every post in the row starts on the same line. */
+    align-content: start;
     gap: 10px;
     padding: 30px 0 32px;
     border-bottom: 1px solid var(--color-line-cool);
