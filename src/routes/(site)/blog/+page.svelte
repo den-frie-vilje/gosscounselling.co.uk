@@ -13,10 +13,11 @@
 <script lang="ts">
   import { contact, livePosts, postPath, site } from '$lib/content';
   import { publishClock } from '$lib/publish-clock.svelte';
-  import { buildPageSeo } from '$lib/seo/structured-data';
+  import { breadcrumbNode, buildPageSeo } from '$lib/seo/structured-data';
   import { dateAttr, formatDate } from '$lib/date';
   import SeoHead from '$lib/components/SeoHead.svelte';
   import Section from '$lib/components/Section.svelte';
+  import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
   import ContactBand from '$lib/components/ContactBand.svelte';
 
   const clock = publishClock();
@@ -34,7 +35,11 @@
   // "Writing from", which name the page rather than claim anything — the same
   // footing as "Blog" and "From the blog" (docs/copy-to-confirm.md §5), and
   // recorded there with the rest of them for him to overrule.
+  /* One level down. The same array feeds the trail and the BreadcrumbList. */
+  const trail = [{ label: 'Home', href: '/' }, { label: 'Blog' }];
+
   const seo = buildPageSeo({
+    graph: [breadcrumbNode(trail)],
     path: '/blog/',
     title: `Blog | ${site.name}, ${site.tagline}`,
     description: `Writing from ${site.name}, ${site.schema.jobTitle}. ${contact.locationNote}`,
@@ -57,6 +62,9 @@
 </svelte:head>
 
 <Section h1 heading="Blog">
+  {#snippet above()}
+    <Breadcrumbs {trail} />
+  {/snippet}
   {#if posts.length}
     <div class="list border-line mt-13 border-t">
       {#each posts as post (post.slug)}

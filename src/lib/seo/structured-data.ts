@@ -205,8 +205,15 @@ export function reviewNodes(): object[] {
 }
 
 /** Site-wide JSON-LD graph, optionally extended with page-specific nodes. */
-export function buildSiteJsonLd(extra: object[] = []): object {
-  return { '@context': 'https://schema.org', '@graph': [...siteGraph(), ...extra] };
+export function buildSiteJsonLd(extra: (object | null | undefined)[] = []): object {
+  // Nulls are dropped here rather than at every call site. A node that only
+  // sometimes applies — a BreadcrumbList needs at least two crumbs, a review
+  // list needs a review — should be able to say "not this time" by returning
+  // null, and the caller should not have to filter for it.
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [...siteGraph(), ...extra.filter((node): node is object => node != null)]
+  };
 }
 
 export interface PageSeo {
@@ -238,7 +245,33 @@ interface BuildPageSeoInput {
    *  It is here rather than in `SeoHead` because `SeoHead` renders what it is
    *  handed and decides nothing, which is what makes it readable. */
   ogType?: string;
-  graph?: object[];
+  graph?: (object | null | undefined)[];
+}
+
+/**
+ * The trail, for a search result rather than for the page.
+ *
+ * Google renders a BreadcrumbList as the little path above a result instead of
+ * the bare URL, which is the only reason to emit it: it is the same trail the
+ * page already draws, said again in the form a crawler reads. Built from the
+ * SAME array the component is handed, so the two cannot disagree — a
+ * breadcrumb in the markup that says one thing and a BreadcrumbList that says
+ * another is worse than neither.
+ *
+ * The last item carries no `item`: it is the current page, and naming it would
+ * be telling a crawler the page links to itself.
+ */
+export function breadcrumbNode(trail: { label: string; href?: string }[]): object | null {
+  if (trail.length < 2) return null;
+  return {
+    '@type': 'BreadcrumbList',
+    itemListElement: trail.map((crumb, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: crumb.label,
+      ...(crumb.href && i < trail.length - 1 ? { item: absUrl(crumb.href) } : {})
+    }))
+  };
 }
 
 /** Map a site-relative path to its OG slug (`/` → home). */

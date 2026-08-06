@@ -9,10 +9,11 @@
 <script lang="ts">
   import { BLOG_PATH, livePosts, postPath, postSlug, site } from '$lib/content';
   import { publishClock } from '$lib/publish-clock.svelte';
-  import { blogPostingNode, buildPageSeo } from '$lib/seo/structured-data';
+  import { blogPostingNode, breadcrumbNode, buildPageSeo } from '$lib/seo/structured-data';
   import { dateAttr, formatDate } from '$lib/date';
   import SeoHead from '$lib/components/SeoHead.svelte';
   import Section from '$lib/components/Section.svelte';
+  import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
   import Prose from '$lib/components/Prose.svelte';
   import ContactBand from '$lib/components/ContactBand.svelte';
   import Icon from '$lib/components/Icon.svelte';
@@ -20,6 +21,16 @@
   let { data } = $props();
 
   const post = $derived(data.post);
+
+  /* Two levels down, which is the deepest this site goes: the post is inside
+     the blog, and the blog is inside the site. One array, handed both to the
+     component and to the BreadcrumbList, so the trail a reader sees and the
+     trail a crawler reads are the same object. */
+  const trail = $derived([
+    { label: 'Home', href: '/' },
+    { label: 'Blog', href: BLOG_PATH },
+    { label: post.title }
+  ]);
 
   /**
    * The post before and after this one, on the same clock the listings use.
@@ -61,6 +72,7 @@
       // that is copy John would have to write for every post he publishes.
       image: '/img/og/home.png',
       graph: [
+        breadcrumbNode(trail),
         blogPostingNode({
           path: postPath(post),
           title: post.title,
@@ -75,6 +87,9 @@
 <SeoHead {seo} />
 
 <Section h1 heading={post.title}>
+  {#snippet above()}
+    <Breadcrumbs {trail} />
+  {/snippet}
   <!-- Under the title rather than over it, and a real `<time>`: the date is
        information about the post, not a label for the section, so it is not
        the Section's kicker. -->
