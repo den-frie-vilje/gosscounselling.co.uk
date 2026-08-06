@@ -54,7 +54,7 @@
     "@sveltejs/kit": "^2.63.0",
     "@sveltejs/mcp": "^0.1.20",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
-    "@sveltia/cms": "0.157.1",
+    "@sveltia/cms": "0.180.1",
     "@tailwindcss/vite": "^4.3.0",
     "bootstrap-icons": "^1.13.1",
     "satori": "^0.26.0",
