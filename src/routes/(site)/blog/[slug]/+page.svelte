@@ -159,21 +159,40 @@
      `space-between` on the list, which would centre a lone link. The first and
      last posts each have only one neighbour, and that is the ordinary case at
      the ends of a short blog rather than an edge case. */
+  /* Two columns rather than a wrapping row. As a flex row with
+     `margin-left: auto`, two long titles could not sit side by side and the
+     newer one dropped to a second line — leaving a gap the height of a title
+     between them, on a block that is meant to be a footnote. A grid gives each
+     one half the width and lets it wrap inside its own column instead. */
   .sequence {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 20px 40px;
     margin: 24px 0 0;
     padding: 0;
     list-style: none;
   }
+  /* The newer post keeps the right-hand column even when it is the only one,
+     which is the case on the newest post and on the oldest. */
   .sequence .newer {
-    margin-left: auto;
+    grid-column: 2;
     text-align: right;
+  }
+  .sequence .older {
+    grid-column: 1;
+  }
+  @media (max-width: 599px) {
+    .sequence {
+      grid-template-columns: 1fr;
+    }
+    .sequence .newer,
+    .sequence .older {
+      grid-column: 1;
+      text-align: left;
+    }
   }
   .sequence a {
     display: block;
-    max-width: 34ch;
     text-decoration: none;
     color: inherit;
   }

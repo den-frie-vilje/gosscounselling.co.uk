@@ -56,6 +56,22 @@
   --color-teal: #0d6b83; /* links, primary CTA ground */
   --color-teal-bright: #17a2c4; /* dark grounds only — 3.0:1 on paper, never used there */
 
+  /* The breadcrumb trail, and the lightest ink on this site.
+     
+     Ole asked for it as light as accessibility allows, so it was computed
+     rather than chosen: walking `--color-muted` toward the paper ground a
+     percent at a time, this is the last step that still clears 4.5:1 for
+     normal text (WCAG 1.4.3 — the trail is 13.5px, so the large-text
+     exemption does not apply). 4.53:1 on paper.
+     
+     PAPER ONLY, and that is the cost of taking the last percent: on mist it
+     measures 4.19 and on sand 3.70, both short. Every page that draws a trail
+     is on paper today, and scripts/check-contrast.ts gates exactly that
+     pairing, so moving one onto another ground fails the build rather than
+     shipping quietly. If a trail is ever needed on mist or sand, #506973 is
+     the lightest that clears all three. */
+  --color-crumb: #60777f;
+
   /* Warm accent — kickers and numerals, one at a time */
   --color-gold: #855508;
 

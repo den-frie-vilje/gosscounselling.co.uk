@@ -60,7 +60,7 @@
     list-style: none;
     font-family: var(--font-sans);
     font-size: 13.5px;
-    color: var(--color-muted);
+    color: var(--color-crumb);
   }
   /* The separator belongs to the item that FOLLOWS it, so a trail never ends
      with one and a wrapped line never starts with an orphaned slash. */
@@ -70,7 +70,7 @@
     color: var(--color-line);
   }
   a {
-    color: var(--color-muted);
+    color: var(--color-crumb);
     text-decoration: none;
   }
   a:hover {
@@ -78,9 +78,12 @@
     text-decoration: underline;
     text-underline-offset: 4px;
   }
-  /* The page you are on: stated, not offered. */
+  /* The page you are on: stated, not offered. Still the darkest thing in the
+     trail so the hierarchy survives the lightening, but muted rather than full
+     ink — the trail is orientation, and it should not compete with the title
+     directly beneath it. */
   [aria-current='page'] {
-    color: var(--color-ink);
+    color: var(--color-muted);
     font-weight: 600;
   }
 </style>
