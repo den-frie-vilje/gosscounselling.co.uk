@@ -248,7 +248,7 @@ rather than inventing one — a photograph that clips the top of the head still 
 portrait, solving the hero geometry, rendering the OG cards. Each declares what it reads and
 what it writes; the gate hashes both, records them in `src/lib/generated/build-manifest.json`
 and runs a step only when something it actually depends on moved. A warm build is 0.08s
-against 10.2s cold, and an edit to `src/content/home.json` re-renders the cards without
+against 10.2s cold, and an edit to `src/content/search.json` re-renders the cards without
 re-keying the portrait.
 
 Three properties are load-bearing, and each is there because of a way this kind of cache

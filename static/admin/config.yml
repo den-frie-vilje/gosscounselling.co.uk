@@ -7,14 +7,19 @@
 # copy actually needs: a full toolbar invites structure the design has no place
 # for.
 #
-# Three collections, in the order John reaches for them rather than the order
+# Four collections, in the order John reaches for them rather than the order
 # the files were written:
-#   • Page    — the home page, which is the whole site, and what he opens for
-#               almost every edit he will ever make
-#   • General — the things reused across it, commonest first: his contact
-#               details, then testimonials, his social profiles, and last the
-#               name-and-search settings he will touch about once
-#   • Blog    — the posts, which may be empty and usually are
+#   • Home     — the home page, which is the whole site, one entry per SECTION
+#                of the scroll and in the order the page puts them, so that
+#                editing the fees is opening "Fees" rather than scrolling past
+#                everything else he has ever written
+#   • Services — one entry per thing he offers, each with a page of its own if
+#                he writes one
+#   • General  — the things reused across the page, commonest first: his
+#                contact details, then testimonials, his social profiles, the
+#                bodies he belongs to, his name, and last what search engines
+#                and share cards are told, which he will touch about once
+#   • Blog     — the posts, which may be empty and usually are
 #
 # THREE RULES FOR ANYONE ADDING A FIELD HERE.
 #
@@ -53,301 +58,280 @@ media_folder: static/img
 public_folder: /img
 
 collections:
-  - name: page
-    label: Page
+  # THE HOME PAGE, ONE ENTRY PER SECTION.
+  #
+  # It was a single entry called "Home — the whole scroll", holding every
+  # section of the page nested inside it, and it had grown to a form John had
+  # to scroll through five screens of to change a fee. So each section of the
+  # scroll is now an editor page of its own.
+  #
+  # A `files:` collection, not a folder, and that is the point rather than a
+  # detail. These sections have fixed identities: the page renders exactly
+  # these eight and no others, so there is no New button and nothing to
+  # delete — a "section" John could add would be a section nothing renders,
+  # which is rule 3 above. It is also the only collection shape whose ORDER
+  # is authored, and the order here is the order the sections appear on the
+  # page: `scripts/check-nav.ts` reads that order out of the markup, and this
+  # list follows it — top, what happens, how I can help, about, fees,
+  # qualifications, questions, get in touch.
+  - name: home
+    label: Home
     # No side preview pane: it renders a generic field dump rather than the
     # real site. Changes are reviewed on staging instead.
     editor: { preview: false }
+    description: >
+      Your page, top to bottom, one section at a time and in the order a visitor scrolls
+      through them. Nothing here can break the page: every section is always there, and every
+      field is words rather than layout.
     files:
-      - name: home
-        label: Home — the whole scroll
-        file: src/content/home.json
-        hint: >
-          The whole site, top to bottom, in the order a visitor scrolls through it. Nothing here
-          can break the page: every section is always there, and every field is words rather
-          than layout.
+      - name: hero
+        label: Top of the page
+        file: src/content/home/hero.json
+        hint: 'The dark band at the very top, and the first thing anybody reads.'
         fields:
-          - name: hero
-            label: Top of the page
+          - {
+              name: eyebrow,
+              label: Small label above the headline,
+              widget: string,
+              hint: 'Also printed under your name on the card people see when they share the site, so it is written here once and used in both places.'
+            }
+          - { name: title, label: Headline, widget: string }
+          - { name: lead, label: Opening paragraph, widget: text }
+          - {
+              name: aside,
+              label: The quieter line,
+              widget: text,
+              hint: 'Hung off a rule under the opening paragraph. Currently your own sentence from the old site.'
+            }
+          - {
+              name: reassure,
+              label: Line under the buttons,
+              widget: markdown,
+              buttons: [bold, italic, link],
+              editor_components: [],
+              modes: [rich_text],
+              hint: 'The WhatsApp link here points at {whatsapp}, which is filled in from your number under General → Contact details. Leave it as it is and it can never point at the wrong phone.'
+            }
+          - {
+              name: ctaPrimary,
+              label: First button,
+              widget: string,
+              hint: 'Write {phone} where the number should appear and it is filled in from Contact details. Typing the number out instead is how the button ends up reading one number and dialling another.'
+            }
+          - { name: ctaSecondary, label: Second button, widget: string }
+          # The upload that drives the whole portrait pipeline. A photograph
+          # dropped here is keyed, cut out and composited by the build; see
+          # scripts/keyer.ts, which measures the backdrop rather than
+          # assuming one and REFUSES a photograph it cannot key cleanly
+          # rather than publishing a bad cut-out.
+          #
+          # Its own folder, not `static/img`, because the pipeline watches
+          # that folder and everything else in `static/img` is something it
+          # produced. Optional, so leaving it empty keeps the portrait that
+          # is already there.
+          - {
+              name: portrait,
+              label: Your photograph,
+              widget: image,
+              required: false,
+              media_folder: '/static/img/portrait',
+              public_folder: '/img/portrait',
+              hint: 'Upload a new photo of yourself and the site cuts it out and places it for you. It needs an evenly lit plain background — if it is too patchy to cut out cleanly the build will say so and keep the photo you have. Leave this empty to keep the current one.'
+            }
+          - {
+              name: portraitAlt,
+              label: Photo description,
+              widget: string,
+              hint: 'Read out to anyone who cannot see the photo. A few words are plenty.'
+            }
+
+      - name: steps
+        label: What happens when you get in touch
+        file: src/content/home/steps.json
+        hint: 'The three steps under the top of the page, before anything else is asked of anyone.'
+        fields:
+          - { name: kicker, label: Small label above the heading, widget: string }
+          - { name: heading, label: Heading, widget: string }
+          - { name: intro, label: Line under the heading, widget: text }
+          - name: items
+            label: Steps
+            widget: list
+            summary: '{{fields.title}}'
+            hint: 'Numbered on the page in the order they are listed here, so dragging one up renumbers them for you.'
+            fields:
+              - { name: title, label: Title, widget: string }
+              - { name: body, label: Body, widget: text }
+
+      - name: services
+        label: How I can help
+        file: src/content/home/services.json
+        hint: 'The heading and the line under it. The things you offer are their own entries, under Services.'
+        fields:
+          - { name: kicker, label: Small label above the heading, widget: string }
+          - { name: heading, label: Heading, widget: string }
+          - {
+              name: navLabel,
+              label: Menu wording,
+              widget: string,
+              required: false,
+              pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
+              hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "How I can help".'
+            }
+          - { name: intro, label: Line under the heading, widget: text }
+
+      - name: about
+        label: About me
+        file: src/content/home/about.json
+        fields:
+          - { name: kicker, label: Small label above the heading, widget: string }
+          - { name: heading, label: Heading, widget: string }
+          - {
+              name: navLabel,
+              label: Menu wording,
+              widget: string,
+              required: false,
+              pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
+              hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "About me".'
+            }
+          - {
+              name: body,
+              label: Body,
+              widget: markdown,
+              buttons: [bold, italic, link, bulleted-list],
+              editor_components: [],
+              modes: [rich_text]
+            }
+          - {
+              name: photoAlt,
+              label: Photo description,
+              widget: string,
+              hint: 'Read out to anyone who cannot see the photo.'
+            }
+
+      - name: fees
+        label: Fees
+        file: src/content/home/fees.json
+        fields:
+          - { name: kicker, label: Small label above the heading, widget: string }
+          - { name: heading, label: Heading, widget: string }
+          - {
+              name: navLabel,
+              label: Menu wording,
+              widget: string,
+              required: false,
+              pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
+              hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "Fees".'
+            }
+          - { name: intro, label: Line under the heading, widget: text }
+          - name: rows
+            label: Fee groups
+            widget: list
+            summary: '{{fields.title}}'
+            hint: >
+              These are also where search engines get the price range they show for the
+              practice: it is worked out from the lowest and highest number written below,
+              so it follows your fees rather than having to be updated separately.
+            fields:
+              - { name: title, label: Group, widget: string }
+              - name: lines
+                label: Lines
+                widget: list
+                summary: '{{fields.label}} — {{fields.value}}'
+                fields:
+                  - {
+                      name: label,
+                      label: What it is,
+                      widget: string,
+                      hint: 'e.g. In person, 50 minutes'
+                    }
+                  - { name: value, label: Fee, widget: string, hint: 'e.g. £70–90' }
+          - name: note
+            label: Low-income note
             widget: object
             fields:
+              - { name: title, label: Heading, widget: string }
               - {
-                  name: eyebrow,
-                  label: Small label above the headline,
-                  widget: string,
-                  hint: 'Also printed under your name on the card people see when they share the site, so it is written here once and used in both places.'
-                }
-              - { name: title, label: Headline, widget: string }
-              - { name: lead, label: Opening paragraph, widget: text }
-              - {
-                  name: aside,
-                  label: The quieter line,
-                  widget: text,
-                  hint: 'Hung off a rule under the opening paragraph. Currently your own sentence from the old site.'
-                }
-              - {
-                  name: reassure,
-                  label: Line under the buttons,
+                  name: body,
+                  label: Body,
                   widget: markdown,
                   buttons: [bold, italic, link],
                   editor_components: [],
                   modes: [rich_text],
-                  hint: 'The WhatsApp link here points at {whatsapp}, which is filled in from your number under General → Contact details. Leave it as it is and it can never point at the wrong phone.'
-                }
-              - {
-                  name: ctaPrimary,
-                  label: First button,
-                  widget: string,
-                  hint: 'Write {phone} where the number should appear and it is filled in from Contact details. Typing the number out instead is how the button ends up reading one number and dialling another.'
-                }
-              - { name: ctaSecondary, label: Second button, widget: string }
-              # The upload that drives the whole portrait pipeline. A photograph
-              # dropped here is keyed, cut out and composited by the build; see
-              # scripts/keyer.ts, which measures the backdrop rather than
-              # assuming one and REFUSES a photograph it cannot key cleanly
-              # rather than publishing a bad cut-out.
-              #
-              # Its own folder, not `static/img`, because the pipeline watches
-              # that folder and everything else in `static/img` is something it
-              # produced. Optional, so leaving it empty keeps the portrait that
-              # is already there.
-              - {
-                  name: portrait,
-                  label: Your photograph,
-                  widget: image,
-                  required: false,
-                  media_folder: '/static/img/portrait',
-                  public_folder: '/img/portrait',
-                  hint: 'Upload a new photo of yourself and the site cuts it out and places it for you. It needs an evenly lit plain background — if it is too patchy to cut out cleanly the build will say so and keep the photo you have. Leave this empty to keep the current one.'
-                }
-              - {
-                  name: portraitAlt,
-                  label: Photo description,
-                  widget: string,
-                  hint: 'Read out to anyone who cannot see the photo. A few words are plenty.'
+                  hint: 'The "Get in touch" link here points at {mailto}, which is filled in from your address under General → Contact details, so changing your email changes this link too.'
                 }
 
-          - name: steps
-            label: What happens when you get in touch
-            widget: object
+      - name: quals
+        label: Qualifications and membership
+        file: src/content/home/quals.json
+        fields:
+          - { name: kicker, label: Small label above the heading, widget: string }
+          - { name: heading, label: Heading, widget: string }
+          - name: items
+            label: Qualifications
+            widget: list
+            summary: '{{fields.title}} ({{fields.detail}})'
+            hint: 'Listed on the page in the order they are in here.'
             fields:
-              - { name: kicker, label: Small label above the heading, widget: string }
-              - { name: heading, label: Heading, widget: string }
-              - { name: intro, label: Line under the heading, widget: text }
-              - name: items
-                label: Steps
-                widget: list
-                summary: '{{fields.title}}'
-                hint: 'Numbered on the page in the order they are listed here, so dragging one up renumbers them for you.'
-                fields:
-                  - { name: title, label: Title, widget: string }
-                  - { name: body, label: Body, widget: text }
+              - { name: title, label: Qualification, widget: string }
+              - {
+                  name: detail,
+                  label: Year,
+                  widget: string,
+                  hint: 'The year, or "studying" if it is in progress.'
+                }
+          - name: bodies
+            label: Membership and registration
+            widget: object
+            hint: 'Just the heading. The bodies themselves are edited under General → Membership and registration, so their names are not typed twice.'
+            fields:
+              - { name: title, label: Heading, widget: string }
 
-          - name: services
-            label: How I can help
-            widget: object
+      - name: faq
+        label: Questions people ask
+        file: src/content/home/faq.json
+        fields:
+          - { name: kicker, label: Small label above the heading, widget: string }
+          - { name: heading, label: Heading, widget: string }
+          - {
+              name: navLabel,
+              label: Menu wording,
+              widget: string,
+              required: false,
+              pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
+              hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "Questions".'
+            }
+          - name: items
+            label: Questions
+            widget: list
+            summary: '{{fields.q}}'
+            hint: 'These also feed the FAQPage structured data that search engines read. Google no longer shows FAQ answers directly in its results, so this is for machines rather than for a rich result.'
             fields:
-              - { name: kicker, label: Small label above the heading, widget: string }
-              - { name: heading, label: Heading, widget: string }
+              - { name: q, label: Question, widget: string }
               - {
-                  name: navLabel,
-                  label: Menu wording,
-                  widget: string,
-                  required: false,
-                  pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
-                  hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "How I can help".'
-                }
-              - { name: intro, label: Line under the heading, widget: text }
-          - name: about
-            label: About me
-            widget: object
-            fields:
-              - { name: kicker, label: Small label above the heading, widget: string }
-              - { name: heading, label: Heading, widget: string }
-              - {
-                  name: navLabel,
-                  label: Menu wording,
-                  widget: string,
-                  required: false,
-                  pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
-                  hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "About me".'
-                }
-              - {
-                  name: body,
-                  label: Body,
+                  name: a,
+                  label: Answer,
                   widget: markdown,
                   buttons: [bold, italic, link, bulleted-list],
                   editor_components: [],
                   modes: [rich_text]
                 }
-              - {
-                  name: photoAlt,
-                  label: Photo description,
-                  widget: string,
-                  hint: 'Read out to anyone who cannot see the photo.'
-                }
 
-          - name: fees
-            label: Fees
-            widget: object
-            fields:
-              - { name: kicker, label: Small label above the heading, widget: string }
-              - { name: heading, label: Heading, widget: string }
-              - {
-                  name: navLabel,
-                  label: Menu wording,
-                  widget: string,
-                  required: false,
-                  pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
-                  hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "Fees".'
-                }
-              - { name: intro, label: Line under the heading, widget: text }
-              - name: rows
-                label: Fee groups
-                widget: list
-                summary: '{{fields.title}}'
-                hint: >
-                  These are also where search engines get the price range they show for the
-                  practice: it is worked out from the lowest and highest number written below,
-                  so it follows your fees rather than having to be updated separately.
-                fields:
-                  - { name: title, label: Group, widget: string }
-                  - name: lines
-                    label: Lines
-                    widget: list
-                    summary: '{{fields.label}} — {{fields.value}}'
-                    fields:
-                      - {
-                          name: label,
-                          label: What it is,
-                          widget: string,
-                          hint: 'e.g. In person, 50 minutes'
-                        }
-                      - { name: value, label: Fee, widget: string, hint: 'e.g. £70–90' }
-              - name: note
-                label: Low-income note
-                widget: object
-                fields:
-                  - { name: title, label: Heading, widget: string }
-                  - {
-                      name: body,
-                      label: Body,
-                      widget: markdown,
-                      buttons: [bold, italic, link],
-                      editor_components: [],
-                      modes: [rich_text],
-                      hint: 'The "Get in touch" link here points at {mailto}, which is filled in from your address under General → Contact details, so changing your email changes this link too.'
-                    }
-
-          - name: quals
-            label: Qualifications and membership
-            widget: object
-            fields:
-              - { name: kicker, label: Small label above the heading, widget: string }
-              - { name: heading, label: Heading, widget: string }
-              - name: items
-                label: Qualifications
-                widget: list
-                summary: '{{fields.title}} ({{fields.detail}})'
-                hint: 'Listed on the page in the order they are in here.'
-                fields:
-                  - { name: title, label: Qualification, widget: string }
-                  - {
-                      name: detail,
-                      label: Year,
-                      widget: string,
-                      hint: 'The year, or "studying" if it is in progress.'
-                    }
-              - name: bodies
-                label: Membership and registration
-                widget: object
-                hint: 'Just the heading. The bodies themselves are edited under General → Site, so their names are not typed twice.'
-                fields:
-                  - { name: title, label: Heading, widget: string }
-
-          - name: faq
-            label: Questions people ask
-            widget: object
-            fields:
-              - { name: kicker, label: Small label above the heading, widget: string }
-              - { name: heading, label: Heading, widget: string }
-              - {
-                  name: navLabel,
-                  label: Menu wording,
-                  widget: string,
-                  required: false,
-                  pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
-                  hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "Questions".'
-                }
-              - name: items
-                label: Questions
-                widget: list
-                summary: '{{fields.q}}'
-                hint: 'These also feed the FAQPage structured data that search engines read. Google no longer shows FAQ answers directly in its results, so this is for machines rather than for a rich result.'
-                fields:
-                  - { name: q, label: Question, widget: string }
-                  - {
-                      name: a,
-                      label: Answer,
-                      widget: markdown,
-                      buttons: [bold, italic, link, bulleted-list],
-                      editor_components: [],
-                      modes: [rich_text]
-                    }
-
-          - name: contact
-            label: Get in touch
-            widget: object
-            hint: 'The heading and the line under it. The phone number, email and WhatsApp link live under General → Contact details. This heading is also the one over the contact block in the phone menu, so it is written here and nowhere else.'
-            fields:
-              - { name: kicker, label: Small label above the heading, widget: string }
-              - { name: heading, label: Heading, widget: string }
-              - {
-                  name: navLabel,
-                  label: Menu wording,
-                  widget: string,
-                  required: false,
-                  pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
-                  hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "Get in touch".'
-                }
-              - { name: intro, label: Line under the heading, widget: text }
-
-          - name: seo
-            label: Search engine summary
-            widget: object
-            hint: >
-              How this page looks in a Google result: this is the blue line people click, and
-              the line in the browser tab. The sentence underneath it comes from “Description
-              in search results” under General → Site, because for the home page that is the
-              same sentence — so it is written once, there.
-            fields:
-              # Same reason as the slug fields: it is read straight from the
-              # file by scripts/gen-og.ts as the share card's fallback title,
-              # so a placeholder must never appear here (check-contact.ts).
-              - {
-                  name: title,
-                  label: Title in the search result,
-                  widget: string,
-                  hint: 'Also what shows in the browser tab. Around 60 characters — Google cuts it off after that.'
-                }
-
-          - name: og
-            label: Social-share card
-            widget: object
-            hint: 'The picture people see when your site is shared in a chat or on social media. It is redrawn on its own each time the site publishes. There is one thing to write here — the card also shows your name and the “Bletchley, Milton Keynes” line, and it takes those from where you already wrote them rather than asking twice.'
-            fields:
-              # The card is drawn by scripts/gen-og.ts, in plain node, straight
-              # from the JSON — so it never sees the {phone}-style
-              # placeholders the pages resolve. A token here would be painted
-              # onto the image as literal braces, and check-contact.ts refuses
-              # one in this field and in the two others that script reads.
-              - {
-                  name: title,
-                  label: Headline on the card,
-                  widget: string,
-                  hint: 'Leave it empty and the card uses the headline from the top of your home page, which is usually what you want. Fill it in only when the card needs a shorter or different line.'
-                }
-
+      - name: contact
+        label: Get in touch
+        file: src/content/home/contact.json
+        hint: 'The last band on the page: the heading and the line under it. The phone number, email and WhatsApp link live under General → Contact details. This heading is also the one over the contact block in the phone menu, so it is written here and nowhere else.'
+        fields:
+          - { name: kicker, label: Small label above the heading, widget: string }
+          - { name: heading, label: Heading, widget: string }
+          - {
+              name: navLabel,
+              label: Menu wording,
+              widget: string,
+              required: false,
+              pattern: ['^.{1,18}$', 'Menu wording has to be 18 characters or fewer — the menu bar is only so wide.'],
+              hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "Get in touch".'
+            }
+          - { name: intro, label: Line under the heading, widget: text }
 
   - name: services
     label: Services
@@ -588,56 +572,25 @@ collections:
                   hint: 'The full address of your profile, pasted from the browser — for example https://www.facebook.com/gosscounselling.'
                 }
 
-      - name: site
-        label: Site
-        file: src/content/site.json
+      # The bodies, out of Site and standing on their own. They were a list
+      # nested at the bottom of the Site entry, under a name, a tagline and
+      # four fields of Schema.org — so adding a register meant opening the
+      # entry John has least reason to open and scrolling past everything in
+      # it. They are also the only thing in that entry with a logo to upload.
+      - name: memberships
+        label: Membership and registration
+        file: src/content/memberships.json
         hint: >
-          Your name, the line under it, and what search engines are told about the practice.
-          These change about once. Everything a visitor reads on the page itself is under Page.
+          The bodies you belong to, and the ones that accredit or list you. Shown as a row
+          each, logo beside name, in the qualifications section on the page, and told to
+          search engines. The heading over them on the page is under Home → Qualifications
+          and membership, so their names are not typed twice.
         fields:
-          - { name: name, label: Name, widget: string }
-          - { name: tagline, label: Tagline, widget: string }
-          - {
-              name: description,
-              label: Description in search results,
-              widget: text,
-              hint: 'About 150 to 160 characters. Used in search results and link previews.'
-            }
-          - {
-              name: footerNote,
-              label: Footer note,
-              widget: string,
-              hint: 'Use {year} for the year; it is filled in automatically, so the copyright line is never out of date.'
-            }
-          - name: schema
-            label: What search engines are told
-            widget: object
-            hint: 'Read by machines, not shown anywhere on the page. Getting it wrong makes the site harder to find; it cannot break anything a visitor sees.'
-            fields:
-              - { name: jobTitle, label: Job title, widget: string }
-              - {
-                  name: bio,
-                  label: A sentence or two about you,
-                  widget: text,
-                  hint: 'For search engines only. Your own About me section is under Page.'
-                }
-              - {
-                  name: knowsAbout,
-                  label: Topics you work with,
-                  widget: list,
-                  field: { name: topic, label: Topic, widget: string }
-                }
-              - {
-                  name: areaServed,
-                  label: Areas served,
-                  widget: list,
-                  field: { name: area, label: Area, widget: string }
-                }
-          - name: memberships
-            label: Membership and registration
+          - name: items
+            label: Bodies
             widget: list
             summary: '{{fields.abbr}}'
-            hint: 'Shown as a row each, logo beside name, in the qualifications section on the page, and told to search engines. Listed in the order they are in here.'
+            hint: 'Listed on the page in the order they are in here.'
             fields:
               - { name: name, label: Full name, widget: string }
               - { name: abbr, label: Abbreviation, widget: string }
@@ -669,6 +622,93 @@ collections:
                   widget: string,
                   required: false,
                   hint: 'Your public listing on their register. Leave empty and the name shows unlinked.'
+                }
+
+      - name: site
+        label: Site
+        file: src/content/site.json
+        hint: >
+          Your name, the line under it, and what search engines are told about you. These
+          change about once. How the site LOOKS in a search result or when somebody shares it
+          is next door, under Search engines and sharing; everything a visitor reads on the
+          page itself is under Home.
+        fields:
+          - { name: name, label: Name, widget: string }
+          - { name: tagline, label: Tagline, widget: string }
+          - {
+              name: footerNote,
+              label: Footer note,
+              widget: string,
+              hint: 'Use {year} for the year; it is filled in automatically, so the copyright line is never out of date.'
+            }
+          - name: schema
+            label: What search engines are told
+            widget: object
+            hint: 'Read by machines, not shown anywhere on the page. Getting it wrong makes the site harder to find; it cannot break anything a visitor sees.'
+            fields:
+              - { name: jobTitle, label: Job title, widget: string }
+              - {
+                  name: bio,
+                  label: A sentence or two about you,
+                  widget: text,
+                  hint: 'For search engines only. Your own About me section is under Home.'
+                }
+              - {
+                  name: knowsAbout,
+                  label: Topics you work with,
+                  widget: list,
+                  field: { name: topic, label: Topic, widget: string }
+                }
+              - {
+                  name: areaServed,
+                  label: Areas served,
+                  widget: list,
+                  field: { name: area, label: Area, widget: string }
+                }
+
+      # How the site LOOKS somewhere else: in a search result, and in the
+      # picture that appears when somebody pastes the address into a chat.
+      # The two were in different places — the sentence Google shows was at
+      # the bottom of Site, the share card was at the bottom of the home
+      # page — and they are one job, done once, so they are one entry.
+      - name: search
+        label: Search engines and sharing
+        file: src/content/search.json
+        hint: >
+          How your site appears where it is not: the blue line and the sentence under it in a
+          Google result, and the picture people see when the address is shared in a chat. None
+          of this shows on the page itself. You can leave it alone once it is written.
+        fields:
+          # Read straight from the file by scripts/gen-og.ts as the share
+          # card's last fallback title, so a placeholder must never appear
+          # here (check-contact.ts).
+          - {
+              name: title,
+              label: Title in the search result,
+              widget: string,
+              hint: 'Also what shows in the browser tab. Around 60 characters — Google cuts it off after that.'
+            }
+          - {
+              name: description,
+              label: Description in search results,
+              widget: text,
+              hint: 'About 150 to 160 characters, written for the person reading the search result. Used under the title above, in link previews, and on the Blog page.'
+            }
+          - name: og
+            label: Social-share card
+            widget: object
+            hint: 'The picture people see when your site is shared in a chat or on social media. It is redrawn on its own each time the site publishes. There is one thing to write here — the card also shows your name and the “Bletchley, Milton Keynes” line, and it takes those from where you already wrote them rather than asking twice.'
+            fields:
+              # The card is drawn by scripts/gen-og.ts, in plain node,
+              # straight from the JSON — so it never sees the {phone}-style
+              # placeholders the pages resolve. A token here would be painted
+              # onto the image as literal braces, and check-contact.ts refuses
+              # one in this field and in the two others that script reads.
+              - {
+                  name: title,
+                  label: Headline on the card,
+                  widget: string,
+                  hint: 'Leave it empty and the card uses the headline from the top of your home page, which is usually what you want. Fill it in only when the card needs a shorter or different line.'
                 }
 
   # A blog is a FOLDER collection: one file per post in `src/content/posts/`,

@@ -10,6 +10,34 @@ ordinary practice detail does not look invented.
 
 ---
 
+## 0. ON THE SITE NOW, and it replaced a sentence of his own
+
+Everything else in this file is waiting. This one is live, on Ole's instruction, and it is first
+because it is the only one where OUR words took the place of JOHN'S.
+
+The line under the hero's opening paragraph now reads:
+
+> If you've been putting off making this call, that's a common place to start from. You don't have
+> to have the words ready.
+
+It replaced this, which came off his old site and was his own:
+
+> Whatever brings you to counselling, you are assured of a space to talk openly about it.
+
+Ole's reason, and it is a good one: the new line "sits warmer and more disarming". It names the
+hesitation once and then leaves it alone, which is the register of the Quiet Practice prototype
+John liked. It is also the most personal sentence on the page and it is now in his voice without
+being his — which is exactly the thing this file exists to stop happening quietly.
+
+**The question for him is one line: is that true of you, and may it stay?** If not, his own
+sentence goes straight back; it is in the git history and in this file.
+
+The hero's opening paragraph also lost its last sentence, "In person in Bletchley, Milton Keynes,
+or online", because the label above the headline already says it. That one is a deletion of a
+repetition, not a substitution, and needs no answer.
+
+---
+
 ## 1. The two empathy lines from the Quiet Practice prototype
 
 Ole singled these out and would like them on the site. They are good, and neither is his.
@@ -58,7 +86,7 @@ Carried over from [content-coverage.md](content-coverage.md):
 `https://menstherapyhub.co.uk/therapist/john-goss/`, so the discrepancies below are no
 longer only his business: a visitor can follow the link and read them. The email in
 `docs/emails/2026-08-05-listing-discrepancies.md` asks him to correct them. If he would
-rather not, remove the `href` from the MTH entry in `src/content/site.json` and the chip
+rather not, remove the `href` from the MTH entry in `src/content/memberships.json` and the chip
 shows the name unlinked.
 
 

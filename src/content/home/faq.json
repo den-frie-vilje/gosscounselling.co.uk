@@ -1,0 +1,27 @@
+{
+  "kicker": "Before you call",
+  "heading": "Questions people ask",
+  "navLabel": "Questions",
+  "items": [
+    {
+      "q": "How many sessions will I need?",
+      "a": "There isn't necessarily a set amount of therapy you 'need'; it depends on what you're coming for and what you'd like from the sessions. We can discuss it when we start, and keep it under review."
+    },
+    {
+      "q": "What sort of therapy do you offer?",
+      "a": "I see myself very much as an integrative therapist: I use all my training to support you, without sticking to one type of theory. Some people come for something specific, like a sexual issue, which would fit under psychosexual therapy, but I'd still be using all my other skills and training too."
+    },
+    {
+      "q": "What is psychosexual therapy?",
+      "a": "Psychosexual therapy generally focuses on a sexual issue. That could include:\n\n- Unreliable erections\n- Delayed ejaculation\n- Loss of, or lack of, sexual desire\n- Vaginismus\n- Painful sex\n- Orgasm problems\n- Vulvodynia\n\nPeople also see a psychosexual therapist for other reasons: porn use, intimacy with a partner or partners, fetishes, or exploring kinks."
+    },
+    {
+      "q": "Is there a difference between counselling, therapy and psychotherapy?",
+      "a": "The simple answer is no. In the UK, terms such as counsellor, therapist and psychotherapist aren't protected by law, so people use them interchangeably. I usually use 'counsellor' or 'therapist'. Some membership bodies and some therapists do differentiate, but in UK law there's no distinction."
+    },
+    {
+      "q": "Why is therapy so expensive?",
+      "a": "As a therapist I'm self-employed, so there's no sick pay or employee benefits. There's also the training and qualifications to pay for, and continuing professional development that never stops.\n\nThe session fee has to take account of my qualifications and what they cost, along with practical things like room hire and Zoom licences."
+    }
+  ]
+}

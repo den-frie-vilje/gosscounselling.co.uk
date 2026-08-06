@@ -2,7 +2,7 @@
  * Canonical URLs, Schema.org graph, and the per-page SEO payload.
  */
 import { PUBLIC_SITE_URL } from '$env/static/public';
-import { site, contact, home, social, testimonials } from '$lib/content';
+import { site, contact, home, memberships, search, social, testimonials } from '$lib/content';
 import { parsePhone } from '$lib/phone';
 import { entitySameAs, memberOfOrganizations, priceRangeFrom } from '$lib/seo/entity';
 
@@ -50,7 +50,7 @@ const PERSON_ID = `${SITE_URL}/#john`;
  * it. What that gate enforces is the part no code can decide: every URL that
  * reaches here has to be one docs/social-profiles.md records as VERIFIED.
  */
-const personSameAs = entitySameAs(social.profiles, site.memberships);
+const personSameAs = entitySameAs(social.profiles, memberships);
 
 /**
  * The number in international form, for machines only.
@@ -95,7 +95,7 @@ function siteGraph(): object[] {
       '@type': 'ProfessionalService',
       '@id': PRACTICE_ID,
       name: site.name,
-      description: site.description,
+      description: search.description,
       url: `${SITE_URL}/`,
       telephone: TELEPHONE,
       email: contact.email,
@@ -134,7 +134,7 @@ function siteGraph(): object[] {
       // Authority accredits the register rather than admitting him, and Men's
       // Therapy Hub is a directory that lists him. The filter is in
       // $lib/seo/entity so that scripts/check-seo.ts gates this exact code.
-      memberOf: memberOfOrganizations(site.memberships)
+      memberOf: memberOfOrganizations(memberships)
     }
   ];
 }

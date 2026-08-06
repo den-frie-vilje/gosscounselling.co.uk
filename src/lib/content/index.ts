@@ -13,7 +13,21 @@
 import { PUBLIC_BUILD_TIME } from '$env/static/public';
 import siteData from '../../content/site.json';
 import contactData from '../../content/contact.json';
-import homeData from '../../content/home.json';
+import membershipsData from '../../content/memberships.json';
+import searchData from '../../content/search.json';
+/* The home page, one file per SECTION, imported in the order the page puts
+   them. Named imports rather than a glob: these eight are fixed — the page
+   renders exactly them — so the set is not the filesystem's to decide, and a
+   glob would hand them back in whatever order it found them and make the
+   assembled `home` object depend on that. */
+import heroData from '../../content/home/hero.json';
+import stepsData from '../../content/home/steps.json';
+import homeServicesData from '../../content/home/services.json';
+import aboutData from '../../content/home/about.json';
+import feesData from '../../content/home/fees.json';
+import qualsData from '../../content/home/quals.json';
+import faqData from '../../content/home/faq.json';
+import homeContactData from '../../content/home/contact.json';
 import testimonialsData from '../../content/testimonials.json';
 import socialData from '../../content/social.json';
 import { SOCIAL_BY_ID } from '$lib/generated/social-icons';
@@ -38,10 +52,20 @@ export interface Membership {
   isMembership: boolean;
 }
 
+/**
+ * What the site is called, and what it says about John to a machine.
+ *
+ * There is no `description` and no `memberships` here any more, and neither
+ * is a loss of information: both are still exactly one string apiece, just in
+ * a file of their own with an editor entry of their own. `description` is the
+ * sentence a stranger reads in a search result, which is `search` below; the
+ * bodies are a list with a logo to upload each, which was the one thing in
+ * this entry John would ever open twice. An interface that kept naming them
+ * after they had moved would be the drift this file exists to prevent.
+ */
 export interface Site {
   name: string;
   tagline: string;
-  description: string;
   /** Carries `{year}`, filled in at render time by `footerNote()`. */
   footerNote: string;
   /* There is no `serviceType`. It was in the CMS and in this interface for
@@ -57,7 +81,28 @@ export interface Site {
     knowsAbout: string[];
     areaServed: string[];
   };
-  memberships: Membership[];
+}
+
+/**
+ * How the site reads where it is not: in a search result, and in the card a
+ * chat window draws when somebody pastes the address.
+ *
+ * One entry in the editor, because it is one job. The sentence Google shows
+ * was the last field of Site and the share card was the last field of the
+ * home page, which is two places to go for the same twenty minutes of work,
+ * and neither of them is anything a visitor to the page ever sees.
+ *
+ * `description` is the home page's search description AND the site's, because
+ * this site is one page; see `home` below for why that is derived rather than
+ * asked for twice.
+ */
+export interface Search {
+  title: string;
+  description: string;
+  /** The share card. Only the title is John's to write: the card also carries
+   *  his name and the hero's own eyebrow, and it reads those from where he
+   *  already wrote them rather than asking twice. */
+  og: { title: string };
 }
 
 /**
@@ -164,6 +209,22 @@ export interface FaqItem {
    the brand in the header is `site.name` over `site.tagline`, and the bar is
    built from `nav` below. It had been editable, and dead, since the first
    commit. */
+/**
+ * The home page, which is the whole site.
+ *
+ * ONE INTERFACE, EIGHT FILES. Each section below is its own file under
+ * `src/content/home/` and its own entry in the editor, because the single
+ * `home.json` had become a form five screens long: changing a fee meant
+ * scrolling past the hero, the three steps, the services framing and the
+ * whole of About me. The page did not change and neither did this shape —
+ * the components read `home.fees.rows` exactly as they always have — so the
+ * split is in the editor and on disk and nowhere else. `home` below is where
+ * the eight files are put back together, in the order the page renders them.
+ *
+ * `seo` and `og` are NOT sections of the scroll and are not files here: they
+ * are how the page reads in a search result and in a share card, which is
+ * `Search` above, one entry under General.
+ */
 export interface Home {
   hero: {
     eyebrow: string;
@@ -202,17 +263,18 @@ export interface Home {
     kicker: string;
     heading: string;
     items: Qualification[];
-    /** Just the heading: the bodies themselves come from site.memberships, so
+    /** Just the heading: the bodies themselves come from `memberships`, so
      *  the names are not typed twice. */
     bodies: { title: string };
   };
   faq: { kicker: string; heading: string; navLabel?: string; items: FaqItem[] };
   contact: { kicker: string; heading: string; intro: string; navLabel?: string };
-  /** `description` is NOT in home.json and is not a field: see `home` below. */
+  /** Assembled from `search`, not from a file under `src/content/home/`: the
+   *  search listing is not a section of the page. See `home` below. */
   seo: { title: string; description: string };
-  /** The share card. Only the title is John's to write here: the card also
-   *  carries his name and the hero's own eyebrow, and it reads those from
-   *  where he already wrote them rather than asking twice. */
+  /** The share card, likewise from `search`. Only the title is John's to
+   *  write: the card also carries his name and the hero's own eyebrow, and it
+   *  reads those from where he already wrote them rather than asking twice. */
   og: { title: string };
 }
 
@@ -354,18 +416,67 @@ const COPY: TokenValues = {
 
 export const site: Site = resolveDeep(siteData, COPY);
 
-/* Mock content is merged in only where it exists, and it only exists in dev
-   (see ./mock.ts). Production reads exactly the JSON in src/content/. */
-export const testimonials: Testimonials = resolveDeep(
-  mockTestimonials ?? testimonialsData,
+/**
+ * The bodies, in the order John lists them.
+ *
+ * Their own file and their own entry, out of `site`. `{ items: [...] }` and
+ * not a bare array, because a `files:` entry in the CMS edits an OBJECT: a
+ * JSON file whose root is a list has no field for the editor to hang the list
+ * widget on. Same envelope as testimonials.json, for the same reason.
+ */
+export const memberships: Membership[] = resolveDeep(
+  (membershipsData as { items: Membership[] }).items,
   COPY
 );
 
-/** home.json as it is on disk: everything `Home` has except the description,
- *  which is not in the file and is not a field. */
-type HomeSource = Omit<Home, 'seo'> & { seo: { title: string } };
+/** The search listing and the share card. */
+export const search: Search = resolveDeep(searchData as Search, COPY);
 
-const homeResolved = resolveDeep(homeData as HomeSource, COPY);
+/* Mock content is merged in only where it exists, and it only exists in dev
+   (see ./mock.ts). Production reads exactly the JSON in src/content/.
+
+   MERGED, not substituted. `mockTestimonials ?? testimonialsData` replaced the
+   whole record, and the mock file holds only `items` — deliberately, because
+   the instruction was to mock the quotations and not the labelling around
+   them. So in dev the kicker became `undefined` and the eyebrow over the rail
+   rendered as an empty <p>: present, centred, gold, and containing nothing.
+   It looked like the eyebrow had never been built, and was asked for again
+   and again on that evidence. It had been built every time.
+
+   The spread keeps everything the real file says and overrides only the keys
+   the mock actually carries. */
+export const testimonials: Testimonials = resolveDeep(
+  mockTestimonials ? { ...testimonialsData, ...mockTestimonials } : testimonialsData,
+  COPY
+);
+
+/**
+ * The eight section files, put back into the one object the page reads.
+ *
+ * Written out key by key rather than spread from a glob, and in the order the
+ * page renders them, so that this list IS the running order and reads as one:
+ * top, what happens when you get in touch, how I can help, about me, fees,
+ * qualifications, questions, get in touch. `scripts/check-nav.ts` reads that
+ * same order out of the markup and gates the menu against it.
+ *
+ * `seo` and `og` are not here because they are not sections; they are added
+ * from `search` in `home` below.
+ */
+type HomeSource = Omit<Home, 'seo' | 'og'>;
+
+const homeResolved = resolveDeep(
+  {
+    hero: heroData,
+    steps: stepsData,
+    services: homeServicesData,
+    about: aboutData,
+    fees: feesData,
+    quals: qualsData,
+    faq: faqData,
+    contact: homeContactData
+  } as HomeSource,
+  COPY
+);
 
 /**
  * What he offers, one file each.
@@ -400,15 +511,20 @@ export const services: Service[] = resolveDeep(
   );
 
 /**
- * The home page.
+ * The home page: its eight sections, plus how it reads elsewhere.
  *
- * `seo.description` is derived, not written. It was a field, and it held a
- * byte-for-byte copy of `site.description`: the same 150 characters in two
- * boxes in the editor, one of which John would eventually change and the
- * other of which he would not — and the one he did not change is the one a
- * stranger reads in a search result. This site is one page, so the site's
- * description IS the home page's; the blog index, the share card and the
- * Schema.org graph were all already using it.
+ * `seo` and `og` come from `search` rather than from a file of their own
+ * here, and every component that reads `home.seo.title` or `home.og.title` is
+ * untouched by that: this is the seam, and it is the only place that knows
+ * where those two strings are kept.
+ *
+ * `seo.description` is derived and has never been a field of its own. It was
+ * one, and it held a byte-for-byte copy of the site description: the same 150
+ * characters in two boxes in the editor, one of which John would eventually
+ * change and the other of which he would not — and the one he did not change
+ * is the one a stranger reads in a search result. This site is one page, so
+ * the site's description IS the home page's; the blog index, the share card
+ * and the Schema.org graph were all already using it.
  *
  * If the two ever genuinely need to differ, this is where the override goes
  * back, as an OPTIONAL field falling back to here rather than a required one
@@ -416,7 +532,8 @@ export const services: Service[] = resolveDeep(
  */
 export const home: Home = {
   ...homeResolved,
-  seo: { ...homeResolved.seo, description: site.description }
+  seo: { title: search.title, description: search.description },
+  og: search.og
 };
 
 /* ---------------------------------------------------------------------------

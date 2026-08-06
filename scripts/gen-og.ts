@@ -7,8 +7,16 @@
  * CI build (pure JS + native resvg — no ImageMagick).
  *
  * The copy is pulled from the content JSON, so the card updates whenever
- * John edits the `og` block in the CMS and the site is rebuilt. Keep the
- * card list below in sync with the routes (today: one page, one card).
+ * John edits the `og` block under General → Search engines and sharing and
+ * the site is rebuilt. Keep the card list below in sync with the routes
+ * (today: one page, one card).
+ *
+ * THREE FILES, and each is read for one thing: his name from `site.json`,
+ * the card's own headline and the search title from `search.json`, and the
+ * hero's eyebrow and headline from the home page's top section. They are the
+ * files the CMS entries write, so a field this script reads is a field John
+ * can see; `scripts/check-contact.ts` forbids a {placeholder} in each of the
+ * four, because nothing here resolves one.
  */
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -23,7 +31,8 @@ const read = (p: string) => readFileSync(resolve(root, p));
 const readJson = (p: string) => JSON.parse(read(p).toString('utf8'));
 
 const site = readJson('src/content/site.json');
-const home = readJson('src/content/home.json');
+const search = readJson('src/content/search.json');
+const hero = readJson('src/content/home/hero.json');
 
 // FONTS — satori can only parse `.woff`/`.ttf`/`.otf`; it CANNOT read woff2.
 // The `@fontsource-variable/*` packages the site itself loads ship woff2
@@ -59,7 +68,7 @@ const NAME: string = site.name;
 /** The hero's own eyebrow — where he is. One field, read here and rendered on
  *  the page, rather than a second copy of the same sentence in the og block
  *  that John would have to remember to keep in step. */
-const WHERE: string = home.hero?.eyebrow ?? '';
+const WHERE: string = hero.eyebrow ?? '';
 
 /** Bind the last two words with a non-breaking space so a wrapped line
  *  never leaves a single-word orphan. */
@@ -201,7 +210,7 @@ interface Card {
 const CARDS: Card[] = [
   {
     slug: 'home',
-    title: home.og?.title?.trim() || home.hero?.title?.trim() || home.seo?.title?.trim() || ''
+    title: search.og?.title?.trim() || hero.title?.trim() || search.title?.trim() || ''
   }
 ];
 

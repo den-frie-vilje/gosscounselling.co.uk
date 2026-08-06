@@ -116,10 +116,16 @@ function jsonFilesIn(dir: string): string[] {
 
 const CONTENT = [
   'src/content/contact.json',
-  'src/content/home.json',
+  'src/content/memberships.json',
+  'src/content/search.json',
   'src/content/site.json',
   'src/content/social.json',
   'src/content/testimonials.json',
+  // The home page is one file per section, so it is read as a folder for the
+  // same reason the posts are: a list of eight section names written down
+  // here is a list that is one section short the day a section is added, and
+  // the section nobody scanned is the one with his number typed into it.
+  ...jsonFilesIn('src/content/home'),
   ...jsonFilesIn('src/content/posts'),
   ...jsonFilesIn('src/content/services')
 ];
@@ -139,13 +145,13 @@ const SOURCE = 'contact.json';
  */
 const RAW_FIELDS = new Set([
   'site.json:name',
-  'home.json:hero.eyebrow',
-  'home.json:og.title',
-  'home.json:seo.title'
+  'home/hero.json:eyebrow',
+  'search.json:og.title',
+  'search.json:title'
 ]);
 
 interface Found {
-  /** `home.json:hero.ctaPrimary` — the file and the field, as John sees it. */
+  /** `home/hero.json:ctaPrimary` — the file and the field, as John sees it. */
   where: string;
   text: string;
 }
@@ -243,23 +249,23 @@ export function checkCopy(found: Found[], rules: Rules): string[] {
 // real files are allowed to pass.
 const RULES: Rules = { e164: '+447776153426', email: 'info@gosscounselling.co.uk' };
 const FAULTS: Array<[string, Found[]]> = [
-  ['an unknown placeholder', [{ where: 'home.json:hero.ctaPrimary', text: 'Call {phon}' }]],
-  ['a placeholder in a share-card field', [{ where: 'home.json:og.title', text: 'Ring {phone}' }]],
+  ['an unknown placeholder', [{ where: 'home/hero.json:ctaPrimary', text: 'Call {phon}' }]],
+  ['a placeholder in a share-card field', [{ where: 'search.json:og.title', text: 'Ring {phone}' }]],
   [
     'the number written out',
-    [{ where: 'home.json:hero.ctaPrimary', text: 'Call 07776 153 426' }]
+    [{ where: 'home/hero.json:ctaPrimary', text: 'Call 07776 153 426' }]
   ],
   [
     'the number written out in another shape',
-    [{ where: 'home.json:faq.items[0].a', text: 'Ring me on +44 7776 153426.' }]
+    [{ where: 'home/faq.json:items[0].a', text: 'Ring me on +44 7776 153426.' }]
   ],
   [
     'the email written out',
-    [{ where: 'home.json:fees.note.body', text: '[Write](mailto:info@gosscounselling.co.uk)' }]
+    [{ where: 'home/fees.json:note.body', text: '[Write](mailto:info@gosscounselling.co.uk)' }]
   ],
   [
     'a wa.me link',
-    [{ where: 'home.json:hero.reassure', text: '[WhatsApp](https://wa.me/447776153426)' }]
+    [{ where: 'home/hero.json:reassure', text: '[WhatsApp](https://wa.me/447776153426)' }]
   ]
 ];
 for (const [label, fault] of FAULTS) {
@@ -274,11 +280,11 @@ for (const [label, fault] of FAULTS) {
 const INNOCENT: Found[] = [
   { where: 'contact.json:phone', text: '07776 153 426' },
   { where: 'contact.json:email', text: 'info@gosscounselling.co.uk' },
-  { where: 'home.json:hero.ctaPrimary', text: 'Call {phone}' },
-  { where: 'home.json:fees.rows[0].lines[0].value', text: '£70–90' },
+  { where: 'home/hero.json:ctaPrimary', text: 'Call {phone}' },
+  { where: 'home/fees.json:rows[0].lines[0].value', text: '£70–90' },
   { where: 'contact.json:location', text: 'Bletchley, Milton Keynes MK3' },
   { where: 'site.json:footerNote', text: '© {year} John Goss' },
-  { where: 'home.json:faq.items[0].a', text: 'Some 2015 training, 90 minutes, 60 sessions.' }
+  { where: 'home/faq.json:items[0].a', text: 'Some 2015 training, 90 minutes, 60 sessions.' }
 ];
 const falseAlarms = checkCopy(INNOCENT, RULES);
 if (falseAlarms.length) {

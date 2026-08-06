@@ -92,10 +92,10 @@ const STEPS: Step[] = [
     describe: 'Keying his portrait is the most expensive thing in the build.',
     // The keyer's own source counts: a change to the physics has to re-key, or the fix
     // ships everywhere except in the asset it was written for.
-    // `home.json` because the CMS records WHICH photograph is his in
-    // `hero.portrait`, so clearing or changing that field is a reason to re-key
-    // even when the folder's contents have not moved.
-    inputs: ['scripts/keyer.ts', 'scripts/gen-cutouts.ts', 'src/content/home.json'],
+    // The home page's top section because the CMS records WHICH photograph is
+    // his in its `portrait` field, so clearing or changing that field is a
+    // reason to re-key even when the folder's contents have not moved.
+    inputs: ['scripts/keyer.ts', 'scripts/gen-cutouts.ts', 'src/content/home/hero.json'],
     optional: [PORTRAIT_SOURCE],
     outputs: [PORTRAIT_ASSETS, PORTRAIT_MASTERS],
     run: () => node('scripts/gen-cutouts.ts')
@@ -122,7 +122,8 @@ const STEPS: Step[] = [
       // and a field-level dependency would have to be kept in step with someone else's
       // script by hand.
       'src/content/site.json',
-      'src/content/home.json',
+      'src/content/search.json',
+      'src/content/home/hero.json',
       'src/lib/generated/portrait-geometry.json',
       // The three .woff faces satori embeds live in node_modules, which is not a place to
       // hash from — it need not exist, and it is not what a clone carries. The lockfile is
