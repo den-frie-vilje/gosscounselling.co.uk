@@ -37,10 +37,11 @@ renamed off the template's own subject. It exits non-zero if any of that fails.
 
 Two things to know about the layout:
 
-- **Pictures span the full measure between the page margins**, the width the template's own body
-  picture uses. An anchored picture is drawn from the page margin whatever geometry it is given, so
-  a picture narrowed to the text column leaves a gap beside it that the next paragraph flows into.
-  Full measure is the width at which that cannot happen.
+- **Pictures sit in the text column**, the width of the words, with a blank line above and below.
+  That takes one field: a picture inserted by cupertino-files carries no text-wrap archive, and
+  Pages supplies a floating one the first time it saves, which is what made pictures draw from the
+  page margin with text running up their side. `build-pages.mjs` writes the archive itself, with 0
+  where Pages puts 4. `picture-placement-test.pages` is the document that settled it.
 - **`Contents` is a plain list of the chapters, not a live table of contents.** Page numbers come
   from layout, which nothing outside Pages performs. For numbers that update, delete that list and
   use Insert ▸ Table of Contents: the chapters are on the named `Heading 1` style for exactly that
