@@ -272,10 +272,32 @@ for (const s of [1, 1 + (pushScale - 1) / 2, pushScale]) {
   fadeFloor = Math.max(fadeFloor, b.crownEnd);
   fadeCeil = Math.min(fadeCeil, b.bodyStart);
 }
-// A quarter of a point inside the bound, and the same 14-point span the design
-// had, unless the gap is too narrow to hold it.
-const outFadeStart = Math.ceil(fadeFloor * 400) / 400 + 0.0025;
-const outFadeEnd = Math.min(outFadeStart + 0.14, Math.floor(fadeCeil * 400) / 400 - 0.0025);
+// FRACTIONS OF THE GAP, not absolute figures.
+//
+// This was a quarter of a point inside each bound and a fixed 14-point span,
+// and that is a rule that only works at one photograph's proportions. A
+// cut-out two rows shorter moves his crown down inside the layer box, the gap
+// between his crown and his shoulders closes to 0.14 points, and the two
+// quarter-point insets alone need 0.5 — so the band failed to exist and the
+// build stopped, on a portrait that was otherwise fine.
+//
+// The inset stays the quarter point it was WHEREVER THERE IS ROOM FOR IT, and
+// becomes a tenth of the gap only when there is not. That distinction matters:
+// a flat tenth sounds tidier and is wrong, because on today's wide gap it
+// moves the fade's start from 11.50% to 17.61% — six points later than the row
+// where the circle actually stops crossing his skull, which is the whole thing
+// the start was solved from. The fade must begin as soon as his crown is clear
+// and not a moment after.
+//
+// So: same numbers as before on a normal portrait, a shorter fade rather than
+// a failed build on a tight one. The only remaining failure is a gap of zero —
+// his crown and his shoulders leaving the circle on the same row — which
+// `outsideBand` catches above and is a photograph problem, not an arithmetic
+// one.
+const gap = fadeCeil - fadeFloor;
+const inset = Math.min(0.0025, gap * 0.1);
+const outFadeStart = fadeFloor + inset;
+const outFadeEnd = Math.min(outFadeStart + 0.14, fadeCeil - inset);
 
 // ---- report -------------------------------------------------------------
 const pct = (v: number) => `${(v * 100).toFixed(2)}%`;
