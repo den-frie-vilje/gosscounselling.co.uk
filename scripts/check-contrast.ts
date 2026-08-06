@@ -67,6 +67,10 @@ const PAIRS: [string, string, string][] = [
   // exactly what a light lime does against the sand at 1.05:1.
   ['accent', 'deep', 'accent rule on the dark bands'],
   ['deep', 'accent', 'selected text on the accent'],
+  // Paper only, deliberately: it is the lightest ink here and it does NOT
+  // clear 4.5:1 on mist or sand. Declaring the one pairing it is used on is
+  // what turns "we only put it on paper" from an intention into a check.
+  ['crumb', 'paper', 'the breadcrumb trail on a detail page'],
   ['accent-ink', 'paper', 'accent mark on the page ground'],
   ['accent-ink', 'mist', 'the step connector, on the band'],
   ['accent-ink', 'sand', 'accent mark on the warm strip'],
