@@ -59,10 +59,13 @@ If you are ever signed out, it is the same three steps.
 
 The editor has four sections down the left.
 
-**Home** — your front page, one section at a time, in the order someone scrolls through them: the
-top of the page, what happens when you get in touch, how you can help, about you, your fees, your
-qualifications, questions, and getting in touch. Changing your fees means opening **Fees**, not
-scrolling past everything else you have written.
+**Home** — your front page, one section at a time, in the order someone scrolls through them:
+
+> Hero · What happens when you get in touch · How I can help · About me · Fees ·
+> Qualifications and membership · Questions people ask · Get in touch
+
+Changing your fees means opening **Fees**, not scrolling past everything else you have written.
+"Hero" is the trade's word for the dark band at the very top; the rest say what they are.
 
 **Services** — one entry for each thing you offer. Each can have a longer page of its own, and
 only gets one if you write it.

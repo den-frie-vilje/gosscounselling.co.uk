@@ -5,6 +5,9 @@
 - `images/` — the screen captures.
 - `capture.sh` — how the ones that can be automated were taken. Read the note at the top before
   taking more; two of its lines are there because of an hour already spent.
+- `template/` — Ole's whitepaper Pages template, once it is copied off Synology Drive. It lives
+  here so the manual and the thing it is set in travel together.
+- `HANDOVER.md` — the brief for the session that does the Pages setup.
 
 **Status: preliminary, and two things are outstanding.**
 
