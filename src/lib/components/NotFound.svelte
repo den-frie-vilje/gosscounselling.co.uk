@@ -16,21 +16,20 @@
   into a reflected-content problem.
 -->
 <script lang="ts">
-  import { contact, home, nav } from '$lib/content';
+  import { contact, home, labels, nav } from '$lib/content';
 
   interface Props {
     /** The heading. Defaults to the one a missing page gets. */
     heading?: string;
   }
-  let { heading = 'That page is not here' }: Props = $props();
+  let { heading = labels.notFound.heading }: Props = $props();
 </script>
 
 <section class="section-y bg-paper text-ink">
   <div class="container-page">
     <h1 class="t-h2">{heading}</h1>
     <p class="text-muted mt-4 mb-0 max-w-[46ch] text-[18px]">
-      The address you followed is not on this site. Everything is on the home page,
-      or you can reach me directly.
+      {labels.notFound.body}
     </p>
 
     <ul class="links mt-9 flex list-none flex-wrap gap-x-7 gap-y-3 p-0">

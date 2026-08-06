@@ -15,6 +15,7 @@ import siteData from '../../content/site.json';
 import contactData from '../../content/contact.json';
 import membershipsData from '../../content/memberships.json';
 import searchData from '../../content/search.json';
+import labelsData from '../../content/labels.json';
 /* The home page, one file per SECTION, imported in the order the page puts
    them. Named imports rather than a glob: these eight are fixed — the page
    renders exactly them — so the set is not the filesystem's to decide, and a
@@ -103,6 +104,15 @@ export interface Search {
    *  his name and the hero's own eyebrow, and it reads those from where he
    *  already wrote them rather than asking twice. */
   og: { title: string };
+}
+
+/** The site's own furniture words. See `labels` further down for the line
+ *  between these and the assistive-technology labelling that stays in code. */
+export interface Labels {
+  contactRows: { phone: string; email: string; whatsapp: string; location: string };
+  header: { call: string };
+  blog: { older: string; newer: string };
+  notFound: { heading: string; errorHeading: string; body: string };
 }
 
 /**
@@ -431,6 +441,24 @@ export const memberships: Membership[] = resolveDeep(
 
 /** The search listing and the share card. */
 export const search: Search = resolveDeep(searchData as Search, COPY);
+
+/**
+ * The site's own words, as opposed to John's prose.
+ *
+ * "Phone", "Where", "Call", "Older post", and what a visitor reads at an
+ * address that is not here. These were written into the components, which made
+ * them the only text on the page John could not change: he can rewrite every
+ * heading and every paragraph, and could not rename the row above his own
+ * phone number.
+ *
+ * What is NOT here, deliberately, is the assistive-technology labelling —
+ * "Previous", "Next", "Menu", "Skip to content", "Breadcrumb". Those are not
+ * read by anyone looking at the page, and a wrong edit is a fault John has no
+ * way of noticing. `scripts/check-copy.ts` is the gate that keeps the line
+ * between the two honest: it refuses a readable string written into a
+ * component unless that string is on its list, with a reason.
+ */
+export const labels: Labels = resolveDeep(labelsData as Labels, COPY);
 
 /* Mock content is merged in only where it exists, and it only exists in dev
    (see ./mock.ts). Production reads exactly the JSON in src/content/.

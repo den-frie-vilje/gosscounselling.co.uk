@@ -129,3 +129,64 @@ export function priceRangeFrom(rows: readonly FeeRowLike[]): string | null {
   const high = Math.max(...amounts);
   return low === high ? `£${low}` : `£${low}-£${high}`;
 }
+
+/** A PostalAddress, minus the parts we have no business guessing. */
+export interface PostalParts {
+  addressLocality?: string;
+  addressRegion?: string;
+  postalCode?: string;
+}
+
+/**
+ * The address, parsed out of the ONE line John types.
+ *
+ * `addressLocality: 'Bletchley'`, `addressRegion: 'Milton Keynes'` and
+ * `postalCode: 'MK3'` were written into `structured-data.ts` as literals while
+ * `contact.location` said the same thing three feet away. Two copies of a fact
+ * is one copy too many, and this was the copy nobody would ever look at: if he
+ * moved practice, every page a visitor reads would say the new town and the
+ * machine-readable graph would keep insisting on the old one.
+ *
+ * So it is derived, and it is derived from the field he already fills in
+ * rather than from three new ones. Asking him to type the locality, the region
+ * and the postcode separately AND a line to display would be four fields for
+ * one fact, and `check-contact.ts` exists specifically to refuse a second copy
+ * of something he has already written.
+ *
+ * The grammar is the one his line already uses and the one a UK address uses:
+ *
+ *     <locality>, <region> <outward code>      Bletchley, Milton Keynes MK3
+ *     <locality>, <region>                     Bletchley, Milton Keynes
+ *     <locality>                               Bletchley
+ *
+ * The outward code is the first half of a UK postcode — one or two letters, a
+ * digit, then optionally one more letter or digit — and it is only read when
+ * it is the LAST token, because that is the only position it occupies.
+ *
+ * Anything that does not parse yields fewer properties rather than wrong ones.
+ * A PostalAddress carrying only a locality is valid and true; one carrying a
+ * region that is really the second half of a street name is neither.
+ */
+export function postalPartsFrom(location: string): PostalParts {
+  const line = location.trim().replace(/\s+/g, ' ');
+  if (!line) return {};
+
+  // Split on the LAST comma: "Bletchley, Milton Keynes MK3" has one, but a
+  // line like "Whaddon Way, Bletchley, Milton Keynes" puts the locality and
+  // region in the final two parts and the street in front of them.
+  const cut = line.lastIndexOf(',');
+  if (cut === -1) return { addressLocality: line };
+
+  const addressLocality = line.slice(0, cut).split(',').pop()!.trim();
+  let rest = line.slice(cut + 1).trim();
+
+  const outward = rest.match(/\s([A-Z]{1,2}\d[A-Z\d]?)$/);
+  const postalCode = outward?.[1];
+  if (outward) rest = rest.slice(0, outward.index).trim();
+
+  return {
+    ...(addressLocality ? { addressLocality } : {}),
+    ...(rest ? { addressRegion: rest } : {}),
+    ...(postalCode ? { postalCode } : {})
+  };
+}

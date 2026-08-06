@@ -35,6 +35,10 @@ asset pipeline first, so nothing downstream measures a stale cut-out:
 - `scripts/check-contact.ts` — the number John typed can actually be dialled. The `tel:`, the
   `mailto:` and the wa.me address are derived from it, so one typo breaks three links
 - `scripts/check-contrast.ts` — every colour pairing, 4.5:1 for text and 3:1 for graphic marks
+- `scripts/check-copy.ts` — nothing a visitor can READ is written into a component. Every word
+  is John's to change, including the site's own furniture ("Phone", "Call", "Older post"), which
+  lives in `src/content/labels.json`. Assistive-technology labelling stays in code and is named
+  in the script's `ALLOWED` list with a reason each — a wrong edit there is a fault he cannot see
 - `scripts/check-portrait-fit.ts` — the hero's geometry, solved from the cut-out's own alpha
 - `scripts/check-mattes.ts` — the cut-outs differ only where they are supposed to, against a
   floor the WebP encoder's own noise sets rather than a number somebody picked
@@ -56,12 +60,15 @@ run through `scripts/run-gates.ts`, which has two modes. Strict under `pnpm chec
 Advisory on **production too**: production is where a blocked publish costs most, because the edit
 silently does not appear and the live site keeps yesterday's words.
 
-`svelte-check` and `check-contrast` are outside that runner and stay strict everywhere — they judge
-code and design tokens, neither of which John can change.
+`svelte-check`, `check-contrast` and `check-copy` are outside that runner and stay strict
+everywhere — they judge code, design tokens and our own source, none of which John can change.
 
 And the finding is not left in a log. Every run writes `src/lib/generated/gate-status.json`, which
 the build compiles into the editor page: `GateStatus.svelte` shows John, in his words, whether the
-last publish went through clean, and says plainly which findings are ours rather than his.
+last publish went through clean. It shows him **only what is his** — findings our tooling owns go
+to the build log. It is also hidden until somebody is signed in (`static/admin/gate-status.js`),
+because the first screen at /admin is a sign-in form and a warning floating over it is alarming
+rather than useful.
 
 Two more gates read the OUTPUT rather than the input, so they run AFTER the build rather than
 in `pnpm check`. These are **disclosure** gates, not consistency gates, and they block on every

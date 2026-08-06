@@ -1,0 +1,21 @@
+{
+  "note": "The site's own words — the ones on its furniture rather than in his prose. Everything a visitor can READ is here or in another content file; nothing readable is written into a component. The assistive-technology labels are the exception and stay in code, because a wrong edit there is a fault John cannot see; scripts/check-copy.ts holds that list and the reason for each one.",
+  "contactRows": {
+    "phone": "Phone",
+    "email": "Email",
+    "whatsapp": "WhatsApp",
+    "location": "Where"
+  },
+  "header": {
+    "call": "Call"
+  },
+  "blog": {
+    "older": "Older post",
+    "newer": "Newer post"
+  },
+  "notFound": {
+    "heading": "That page is not here",
+    "errorHeading": "Something went wrong",
+    "body": "The address you followed is not on this site. Everything is on the home page, or you can reach me directly."
+  }
+}

@@ -7,7 +7,7 @@
   site rather than the home page.
 -->
 <script lang="ts">
-  import { BLOG_PATH, livePosts, postPath, postSlug, site } from '$lib/content';
+  import { BLOG_PATH, labels, livePosts, postPath, postSlug, site } from '$lib/content';
   import { publishClock } from '$lib/publish-clock.svelte';
   import { blogPostingNode, breadcrumbNode, buildPageSeo } from '$lib/seo/structured-data';
   import { dateAttr, formatDate } from '$lib/date';
@@ -128,7 +128,7 @@
         {#if around.older}
           <li class="older">
             <a href={postPath(around.older)}>
-              <span class="dir">Older post</span>
+              <span class="dir">{labels.blog.older}</span>
               <span class="what">{around.older.title}</span>
             </a>
           </li>
@@ -136,7 +136,7 @@
         {#if around.newer}
           <li class="newer">
             <a href={postPath(around.newer)}>
-              <span class="dir">Newer post</span>
+              <span class="dir">{labels.blog.newer}</span>
               <span class="what">{around.newer.title}</span>
             </a>
           </li>

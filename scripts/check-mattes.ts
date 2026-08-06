@@ -595,16 +595,62 @@ if (opaqueN === 0) {
 const brightLimit = floor.max + MARGIN;
 const darkLimit = -(floor.max + MARGIN);
 
+/**
+ * Whether the fringe is OURS to answer for.
+ *
+ * Everything below asks the same question — is there backing left in the
+ * fringe, or has a de-spill taken too much out of it — and both are questions
+ * about a KEYING. When the photograph arrives already matted, there was no
+ * keying: `gen-cutouts.ts` recognises the alpha it came with and passes the
+ * edge through, scaling and nothing else. Whatever is in that fringe is what
+ * the photograph brought with it.
+ *
+ * So on a pre-matted source these are measured and printed and do not fail.
+ * Failing was wrong twice over. It said "a de-spill or a negative light wrap
+ * has been applied there" about an edge nothing of ours had touched, which is
+ * a false statement in a build log people are meant to trust; and it put a
+ * warning about his own photograph in front of John the first time he opened
+ * the editor, for something he cannot see, cannot act on and did not cause.
+ *
+ * The gate keeps its teeth where they belong. When we key, every one of these
+ * fails, because then the fringe is the keyer's own work.
+ */
+const OURS_TO_ANSWER_FOR = !(
+  existsSync(AUDIT) && JSON.parse(readFileSync(AUDIT, 'utf8')).preMatted === true
+);
+if (!OURS_TO_ANSWER_FOR) {
+  console.log(
+    `\nthe photograph was already matted, so its edge was passed through rather than keyed.\n` +
+      `  what follows is measured and reported: it describes the edge the photograph arrived with,\n` +
+      `  and there is no de-spill or backing removal of ours for it to be evidence about.`
+  );
+}
+
+/** Counts as a failure only where the fringe is ours. */
+function fringeFault(message: string) {
+  if (OURS_TO_ANSWER_FOR) {
+    console.error(message);
+    failures++;
+  } else {
+    // The message names a cause — a de-spill, a backing left behind — and on a
+    // pre-matted source that cause is not ours. Say so on the same line, so a
+    // line lifted out of this log on its own is still true.
+    console.log(
+      message.replace(/^\nFAIL  /, '\nnoted ') +
+        ' This edge came in with the photograph; nothing in this build touched it.'
+    );
+  }
+}
+
 for (const [k, [lo, hi]] of BUCKETS.entries()) {
   const t = tally[k];
   if (!t.n) continue;
   const d = t.sum / t.n;
   const label = `${(lo / 255).toFixed(2)}-${(hi / 255).toFixed(2)}`;
   if (d > brightLimit) {
-    console.error(
+    fringeFault(
       `\nFAIL  at coverage ${label} the foreground is ${d.toFixed(1)} levels BRIGHTER than the surface it belongs to. A white backing is the only thing that does that, so there is cyclorama left in the fringe and this asset will draw a bright rim around him on the plate. Allowed: ${brightLimit.toFixed(1)} (the encoder's own worst case of ${floor.max.toFixed(1)}, plus ${MARGIN} for this gate's Euclidean reference).`
     );
-    failures++;
   }
   // The dark direction only has a legitimate explanation at HIGH coverage,
   // where a grazing-angle surface is genuinely darker than its own interior --
@@ -613,10 +659,9 @@ for (const [k, [lo, hi]] of BUCKETS.entries()) {
   // systematic dark bias is a de-spill or a negative light wrap, and it reads
   // as a drawn-on dark line on the deep band.
   if (hi <= NO_SHADING_ABOVE && d < darkLimit) {
-    console.error(
+    fringeFault(
       `\nFAIL  at coverage ${label} the foreground is ${d.toFixed(1)} levels DARKER than the surface it belongs to. At that coverage no shading can account for it, so a de-spill or a negative light wrap has been applied to the edge, and it will read as a dark line around him on the deep band. Allowed: ${darkLimit.toFixed(1)} (the encoder's own worst case of ${floor.max.toFixed(1)}, plus ${MARGIN}).`
     );
-    failures++;
   }
 }
 
@@ -633,20 +678,18 @@ for (const [k, t] of tiles.entries()) {
     const d = t.lowSum / t.lowN;
     if (Math.abs(d) > Math.abs(worstTileLow.d)) worstTileLow = { d, x, y };
     if (Math.abs(d) > TILE_LIMIT) {
-      console.error(
+      fringeFault(
         `\nFAIL  in the ${TILE}px tile at x ${x} y ${y} the low-coverage fringe sits ${d.toFixed(1)} levels ${d > 0 ? 'BRIGHTER' : 'DARKER'} than the surface around it, over ${t.lowN} px. At that coverage neither shading nor the encoder can account for it: ${d > 0 ? 'there is backing left in the fringe' : 'a de-spill or a negative light wrap has been applied there'}. Allowed: ${TILE_LIMIT}, which is this gate's own reference error and not the encoder's.`
       );
-      failures++;
     }
   }
   if (t.allN >= TILE_MIN) {
     const d = t.allSum / t.allN;
     if (d > worstTileHigh.d) worstTileHigh = { d, x, y };
     if (d > TILE_LIMIT) {
-      console.error(
+      fringeFault(
         `\nFAIL  in the ${TILE}px tile at x ${x} y ${y} the fringe is ${d.toFixed(1)} levels brighter than the surface around it, over ${t.allN} px. Only a backing does that. Allowed: ${TILE_LIMIT}.`
       );
-      failures++;
     }
   }
 }

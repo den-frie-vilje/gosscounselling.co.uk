@@ -11,10 +11,11 @@
 -->
 <script lang="ts">
   import NotFound from '$lib/components/NotFound.svelte';
+  import { labels, site } from '$lib/content';
 </script>
 
 <svelte:head>
-  <title>That page is not here | John Goss</title>
+  <title>{labels.notFound.heading} | {site.name}</title>
   <meta name="robots" content="noindex" />
 </svelte:head>
 

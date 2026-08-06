@@ -21,7 +21,7 @@
 <script lang="ts">
   import { flushSync, onMount } from 'svelte';
   import { sectionEl, warnUnregistered } from '$lib/nav-sections.svelte';
-  import { contact, home, livePosts, navFor, site } from '$lib/content';
+  import { contact, home, labels, livePosts, navFor, site } from '$lib/content';
   import { publishClock } from '$lib/publish-clock.svelte';
   import Icon from './Icon.svelte';
 
@@ -355,7 +355,7 @@
         <li>
           <a href={contact.phoneHref} class="btn btn-primary callbtn !px-5 !py-3 !text-[15.5px]">
             <Icon name="phone" size={17} />
-            <span class:hidden={numberFits}>Call</span>
+            <span class:hidden={numberFits}>{labels.header.call}</span>
             <span class="num" class:hidden={!numberFits}>{contact.phone}</span>
           </a>
         </li>
@@ -369,7 +369,7 @@
       class:barcut={!barFits}
     >
       <Icon name="phone" size={17} />
-      <span class:hidden={numberFits}>Call</span>
+      <span class:hidden={numberFits}>{labels.header.call}</span>
       <span class="num" class:hidden={!numberFits}>{contact.phone}</span>
     </a>
 
@@ -429,7 +429,7 @@
       <a href={contact.phoneHref} onclick={close}>{contact.phone}</a>
       <a href={contact.emailHref} onclick={close}>{contact.email}</a>
       {#if contact.whatsappHref}
-        <a href={contact.whatsappHref} onclick={close}>WhatsApp</a>
+        <a href={contact.whatsappHref} onclick={close}>{labels.contactRows.whatsapp}</a>
       {/if}
       <p class="place">{contact.location}</p>
     </div>
