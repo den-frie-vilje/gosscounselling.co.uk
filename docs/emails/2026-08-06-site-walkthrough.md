@@ -13,7 +13,7 @@ The only thing it asks for is a look.
 
 Hi John,
 
-Here it is: **<STAGING URL>**
+Here it is: **https://gosscounselling-co-uk.stage.denfrievilje.dk**
 
 It is not public. Search engines are told to ignore it, and the address is not linked from
 anywhere, so nobody finds it unless you send it to them. The real address, gosscounselling.co.uk,
@@ -49,6 +49,11 @@ Two things to know about that:
    account up — rather than talk you through it over the phone.
 2. **Every change is kept.** Nothing you do is destructive: the site remembers every version, so a
    wrong edit is undone rather than mourned.
+3. **Right now your saves land on the preview, not on a live site.** That is deliberate while
+   nothing is public — you can change anything you like and the only place it shows is the address
+   above. When we go live we will decide whether saving publishes straight to the real site or
+   whether there is a "publish" step in between. I have a view; it is a five-minute conversation
+   and it depends on how much you want to be able to see a change before the world does.
 
 **The one part that is not finished.** The site currently lives on our own server, which is fine for
 looking at and not what you want to be paying for long-term. The last step is moving it to an
@@ -69,7 +74,26 @@ Ole
 
 ## Before sending
 
-- [ ] Replace `<STAGING URL>` with the real one.
-- [ ] Check the staging deploy has finished and the page loads on a phone.
+- [x] The URL is in — `https://gosscounselling-co-uk.stage.denfrievilje.dk`, deployed and serving
+      as of run 31096292215, `noindex, nofollow` confirmed on the live page.
+- [ ] Look at it on a phone yourself before sending.
 - [ ] Decide whether to attach the manual (`docs/manual/`) or send it separately once it has
       screen captures in it.
+
+## The decision behind point 3, for the meeting
+
+Sveltia commits John's saves to the `staging` branch (`static/admin/config.yml:49`), and `staging`
+deploys to the preview host. Production is the `main` branch, and **nothing merges `staging` into
+`main` automatically** — today that merge is a thing one of us does by hand.
+
+So at launch there are two shapes, and it is his call:
+
+- **Point the editor at `main`.** He saves, the live site rebuilds, the change is public in a couple
+  of minutes. Simplest to explain and the one most people expect.
+- **Keep the editor on `staging` and add a publish step.** He saves, sees it on the preview address,
+  and presses something when he is happy. One more concept to learn, and it means a change can sit
+  unpublished because he forgot the second step.
+
+Recommendation: the first. He is one person editing his own words, the versions are all kept, and a
+wrong sentence is thirty seconds to fix. The second shape buys safety he does not need and costs a
+step he will forget.
