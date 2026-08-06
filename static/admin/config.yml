@@ -138,7 +138,7 @@ collections:
               required: false,
               media_folder: '/static/img/portrait',
               public_folder: '/img/portrait',
-              hint: 'The site cuts you out of this and places you on the blue circle. A plain, evenly lit background works best.'
+              hint: 'Cut out for you and placed on the blue circle. A plain, even background works best. Already cut out, with no background? It is used as it is.'
             }
           - {
               name: portraitAlt,
