@@ -4,17 +4,17 @@
     "width": 1800,
     "height": 1452
   },
-  "plateImgWidth": "130.16%",
-  "headShift": "-2.43%",
+  "plateImgWidth": "129.99%",
+  "headShift": "-2.95%",
   "crownClear": "7.00%",
   "pushInScale": 1.045,
-  "maskSize": "76.83% 93.14%",
-  "maskPosition": "60.50% 100.00%",
+  "maskSize": "76.93% 93.27%",
+  "maskPosition": "62.80% 100.00%",
   "layerPad": "2.36%",
-  "outFadeStart": "11.92%",
-  "outFadeEnd": "25.92%",
-  "matteDrop": "0.34%",
+  "outFadeStart": "12.07%",
+  "outFadeEnd": "26.07%",
+  "matteDrop": "0.21%",
   "discInset": "0.75px",
   "discSettle": 1.0175,
-  "softRows": 4
+  "softRows": 2
 }

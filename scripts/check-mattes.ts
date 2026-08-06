@@ -77,7 +77,7 @@ const ASSET = arg('--asset', 'static/img/john-cutout.webp');
 const MASTER = arg('--master', 'assets/portrait/john-knockout.webp');
 /**
  * The photograph the HAND pass cut from, and the alignment and backing it used:
- * `scripts/build-cutouts.py` puts the matte over this plate bottom-aligned, and
+ * the hand pass that used to live in `scripts/build-cutouts.py` puts the matte over this plate bottom-aligned, and
  * measured the cyclorama as a flat, blown-out 255.
  */
 const PLATE = 'docs/source-assets/John-Goss-1.jpg';
@@ -114,7 +114,7 @@ const BUCKETS: [number, number][] = [
  * Extra margin over the encoder's own floor.
  *
  * The reference this gate compares against is a EUCLIDEAN box mean of the
- * nearby opaque pixels, not the geodesic extension `scripts/build-cutouts.py`
+ * nearby opaque pixels, not the geodesic extension the hand pass that used to live in `scripts/build-cutouts.py`
  * solves with, so it carries a small positive bias: the interior inside the
  * window is brighter than the rim at the edge of it. Measured on the shipped
  * asset, this gate's reference is a ring-propagated Euclidean one where the
@@ -150,7 +150,7 @@ const BLEED_RINGS = 4;
  * solve is legitimately still working and the master legitimately still carries
  * backing — measured on the asset that ships, the two differ by up to 99 levels
  * in that sliver and by 8.3 at 254 and above. This is the threshold
- * `scripts/build-cutouts.py` pins F at, expressed in the asset's own units.
+ * the hand pass that used to live in `scripts/build-cutouts.py` pins F at, expressed in the asset's own units.
  */
 const OPAQUE_LO = 254;
 /** The crop's own antialiasing, at the edges of the frame he runs off. */
@@ -163,7 +163,7 @@ const FRAME_EDGE = 3;
  * therefore wrong where the surface has a steep gradient right at the outline —
  * the hairline above the ear, the lit top edge of a dark shoulder. Measured, on
  * the asset that ships: this gate reads up to 20.5 in the tile at x 512 y 512,
- * where `scripts/build-cutouts.py`'s geodesic solve reads +1.2 for the same
+ * where the hand pass that used to live in `scripts/build-cutouts.py`'s geodesic solve reads +1.2 for the same
  * pixels. That 20 is the reference's error and nothing else.
  *
  * So the bound sits above it, and it is still far below what it exists to
@@ -204,7 +204,7 @@ const lum = (d: Buffer, o: number) => 0.2126 * d[o] + 0.7152 * d[o + 1] + 0.0722
 
 /**
  * The encoder's own noise floor, self-calibrated: the asset's decoded pixels
- * pushed back through the pipeline's settings (`scripts/build-cutouts.py`:
+ * pushed back through the pipeline's settings (the keyer (`scripts/keyer.ts`):
  * quality 92, alpha quality 100, effort 6) and compared with themselves.
  */
 async function encodeFloor(): Promise<{ mean: number; max: number; opaqueMax: number }> {
@@ -248,7 +248,7 @@ const floor = await encodeFloor();
  * calls real modelling contamination. Propagating from the nearest opaque ring
  * instead takes the rim's own opaque continuation, which is the surface the
  * fringe pixel actually belongs to. It is the cheap Euclidean cousin of the
- * geodesic extension `scripts/build-cutouts.py` solves with.
+ * geodesic extension the hand pass that used to live in `scripts/build-cutouts.py` solves with.
  *
  * Geodesic matters, and cheaply: the propagation is allowed to travel only
  * through pixels the matte holds. Without that restriction it crosses the gap
