@@ -31,6 +31,7 @@
   "services": {
     "kicker": "What I offer",
     "heading": "How I can help",
+    "navLabel": "How I can help",
     "intro": "Therapy, and your reasons for thinking about coming to see me, will be unique to you. These are the four ways I usually work.",
     "items": [
       {
@@ -62,12 +63,14 @@
   "about": {
     "kicker": "Practising since 2015",
     "heading": "About me",
+    "navLabel": "About me",
     "body": "Thanks for visiting. I qualified as a counsellor in 2015, after a range of experience in support work: youth mentoring, Samaritans, and supporting people in prison.\n\nI see myself very much as an *integrative* therapist: I use all of my training to support you, rather than sticking to a single theory. Some people come to me for something specific, such as a sexual difficulty, but the rest of my skills and training are in the room too.\n\nMy counselling work is varied, often with anxiety, depression and bereavement. I'm also training further as a psychosexual therapist, working with painful sex, unreliable erections and other sex-related concerns.",
     "photoAlt": "John Goss"
   },
   "fees": {
     "kicker": "Fees",
     "heading": "What sessions cost",
+    "navLabel": "Fees",
     "intro": "In person in MK3, or online. Fees are shown as a range.",
     "rows": [
       {
@@ -171,6 +174,7 @@
   "faq": {
     "kicker": "Before you call",
     "heading": "Questions people ask",
+    "navLabel": "Questions",
     "items": [
       {
         "q": "How many sessions will I need?",
@@ -197,6 +201,7 @@
   "contact": {
     "kicker": "Next step",
     "heading": "Get in touch",
+    "navLabel": "Get in touch",
     "intro": "The first step is a conversation. Call, email or WhatsApp, whichever feels easiest."
   },
   "seo": {
