@@ -11,7 +11,7 @@
   Practice's warm ground and air. Nothing on this page is a card.
 -->
 <script lang="ts">
-  import { contact, home, servicePath, site } from '$lib/content';
+  import { contact, home, servicePath, services, site } from '$lib/content';
   import { buildPageSeo, faqNode, reviewNodes } from '$lib/seo/structured-data';
   import { renderInline } from '$lib/markdown';
   import { scrollDraw } from '$lib/actions/scroll-draw';
@@ -241,7 +241,7 @@
   intro={home.services.intro}
 >
   <div class="border-line mt-13 border-t">
-    {#each home.services.items as service, i (service.slug)}
+    {#each services as service, i (service.slug)}
       <article class="row mark-row">
         <p class="num mark" aria-hidden="true">{String(i + 1).padStart(2, '0')}</p>
         <div class="min-w-0">

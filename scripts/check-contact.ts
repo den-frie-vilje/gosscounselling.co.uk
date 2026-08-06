@@ -104,8 +104,9 @@ for (const bad of ['', 'info at example.com', 'info@example', 'in fo@example.com
  * the state the site ships in and is not an error; the fail-closed check is
  * further down, on the copy actually read.
  */
-function postFiles(): string[] {
-  const dir = 'src/content/posts';
+/** Every JSON file in a content folder, read rather than listed — so a post or
+ *  a service John adds is scanned without anyone remembering to add it here. */
+function jsonFilesIn(dir: string): string[] {
   if (!existsSync(resolve(root, dir))) return [];
   return readdirSync(resolve(root, dir))
     .filter((name) => name.endsWith('.json'))
@@ -119,7 +120,8 @@ const CONTENT = [
   'src/content/site.json',
   'src/content/social.json',
   'src/content/testimonials.json',
-  ...postFiles()
+  ...jsonFilesIn('src/content/posts'),
+  ...jsonFilesIn('src/content/services')
 ];
 
 /** The number and the address are John's to write HERE and nowhere else.

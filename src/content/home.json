@@ -32,33 +32,7 @@
     "kicker": "What I offer",
     "heading": "How I can help",
     "navLabel": "How I can help",
-    "intro": "Therapy, and your reasons for thinking about coming to see me, will be unique to you. These are the four ways I usually work.",
-    "items": [
-      {
-        "slug": "individual",
-        "title": "Individual counselling",
-        "who": "From age 11 upwards",
-        "body": "We meet one to one to explore what's challenging you. For some people that's anxiety, depression or bereavement. You might be looking to explore your relationship with pornography or sex.\n\nWhatever brings you to counselling, you are assured of a space to talk openly about it."
-      },
-      {
-        "slug": "relationship",
-        "title": "Relationship counselling",
-        "who": "Couples, throuples, poly dynamics",
-        "body": "Relationship counselling puts the focus on the relationship itself, whether you're part of a couple, a throuple or a poly dynamic."
-      },
-      {
-        "slug": "psychosexual-therapy",
-        "title": "Psychosexual therapy",
-        "who": "Also called sex therapy",
-        "body": "If you're experiencing sexual difficulties, psychosexual therapy could be for you: pain during sex, unreliable erections, delayed ejaculation, low or absent desire, vaginismus, orgasm difficulties, vulvodynia.\n\nPeople also come to talk about porn use, intimacy with a partner or partners, fetishes, or exploring kink."
-      },
-      {
-        "slug": "supervision",
-        "title": "Clinical supervision",
-        "who": "For therapists & helping professionals",
-        "body": "I offer clinical supervision to other therapists and to colleagues working in the helping professions.\n\nSupervision isn't only about bringing your client work; it's about bringing yourself too, so we can explore that work more collaboratively.\n\nI hold a Level 6 Diploma in Clinical Supervision (2022) and I'm an NCPS Accredited Member. If you work with sexual behaviour, harmful sexual behaviour or risk, that is territory I have specific training in; see the qualifications below."
-      }
-    ]
+    "intro": "Therapy, and your reasons for thinking about coming to see me, will be unique to you. These are the four ways I usually work."
   },
   "about": {
     "kicker": "Practising since 2015",

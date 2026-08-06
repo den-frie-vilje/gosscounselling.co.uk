@@ -60,6 +60,18 @@
     <time datetime={dateAttr(post.publishAt)}>{formatDate(post.publishAt)}</time>
   </p>
 
+  {#if post.image}
+    <!-- Between the date and the body: it belongs to the post rather than
+         announcing it, so it is not above the title. `alt=""` when he left the
+         description empty — the honest signal for decoration, and better than
+         reading a filename at somebody. It is the widest thing on the page and
+         the first thing painted, so it is NOT lazy here, and `aspect-ratio`
+         holds its space so the words below it do not jump when it lands. -->
+    <figure class="shot mt-9">
+      <img src={post.image} alt={post.imageAlt ?? ''} decoding="async" />
+    </figure>
+  {/if}
+
   <Prose md={post.body} class="prose-lead mt-9" />
 
   <p class="back">
@@ -73,6 +85,34 @@
 <ContactBand />
 
 <style>
+  .shot {
+    /* `margin: 0` here silently beat the `mt-9` on the element — a scoped
+       class outranks a utility — and left the picture jammed against the date
+       by four pixels. The spacing is stated here instead of in two places. */
+    margin: 36px 0 0;
+    /* The same measure `.prose-clear` gives the body, so the picture is the
+       width of the column it belongs to rather than the width of the page.
+       Full-bleed it was 871px against 749px of text and read as the subject of
+       the page rather than as part of the post.
+
+       `font-size` with it, and that is not decoration: `ch` is the width of a
+       "0" in the element's OWN font, so 66ch on a figure inheriting a
+       different size came out 708px against the body's 749. The unit only
+       means the same thing if the font does. */
+    font-size: 18px;
+    max-width: 66ch;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--color-mist);
+    aspect-ratio: 16 / 9;
+  }
+  .shot img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
   .posted {
     margin: 18px 0 0;
     font-size: 14px;
