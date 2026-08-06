@@ -14,10 +14,11 @@
 -->
 <script lang="ts">
   import { home, servicePath, site } from '$lib/content';
-  import { buildPageSeo } from '$lib/seo/structured-data';
+  import { breadcrumbNode, buildPageSeo } from '$lib/seo/structured-data';
   import { firstParagraph } from '$lib/markdown';
   import SeoHead from '$lib/components/SeoHead.svelte';
   import Section from '$lib/components/Section.svelte';
+  import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
   import Prose from '$lib/components/Prose.svelte';
   import ContactBand from '$lib/components/ContactBand.svelte';
   import Icon from '$lib/components/Icon.svelte';
@@ -33,8 +34,14 @@
   // at it.
   const body = $derived(`${service.body}\n\n${detail?.body ?? ''}`);
 
+  /* One level down. There is no index of services to point at — the front
+     page's "How I can help" IS that list — so the trail goes Home, then here,
+     and does not invent a middle crumb for a page that does not exist. */
+  const trail = $derived([{ label: 'Home', href: '/' }, { label: service.title }]);
+
   const seo = $derived(
     buildPageSeo({
+      graph: [breadcrumbNode(trail)],
       path: servicePath(service),
       title: detail?.seo?.title ?? `${service.title} | ${site.name}`,
       description: detail?.seo?.description ?? firstParagraph(service.body),
@@ -48,6 +55,9 @@
 <SeoHead {seo} />
 
 <Section h1 kicker={service.who} heading={service.title}>
+  {#snippet above()}
+    <Breadcrumbs {trail} />
+  {/snippet}
   <Prose md={body} class="prose-lead mt-10" />
 
   <p class="back">

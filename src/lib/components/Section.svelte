@@ -23,6 +23,11 @@
     intro?: string;
     /** Renders the heading as an <h1>. The home page's first section only. */
     h1?: boolean;
+    /** Anything that belongs ABOVE the heading — the breadcrumb trail on a
+     *  detail page. A snippet rather than a slot of the children, because the
+     *  children render after the heading and a breadcrumb printed under the
+     *  title it orients you within is not a breadcrumb. */
+    above?: Snippet;
     class?: string;
     children: Snippet;
   }
@@ -35,6 +40,7 @@
     heading,
     intro,
     h1 = false,
+    above,
     class: klass = '',
     children
   }: Props = $props();
@@ -56,6 +62,10 @@
   <div class="container-page">
     {#if rule}
       <hr class="rule mb-14" />
+    {/if}
+
+    {#if above}
+      {@render above()}
     {/if}
 
     {#if kicker || heading || intro}
