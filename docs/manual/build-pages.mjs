@@ -18,7 +18,7 @@
 // (399.6 pt) — the picture scales, never the margin.
 
 import { PagesDocument } from "cupertino-files";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -26,9 +26,18 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE = join(HERE, "template", "whitepaper-template.pages");
 const SOURCE = join(HERE, "manual.md");
 const OUTPUT = join(HERE, "Editing-your-website.pages");
+// The site on the front page. Optional: `docs/manual/capture.sh site` makes it.
+const SITE_PICTURE = join(HERE, "images", "00-site.png");
+const CONTENTS_TITLE = "Contents";
 
-const BODY_MEASURE = 399.6; // pageWidth - body indent - right margin
 const LETTERHEAD_DATE = "06-08-2026";
+const LOGO_ID = "291868"; // the letterhead mark, sized by the template, not by us
+
+// The title is one paragraph in the house pattern: the name in the title
+// weight, a line break — not a new paragraph, so it stays one block — and the
+// site in bold under it.
+const TITLE_SITE = "gosscounselling.co.uk";
+const LINE_BREAK = String.fromCharCode(0x2028); // the break the letterhead itself uses
 
 // The running footer names the document: "den frie vilje - <subject>", then
 // the page fields. Only the subject is replaced, so the page numbers — which
@@ -215,6 +224,20 @@ function parse(markdown) {
 const doc = PagesDocument.load(new Uint8Array(readFileSync(TEMPLATE)));
 const blocks = parse(readFileSync(SOURCE, "utf-8"));
 
+// The body column, measured off the template rather than assumed. `leftIndent`
+// is measured from the left page margin, not the page edge — so the column is
+// the page less both margins less that indent. Pictures are fitted to it, so
+// they line up with the text on both sides.
+const page = doc.pageSetup();
+const bodyIndent = doc.bodyOrUndefined.sheet().style("Normal")?.resolved?.()?.paragraph?.leftIndent ?? 0;
+const BODY_LEFT = page.leftMargin + bodyIndent;   // page coordinate of the text's left edge
+// Pictures span the full measure between the page margins, which is what the
+// template's own body picture does (456.3 pt). An anchored picture is drawn
+// from the page margin whatever geometry it is given, so a narrower one
+// leaves a gap the following text wraps into; at the full measure nothing
+// fits beside it and each picture sits square in the flow.
+const BODY_MEASURE = page.pageWidth - page.leftMargin - page.rightMargin;
+
 const titleBlock = blocks.find((b) => b.kind === "title");
 const subtitleBlock = blocks.find((b) => b.kind === "subtitle");
 const bylineBlock = blocks.find((b) => b.kind === "byline");
@@ -222,21 +245,74 @@ const rest = blocks.filter((b) => !["title", "subtitle", "byline"].includes(b.ki
 
 // 1. Head matter: refill the template's own slots, keeping their styling.
 doc.paragraph(SLOT_DATE).text = LETTERHEAD_DATE;
-doc.paragraph(SLOT_TITLE).text = inline(titleBlock.md).text;
 doc.paragraph(SLOT_SUBTITLE).text = inline(subtitleBlock.md).text;
 doc.paragraph(SLOT_BYLINE).text = inline(bylineBlock.md).text;
 
-// 2. Clear the template's sample body, keeping everything above it.
+// The title: the name, a line break, the site in bold — one paragraph, so it
+// stays a single block in the title's own weight and size.
 {
+  const name = inline(titleBlock.md).text;
+  doc.paragraph(SLOT_TITLE).text = name + LINE_BREAK + TITLE_SITE;
+  const start = doc.paragraphs()[SLOT_TITLE].start + name.length + LINE_BREAK.length;
+  doc.range(start, start + TITLE_SITE.length).format({ bold: true });
+}
+
+// 2. Clear the template's sample body, keeping everything above it. Its own
+// pictures are detached first: deleting the text takes their anchor away but
+// leaves the image and its data behind, unreferenced and invisible, inside a
+// document that goes to a client. The logo, anchored up in the letterhead, is
+// above the cut and stays.
+{
+  const body = doc.bodyOrUndefined;
+  const from = doc.paragraphs()[SLOT_FIRST_FREE].start;
+  for (const attachment of body.attachments()) {
+    if (attachment.index >= from) body.removeAttachment(attachment.objectId);
+  }
   const paras = doc.paragraphs();
   doc.range(paras[SLOT_FIRST_FREE].start, paras[paras.length - 1].end).delete();
 }
 
-// 3. Append the manual, recording the spans to format and where pictures go.
-const STYLE = { h2: "Heading 2", h3: "Heading 3", body: "Normal", bullet: "Normal", numbered: "Normal" };
+// 3. Headings keep the paragraph they introduce, set on the named styles
+// rather than per paragraph: `format()` on a paragraph parents it on an
+// anonymous style, which still looks right but is no longer *called*
+// `Heading 1` — and a table of contents collects by style name. Setters merge,
+// so the indents and everything else the template defines are untouched.
+const sheet = doc.bodyOrUndefined.sheet();
+for (const name of ["Heading 1", "Heading 2"]) sheet.style(name)?.setParagraph({ keepWithNext: true });
+
+// A page-opening variant, so the paragraphs that start a page keep a named
+// style too rather than becoming anonymous.
+const OPENER = "Heading 1 opener";
+doc.createParagraphStyle({
+  name: OPENER,
+  copyOf: "Heading 1",
+  paragraph: { keepWithNext: true, pageBreakBefore: true },
+});
+
+// 4. The front page: the site under the title, then the contents on its own
+// page. `SITE_PICTURE` is optional — run `capture.sh site` to make it.
+const frontPictures = [];
+if (existsSync(SITE_PICTURE)) {
+  const index = doc.appendParagraph("", "Normal");
+  doc.paragraph(index).setListStyle("None").format({ spaceBefore: 28 });
+  frontPictures.push({ index, src: "images/00-site.png" });
+}
+
+const contentsHeading = doc.appendParagraph(CONTENTS_TITLE, OPENER);
+doc.paragraph(contentsHeading).setListStyle("None");
+for (const chapter of blocks.filter((b) => b.kind === "h2")) {
+  const line = doc.appendParagraph(inline(chapter.md).text, "Normal");
+  doc.paragraph(line).setListStyle("None");
+}
+
+// 4. Append the manual, recording the spans to format and where pictures go.
+// Chapters take Heading 1 — 14 pt GalaxiePolaris with space above it, the
+// template's real section heading. Their sub-headings take Heading 2 under it.
+const STYLE = { h2: "Heading 1", h3: "Heading 2", body: "Normal", bullet: "Normal", numbered: "Normal" };
 const LIST = { bullet: "Bullet", numbered: "Numbered List" };
 const formatting = [];
-const pictures = [];
+const pictures = [...frontPictures];
+const firstChapter = rest.find((b) => b.kind === "h2");
 
 for (const block of rest) {
   if (block.kind === "image") {
@@ -246,7 +322,9 @@ for (const block of rest) {
     continue;
   }
   const { text, bold, italic } = inline(block.md);
-  const index = doc.appendParagraph(text, STYLE[block.kind]);
+  // The first chapter opens the page after the contents.
+  const style = block === firstChapter ? OPENER : STYLE[block.kind];
+  const index = doc.appendParagraph(text, style);
   // An appended paragraph inherits list membership from the one above, so
   // every paragraph states its own — otherwise the first list turns the rest
   // of the document, headings included, into list items.
@@ -264,10 +342,16 @@ for (const { index, s, e, format } of formatting) {
 // 5. Pictures last, back to front: each insert shifts only what follows it.
 for (const picture of [...pictures].reverse()) {
   const bytes = new Uint8Array(readFileSync(join(HERE, picture.src)));
-  doc.insertInlineImage(doc.paragraphs()[picture.index].start, bytes, {
+  const { imageId } = doc.insertInlineImage(doc.paragraphs()[picture.index].start, bytes, {
     fileName: picture.src.split("/").pop(),
     maxWidth: BODY_MEASURE,
   });
+  // An inserted picture is left at x = 0, which is outside the text column:
+  // it draws from the page margin and the following text wraps up its side.
+  // The template's own logo shows the convention — x is the page coordinate of
+  // the picture's left edge, so it belongs at the body column's left edge.
+  const image = doc.drawables().find((d) => d.id === imageId);
+  image?.setGeometry({ x: BODY_LEFT });
 }
 
 // 6. The appends leave a trailing newline, and Pages draws the empty
@@ -316,18 +400,31 @@ const isListed = (i) => {
 const listedCount = paras.filter((_, i) => isListed(i)).length;
 const strayLists = paras.filter((p, i) => isListed(i) && (p.styleName ?? "").startsWith("Heading")).length;
 
+const written = paras.slice(SLOT_FIRST_FREE); // the appended manual, not the head matter
 const counts = {
   paragraphs: paras.length,
-  headings: paras.filter((p) => p.styleName === "Heading 2").length,
-  subheadings: paras.filter((p) => p.styleName === "Heading 3").length,
+  headings: written.filter((p) => p.styleName === "Heading 1" || p.styleName === OPENER).length - 1, // less the contents heading
+  subheadings: written.filter((p) => p.styleName === "Heading 2").length,
   listItems: listedCount,
   pictures: (text.match(/￼/g) ?? []).length,
   markdownLeft: (text.match(/\*\*|^#{1,3} |^- |^> /gm) ?? []).length,
 };
 const expectedListItems = rest.filter((b) => b.kind === "bullet" || b.kind === "numbered").length;
-const expectedPictures = rest.filter((b) => b.kind === "image").length + 1; // + the logo
+const expectedPictures = rest.filter((b) => b.kind === "image").length + frontPictures.length + 1; // + the logo
+const expectedHeadings = rest.filter((b) => b.kind === "h2").length;
+const expectedSubheadings = rest.filter((b) => b.kind === "h3").length;
+const titleText = check.paragraphs()[SLOT_TITLE].text;
+const titleShaped = titleText.includes(LINE_BREAK) && titleText.endsWith(TITLE_SITE);
 
 const trailingBlank = text.endsWith("\n");
+
+// A picture wider than the column overflows to the left of the text instead of
+// lining up with it, so measure what was actually written.
+const anchored = new Set(check.bodyOrUndefined.attachments().map((a) => String(a.drawableId)));
+const bodyPictures = check.drawables().filter((d) => anchored.has(String(d.id)) && String(d.id) !== LOGO_ID);
+const widest = bodyPictures.length ? Math.max(...bodyPictures.map((d) => d.geometry?.()?.width ?? 0)) : 0;
+const picturesOverflow = widest > BODY_MEASURE + 0.5;
+const strandedPictures = check.drawables().length - check.bodyOrUndefined.attachments().length;
 const footerStale = doc
   .sections()
   .some((s) => s.templates().some((t) => [...t.headers, ...t.footers].some((x) => x && x.text.includes(TEMPLATE_SUBJECT))));
@@ -336,13 +433,21 @@ console.log("wrote", OUTPUT);
 console.log("  page setup unchanged :", geometryKept);
 console.log("  style indents kept   :", indentKept);
 console.log("  paragraphs           :", counts.paragraphs);
-console.log("  chapter headings     :", counts.headings, "| sub-headings:", counts.subheadings);
+console.log("  chapter headings     :", counts.headings, "expected", expectedHeadings, "| sub-headings:", counts.subheadings, "expected", expectedSubheadings);
+console.log("  title shaped         :", titleShaped, JSON.stringify(titleText.replace(LINE_BREAK, " / ")));
 console.log("  list items           :", counts.listItems, "expected", expectedListItems);
 console.log("  headings in a list   :", strayLists);
 console.log("  pictures (incl logo) :", counts.pictures, "expected", expectedPictures);
 console.log("  markdown left over   :", counts.markdownLeft);
 console.log("  trailing blank para  :", trailingBlank);
 console.log("  footers renamed      :", footersRenamed, "| stale subject left:", footerStale);
+console.log("  body column          :", BODY_MEASURE.toFixed(1), "pt | widest picture:", widest.toFixed(1), "pt");
+// Detaching the template's own body picture removes its anchor, so it no
+// longer draws, but the image object itself stays in the archive: there is no
+// call to delete a drawable that no list owns. It is invisible and costs a few
+// kilobytes, so it is reported rather than fatal.
+console.log("  detached leftovers   :", strandedPictures, "(invisible)");
+console.log("  contents entries     :", expectedHeadings, "| front picture:", frontPictures.length ? "yes" : "MISSING — run capture.sh site");
 
 const ok =
   geometryKept &&
@@ -352,7 +457,11 @@ const ok =
   counts.listItems === expectedListItems &&
   counts.pictures === expectedPictures &&
   !trailingBlank &&
-  !footerStale;
+  !footerStale &&
+  !picturesOverflow &&
+  titleShaped &&
+  counts.headings === expectedHeadings &&
+  counts.subheadings === expectedSubheadings;
 
 if (!ok) {
   console.error("FAILED a check");
