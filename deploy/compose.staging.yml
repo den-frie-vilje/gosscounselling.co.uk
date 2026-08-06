@@ -2,8 +2,13 @@
 # Lives at /volume1/docker/gosscounselling.co.uk/staging on the NAS.
 #
 # Reconciled by the nas-sites pull-only agent within ~5 minutes of a push to
-# `staging`. Two containers only: the front door and the static prototypes.
-# No CMS, no OAuth proxy — there is no app yet.
+# `staging`. Three containers:
+#   caddy         the front door, routing /auth and everything else
+#   site          the built site, pulled from GHCR
+#   sveltia-auth  the GitHub OAuth proxy that /admin signs in through
+#
+# The OAuth secrets live in ./staging.env on the NAS and are NOT committed —
+# see deploy/staging.env.example for the shape.
 
 name: gosscounselling-staging
 
@@ -36,6 +41,13 @@ services:
     depends_on:
       site:
         condition: service_started
+      # Optional on purpose. If the auth container is missing or crashes,
+      # caddy still starts and the site still serves; only /auth/* 502s. That
+      # is the failure mode we want — the public page must never depend on the
+      # editor's sign-in being healthy.
+      sveltia-auth:
+        condition: service_started
+        required: false
 
   site:
     image: ghcr.io/den-frie-vilje/gosscounselling:staging-latest
@@ -48,6 +60,32 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+
+  sveltia-auth:
+    # GitHub OAuth proxy for the editor. vencax's image is what the sibling
+    # sites run; Sveltia is protocol-compatible with Decap/Netlify CMS, which
+    # is what it was written for.
+    #
+    # Only ever published under `:master` — there is no `:latest`. It is
+    # stale by a year and that is fine: the GitHub token-exchange API it
+    # implements has not changed.
+    image: vencax/netlify-cms-github-oauth-provider:master@sha256:8608529ae357f0c6cade85f9ed02336a1c3ea45c07b0719852762edc3bbaec6c
+    restart: unless-stopped
+    networks: [internal]
+    environment:
+      # The `:-` defaults keep compose from warning at parse time. They are
+      # NOT usable values: empty credentials make the container fail its own
+      # startup, which is the visible failure we want rather than a sign-in
+      # that hangs.
+      OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID:-}
+      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET:-}
+      # CSRF guard: which origins may start a sign-in. PLURAL — vencax v1.1.0
+      # reads `ORIGINS`, and with the singular it crashes on startup with
+      # "Cannot read property 'match' of undefined".
+      ORIGINS: ${STAGE_ORIGIN:-localhost}
+      # Empty means the proxy renders its own tiny self-closing postMessage
+      # page, which is exactly what Sveltia listens for.
+      REDIRECT_URL: ""
 
 volumes:
   caddy_data:

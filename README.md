@@ -39,6 +39,11 @@ asset pipeline first, so nothing downstream measures a stale cut-out:
   is John's to change, including the site's own furniture ("Phone", "Call", "Older post"), which
   lives in `src/content/labels.json`. Assistive-technology labelling stays in code and is named
   in the script's `ALLOWED` list with a reason each — a wrong edit there is a fault he cannot see
+- `scripts/check-deploy.ts` — if the editor can be signed in to, the stack can serve the sign-in.
+  Sveltia builds its OAuth handshake from `backend.base_url` in the CMS config, so that path needs
+  a proxy service in `deploy/compose.staging.yml`, a PREFIX-STRIPPING Caddy route to it, and the
+  OAuth variables documented in the env example. All four were missing and both halves looked fine
+  on their own
 - `scripts/check-portrait-fit.ts` — the hero's geometry, solved from the cut-out's own alpha
 - `scripts/check-mattes.ts` — the cut-outs differ only where they are supposed to, against a
   floor the WebP encoder's own noise sets rather than a number somebody picked
