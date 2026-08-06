@@ -25,11 +25,6 @@ deploy/*.env
 
 # Sveltia CMS bundle — build artefact copied by scripts/copy-sveltia.ts
 /static/admin/sveltia-cms.js
-# The families Sveltia asks Google for, vendored at prebuild from node_modules
-# so the editor has no third-party runtime. Build artefacts like the bundle
-# above: reproducible from the lockfile, so not in the repo.
-/static/admin/fonts/
-/static/admin/fonts.css
 
 # Generated OG images — built by scripts/gen-og.ts in prebuild
 /static/img/og/

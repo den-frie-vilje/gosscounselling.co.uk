@@ -1,25 +1,33 @@
+<!--
+  Sveltia CMS admin host page.
+
+  The bundle is self-hosted at /admin/sveltia-cms.js — version-pinned in
+  package.json and copied into static/admin/ by scripts/copy-sveltia.ts at
+  prebuild, so the editor has no floating CDN tag to be compromised through.
+
+  ITS FONTS ARE GOOGLE'S, and deliberately. Sveltia injects its own <link>
+  tags to fonts.googleapis.com for Material Symbols — which IS its entire icon
+  set — plus Merriweather Sans and Noto Sans Mono. The CSP below allows those
+  two hosts and nothing else new, which is the same policy chrishemmings.co.uk
+  and skovbyesexologi.com run; this file was copied from them before that line
+  was there, and John opened the editor to find buttons with no symbols on
+  them.
+
+  Vendoring those faces was tried and reverted. The privacy that matters here
+  is JOHN'S CLIENTS', and they never see this page: the public site serves
+  every font from its own origin, sets no cookies and calls nothing
+  third-party, which is why it needs no consent banner. John is one person who
+  knows he is signing into GitHub to edit his own website; sparing him a
+  request to Google cost 3.9 MB of icon font in the build and a font pipeline
+  to maintain, and bought nothing his visitors can tell the difference about.
+-->
 <svelte:head>
   <title>John Goss — Admin</title>
   <meta name="robots" content="noindex, nofollow" />
   <meta
     http-equiv="content-security-policy"
-    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://avatars.githubusercontent.com https://*.githubusercontent.com; font-src 'self' data:; connect-src 'self' https://api.github.com https://github.com https://avatars.githubusercontent.com https://*.githubusercontent.com; worker-src 'self' blob:; base-uri 'self';"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://avatars.githubusercontent.com https://*.githubusercontent.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.github.com https://github.com https://avatars.githubusercontent.com https://*.githubusercontent.com; worker-src 'self' blob:; base-uri 'self';"
   />
-  <!-- Sveltia's own faces, served from here rather than from Google.
-       It injects <link> tags to fonts.googleapis.com for Material Symbols —
-       which IS its entire icon set — and for Merriweather Sans and Noto Sans
-       Mono. The CSP below allows neither the stylesheet nor the font file, so
-       every icon in the editor was missing: John opened it and found buttons
-       with no symbols on them.
-
-       Opening the CSP to Google would have fixed it in one line and undone the
-       reason the bundle is vendored at all, and it would mean a request to
-       Google every time he edits his own site. So the same families are served
-       from /admin/fonts/ under the names Sveltia asks for, and its own links
-       are left to be blocked: by the time they fail, the faces they wanted are
-       already loaded. The console says so, four times, and that is the sound
-       of the policy working. -->
-  <link rel="stylesheet" href="/admin/fonts.css" />
   <!-- Classic, non-module script: Sveltia ships a UMD bundle. It is vendored
        into static/admin/ by scripts/copy-sveltia.ts at prebuild rather than
        loaded from a CDN, so the editor has no third-party runtime dependency
