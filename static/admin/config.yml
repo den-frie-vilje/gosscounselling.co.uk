@@ -136,7 +136,9 @@ collections:
               required: false,
               media_folder: '/static/img/portrait',
               public_folder: '/img/portrait',
-              hint: 'Upload a new photo of yourself and the site cuts it out and places it for you. It needs an evenly lit plain background — if it is too patchy to cut out cleanly the build will say so and keep the photo you have. Leave this empty to keep the current one.'
+              hint: 'This is the photograph the site cuts you out of. Replace it whenever you like — the site removes the background itself, places you on the blue circle at the top of the page, and puts you on the picture people see when the site is shared. Nothing is done to your face or your colours.
+
+                    What works: you against a plain wall or backdrop in one flat colour, lit evenly so there are no strong shadows on it behind you, and a colour nothing you are wearing shares — a green or blue wall is ideal, a white one is the hardest. Head and shoulders, looking at the camera, with a little room above your head. What does not work: a busy room behind you, a patchy or shadowed wall, or a jumper the same colour as the wall. If it cannot be cut out cleanly the site says so and keeps the photograph you already have rather than publishing a bad cut-out.'
             }
           - {
               name: portraitAlt,
