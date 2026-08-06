@@ -9,14 +9,11 @@
   here so the manual and the thing it is set in travel together.
 - `HANDOVER.md` — the brief for the session that does the Pages setup.
 
-**Status: preliminary, and two things are outstanding.**
+**Status: text and pictures are done. One thing is outstanding.**
 
-1. **The signed-in editor screens are missing**, and `capture.sh` can now take them:
-   `capture.sh login` once, then `capture.sh editor`.
-2. **It is not yet the Pages document Ole asked for.** The intended shape is his whitepaper
-   template, filled in with `cupertino-files` — which writes .pages without needing Pages
-   installed. The template was not in this repo, in `~/Library/.../Templates`, or anywhere else
-   searched, so the path is still to be supplied. The text is written to survive that conversion:
-   one H1, H2 per chapter, short paragraphs, no nested lists.
+All five screen captures are in and placed. `capture.sh public` takes the sign-in screen;
+`capture.sh login` signs a throwaway Chrome profile in once, by hand; `capture.sh editor` takes
+the rest by driving Chrome over the DevTools protocol.
 
-Both are noted at the foot of the manual itself, where John can see them, rather than only here.
+**It is not yet the Pages document.** That is HANDOVER.md's job — a session with access to Ole's
+Synology Drive, using cupertino-files. The template belongs in `template/` when it arrives.

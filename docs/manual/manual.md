@@ -30,15 +30,21 @@ editor with, and it is the only account involved.
    plain is best.
 5. GitHub emails you a code. Type it in.
 6. When it asks what you want to do, you can skip every question. None of it affects you.
+7. **Turn on two-factor authentication** when GitHub asks. It means a stolen password alone
+   cannot get anyone in. The simplest option is a code sent to your phone. Another minute, and you
+   will not think about it again.
+8. **Send me your username.** This is the step everything else waits on, so do it before you close
+   the page.
 
-That is the account made.
+That last one matters more than it sounds. Your account exists, but it has nothing to do with your
+website until I connect the two — and I connect them by username. Until I have it you can sign in
+to the editor perfectly well and find nothing there to edit.
 
-**Turn on two-factor authentication.** GitHub will ask you to, and it is worth doing: it means a
-stolen password alone cannot get anyone in. The simplest option is a code sent to your phone. It
-takes another minute and you will not think about it again.
+**Where to find it:** click your picture in the top right corner of github.com. Your username is at
+the top of the menu, under "Signed in as". It is the short name you chose in step 4, not your email
+address.
 
-**Then tell me the username or the email**, and I will give that account permission to edit your
-site. Until I do, you can sign in but you will not see anything to edit.
+Send it to me however suits — text, WhatsApp, email. One word is enough.
 
 ---
 
@@ -70,11 +76,23 @@ Changing your fees means opening **Fees**, not scrolling past everything else yo
 **Services** — one entry for each thing you offer. Each can have a longer page of its own, and
 only gets one if you write it.
 
-**General** — the things that appear in more than one place: your contact details, testimonials,
-your social profiles, the bodies you belong to, your name, and what search engines are told.
+**General** — the things that appear in more than one place:
+
+> Contact details · Testimonials · Social profiles · Membership and registration · Site ·
+> Search engines and sharing · Wording on buttons and labels
+
+Your number and email live in **Contact details**, and everything that links to you is built from
+them.
 
 **Blog** — your posts. It can be empty, and it is empty until you write one. Until then there is
 no blog on the site at all — no link, no page.
+
+![The four sections, with Home open](images/02-collections.png)
+
+Clicking one opens it. Every box is labelled, and most have a line underneath saying what the box
+is for.
+
+![A section open for editing](images/03-entry.png)
 
 ---
 
@@ -82,7 +100,9 @@ no blog on the site at all — no link, no page.
 
 1. Click the section you want.
 2. Change the words.
-3. Click **Save**.
+3. Click **Save**, top right.
+
+![The top of an entry: where you are, and the Save button](images/04-save-button.png)
 
 That is all of it. A minute or two later the live site has caught up.
 
@@ -99,10 +119,12 @@ file from your computer or phone, save.
 Pictures are made smaller automatically. A photograph straight off your phone is fine — you do not
 need to shrink it first.
 
-**Your photograph at the top of the page** is the one exception worth understanding. The site cuts
+**Your photograph** — the field is in **Home → Hero** — is the one exception worth understanding. The site cuts
 you out of it and places you on the blue circle. A plain, evenly lit background works best — a
 wall, a plain backdrop, anything without much going on behind you. If a photographer gives you a
 picture that is already cut out, with no background at all, the site uses it as it is.
+
+![The photograph field, in Home → Hero](images/05-picture-field.png)
 
 **Every picture asks for a description.** It is read aloud to anyone who cannot see the picture,
 and it is a few words, not a sentence: "John in his consulting room". If the picture is only
@@ -112,16 +134,19 @@ decoration and says nothing the words do not, leave it empty.
 
 ## 6. Writing a post
 
-**Blog → New post.**
+**Blog → New Post.** The form asks, in this order:
 
-- **Title** and **Summary** — the summary is two or three lines and is what shows in the list of
-  posts.
+- **Title**.
 - **Status** — a draft is not built into the site at all. There is no page for it and nothing to
   find. Set it to Published when you are ready.
-- **Publish date** — a date in the future means the post appears by itself at that moment. You do
+- **Publish on** — a date in the future means the post appears by itself at that moment. You do
   not have to be there.
+- **Summary** — two or three lines. This is what shows in the list of posts.
+- **Picture** and **Picture description** — both optional. See chapter 5.
 - **Body** — write it. Use **Heading 2** to break a long post into parts, and **Heading 3**
   underneath those.
+- **Search engine summary** — leave it alone. Empty, it uses the post's own title and summary,
+  which is usually right.
 
 ---
 
