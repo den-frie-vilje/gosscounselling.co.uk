@@ -73,7 +73,10 @@ not improve it.
 `images/01-sign-in.png` is done. It is the editor's sign-in screen taken from **staging**, at
 1100px wide and 2× scale.
 
-**Four are missing**, and they need a signed-in editor, which `capture.sh` cannot have:
+**Four are missing.** They need a signed-in editor, and `capture.sh editor` now takes them —
+Chrome keeps its session in a profile directory, so `capture.sh login` opens a real window to sign
+in once and every headless run afterwards is signed in. Sveltia routes by URL hash, so each screen
+has an address and nothing needs clicking. The profile lives outside the repo; it holds a token.
 
 | # | What | Where |
 | --- | --- | --- |
@@ -82,8 +85,12 @@ not improve it.
 | 04 | The Save button, close up, after a change has made it active | same screen |
 | 05 | A picture field with its chooser | Home → Hero, "Your photograph" |
 
-Take them at the same **1100px wide, 2× scale** so they sit together on the page. Chapter 2 is
-where 01 already sits; 02–03 belong in chapter 3, 04 in chapter 4, 05 in chapter 5.
+They come out at **1100px wide, 2× scale**, matching 01. Chapter 2 is where 01 already sits;
+02–03 belong in chapter 3, 04 in chapter 4, 05 in chapter 5.
+
+The `editor` mode refuses a signed-OUT capture rather than writing it, because that failure looks
+like a success: a real png, of a sign-in screen, in the slot where the collection list should be.
+It measures the image's own variance to tell them apart.
 
 Two things `capture.sh` records at the top and are worth repeating, because both cost an hour:
 
