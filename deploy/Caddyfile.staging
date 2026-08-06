@@ -1,8 +1,10 @@
 # Front door for gosscounselling-co-uk.stage.denfrievilje.dk.
 #
 # DSM Web Station proxies the staging hostname to 127.0.0.1:${CADDY_PORT};
-# this Caddy speaks plain HTTP on the docker network and fronts one upstream.
-# No OAuth proxy and no feed proxy — there is no CMS and no podcast here yet.
+# this Caddy speaks plain HTTP on the docker network and routes by path:
+#
+#   /auth/*  → the GitHub OAuth proxy the editor signs in through
+#   /*       → the built site
 
 {
     admin off
@@ -10,6 +12,21 @@
 }
 
 :80 {
+    # The editor's sign-in. `handle_path` STRIPS the /auth prefix, and that
+    # strip is the whole trick.
+    #
+    # Sveltia builds its URLs as `${base_url}/auth` and
+    # `${base_url}/callback`, and base_url is
+    # `https://gosscounselling-co-uk.stage.denfrievilje.dk/auth`
+    # (static/admin/config.yml). So the browser asks for /auth/auth and
+    # /auth/callback; after the strip the upstream sees /auth and /callback at
+    # its own root, which is what netlify-cms-github-oauth-provider serves.
+    # A plain `handle` instead of `handle_path` would forward the prefix and
+    # every sign-in would 404.
+    handle_path /auth/* {
+        reverse_proxy sveltia-auth:3000
+    }
+
     handle {
         reverse_proxy site:8080
     }
