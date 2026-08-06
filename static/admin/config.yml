@@ -515,10 +515,11 @@ collections:
         label: Social profiles
         file: src/content/social.json
         hint: >
-          Shown as icons in the footer, and told to search engines so they know these accounts are
-          yours. Only add a profile that is actually yours; a wrong one here sends people to a
-          stranger. These are external addresses, so they are yours to write. Addresses on this
-          site are never typed in here.
+          Shown as logos in the footer, and told to search engines so they know these accounts are
+          yours. Pick a platform and paste the address; the name fills itself in. Only add a
+          profile that is actually yours — a wrong one here sends people to a stranger, and search
+          engines are being told it is you. These are other people's addresses, so they are yours
+          to write; pages on this site are never typed in here.
         fields:
           - {
               name: note,
@@ -532,20 +533,43 @@ collections:
             widget: list
             summary: '{{fields.label}}'
             fields:
+              # Kept in step with src/lib/generated/social-icons.ts by
+              # scripts/check-social.ts: a platform offered here with no entry
+              # there would put an icon in the footer that cannot be drawn.
               - {
                   name: platform,
                   label: Platform,
                   widget: select,
-                  options: [facebook, instagram],
-                  hint: 'Which icon to draw. Ask for another platform if you start using one; each needs its glyph added.'
+                  options:
+                    [
+                      { label: Facebook, value: facebook },
+                      { label: Instagram, value: instagram },
+                      { label: LinkedIn, value: linkedin },
+                      { label: X, value: x },
+                      { label: Threads, value: threads },
+                      { label: Bluesky, value: bluesky },
+                      { label: YouTube, value: youtube },
+                      { label: TikTok, value: tiktok },
+                      { label: Substack, value: substack },
+                      { label: Spotify, value: spotify },
+                      { label: Mastodon, value: mastodon },
+                      { label: Pinterest, value: pinterest }
+                    ],
+                  hint: 'Pick the one the address below belongs to. It decides which logo is drawn in the footer. If you start using something that is not on this list, it can be added.'
                 }
               - {
                   name: label,
                   label: Name,
                   widget: string,
-                  hint: 'Read out to anyone using a screen reader, in place of the icon.'
+                  required: false,
+                  hint: 'Leave it empty and it uses the platform’s own name, which is almost always what you want. It is what a screen reader says in place of the logo, so change it only if “Facebook” is not the right thing to hear.'
                 }
-              - { name: url, label: Address, widget: string }
+              - {
+                  name: url,
+                  label: Address,
+                  widget: string,
+                  hint: 'The full address of your profile, pasted from the browser — for example https://www.facebook.com/gosscounselling.'
+                }
 
       - name: site
         label: Site

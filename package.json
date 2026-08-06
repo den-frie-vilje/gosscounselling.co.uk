@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
     "precheck": "node scripts/gen-assets.ts",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && node scripts/check-cms.ts && node scripts/check-nav.ts && node scripts/check-contact.ts && node scripts/check-seo.ts && node scripts/check-contrast.ts && node scripts/check-portrait-fit.ts && node scripts/check-mattes.ts",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && node scripts/check-cms.ts && node scripts/check-nav.ts && node scripts/check-social.ts && node scripts/check-contact.ts && node scripts/check-seo.ts && node scripts/check-contrast.ts && node scripts/check-portrait-fit.ts && node scripts/check-mattes.ts",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "og": "node scripts/gen-og.ts",
     "photos": "node scripts/gen-photos.ts",
@@ -31,7 +31,8 @@
     "check:contrast": "node scripts/check-contrast.ts",
     "check:portrait": "node scripts/check-portrait-fit.ts",
     "check:mattes": "node scripts/check-mattes.ts",
-    "postbuild": "node scripts/gen-404.ts"
+    "postbuild": "node scripts/gen-404.ts",
+    "social:icons": "node scripts/gen-social-icons.ts"
   },
   "engines": {
     "node": "~25",
@@ -52,6 +53,7 @@
     "satori": "^0.26.0",
     "satori-html": "^0.3.2",
     "sharp": "^0.35.2",
+    "simple-icons": "^16.28.0",
     "svelte": "^5.56.1",
     "svelte-check": "^4.6.0",
     "tailwindcss": "^4.3.0",
