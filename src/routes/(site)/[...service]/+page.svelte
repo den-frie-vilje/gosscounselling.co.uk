@@ -20,6 +20,7 @@
   import Section from '$lib/components/Section.svelte';
   import Breadcrumbs from '$lib/components/Breadcrumbs.svelte';
   import Prose from '$lib/components/Prose.svelte';
+  import Photo from '$lib/components/Photo.svelte';
   import ContactBand from '$lib/components/ContactBand.svelte';
   import Icon from '$lib/components/Icon.svelte';
 
@@ -58,6 +59,23 @@
   {#snippet above()}
     <Breadcrumbs {trail} />
   {/snippet}
+  {#if detail?.photo}
+    <!-- Under the heading and above the body, which is where the blog post
+         puts its picture, for the same reason: it belongs to the page rather
+         than announcing it. `alt=""` when he left the description empty — the
+         honest signal for decoration. It is the first thing painted here, so
+         it is NOT lazy, and the figure's aspect-ratio holds its space so the
+         words below do not jump when it lands. -->
+    <figure class="shot">
+      <Photo
+        src={detail.photo}
+        alt={detail.photoAlt ?? ''}
+        sizes="(max-width: 640px) 100vw, 66ch"
+        loading="eager"
+      />
+    </figure>
+  {/if}
+
   <Prose md={body} class="prose-lead mt-10" />
 
   <p class="back">
@@ -74,6 +92,35 @@
 <ContactBand />
 
 <style>
+  /* The blog post's picture treatment, at the same measure the body gets, so
+     the picture is the width of the column it belongs to rather than of the
+     page. `font-size` travels with `max-width` deliberately: `ch` is the
+     width of a "0" in the element's OWN font, so 66ch on a figure inheriting a
+     different size is not 66ch of body text. */
+  .shot {
+    margin: 40px 0 0;
+    font-size: 18px;
+    max-width: 66ch;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--color-mist);
+    aspect-ratio: 16 / 9;
+  }
+  .shot :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  /* On a phone the measure is the screen, so the picture runs edge to edge. */
+  @media (max-width: 640px) {
+    .shot {
+      margin-top: 30px;
+      max-width: none;
+      border-radius: 8px;
+    }
+  }
+
   .back {
     margin: 48px 0 0;
     padding-top: 28px;

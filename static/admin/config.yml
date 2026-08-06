@@ -413,6 +413,25 @@ collections:
               required: false,
               hint: 'Use Heading 2 for the main parts, Heading 3 under them.'
             }
+          # Into static/img/photos/, the folder scripts/gen-photos.ts watches,
+          # so an upload straight off a phone is downscaled at prebuild rather
+          # than shipped at 3000px.
+          - {
+              name: photo,
+              label: Picture,
+              widget: image,
+              required: false,
+              media_folder: '/static/img/photos',
+              public_folder: '/img/photos',
+              hint: 'Shown on this page only, under the heading. Not on the front page.'
+            }
+          - {
+              name: photoAlt,
+              label: Picture description,
+              widget: string,
+              required: false,
+              hint: 'For anyone who cannot see it. Empty if it is decoration.'
+            }
           - name: seo
             label: Search engine summary
             widget: object
