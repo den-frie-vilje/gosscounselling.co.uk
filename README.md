@@ -24,9 +24,8 @@ pnpm check                   # every gate below
 pnpm build --mode staging    # static output into build/
 ```
 
-`pnpm check` is what the image build runs before `pnpm build`, so each gate fails the image
-rather than production. Its `precheck` runs the asset pipeline first, so nothing downstream
-measures a stale cut-out:
+`pnpm check` is us, at a keyboard, before we commit: every gate, strict. Its `precheck` runs the
+asset pipeline first, so nothing downstream measures a stale cut-out:
 
 - `svelte-check` — the content JSON against its interfaces in `src/lib/content/index.ts`
 - `scripts/check-cms.ts` — the Sveltia config against the JSON, both directions. A key the
@@ -44,8 +43,29 @@ Each one is self-tested against injected faults before its clean run is believed
 that has never been seen to fail is not a checker. `pnpm check:cms:selftest`,
 `pnpm cutouts:selftest`.
 
+### A gate may stop us. It may not stop John
+
+The image build runs **`pnpm check:publish`**, not `pnpm check`. That build IS John's publish: he
+saves in Sveltia, the push builds this image, and if a gate fails, his change does not go live and
+the reason is in a CI log he has no reason to know exists. A site that refuses to publish because a
+nav label came out two characters long is worse than one with a long nav label.
+
+So the gates that judge **his content** — cms, nav, social, contact, seo, portrait-fit, mattes —
+run through `scripts/run-gates.ts`, which has two modes. Strict under `pnpm check`. Advisory under
+`--advisory`, where every gate still runs and prints everything it found and the build continues.
+Advisory on **production too**: production is where a blocked publish costs most, because the edit
+silently does not appear and the live site keeps yesterday's words.
+
+`svelte-check` and `check-contrast` are outside that runner and stay strict everywhere — they judge
+code and design tokens, neither of which John can change.
+
+And the finding is not left in a log. Every run writes `src/lib/generated/gate-status.json`, which
+the build compiles into the editor page: `GateStatus.svelte` shows John, in his words, whether the
+last publish went through clean, and says plainly which findings are ours rather than his.
+
 Two more gates read the OUTPUT rather than the input, so they run AFTER the build rather than
-in `pnpm check`. The image build and the static-host workflow both run them:
+in `pnpm check`. These are **disclosure** gates, not consistency gates, and they block on every
+path including production — shipping a draft he has not published is worse than not shipping:
 
 ```sh
 pnpm check:build   # check-posts + check-mock, against build/

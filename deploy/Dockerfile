@@ -58,8 +58,16 @@ ENV PUBLIC_GITHUB_REPO=$PUBLIC_GITHUB_REPO
 # Type check first: faster to fail here than in the slower Vite build, and it
 # is the real contract on the content JSON. A CMS save that stops matching its
 # interface fails the image build rather than production.
+#
+# `check:publish`, not `check`. This build IS John's publish: he saves in
+# Sveltia, this image is what gets built, and if it fails his change does not
+# go live and no one is there to read why. So the gates that judge HIS content
+# run in advisory mode here — every one of them still runs and still prints
+# what it found, into this log, for us. Only the gates that judge OUR code
+# (svelte-check, check-contrast) and the disclosure gates below can stop the
+# publish. See scripts/run-gates.ts for the whole rule.
 RUN eval "$(pkgx dev --shellcode 2>/dev/null)" && dev on && \
-    pnpm check
+    pnpm check:publish
 
 # NO `--` before the flags. pnpm forwards a literal `--` to the script, so
 # `pnpm build -- --mode staging` runs `vite build -- --mode staging`, and Vite

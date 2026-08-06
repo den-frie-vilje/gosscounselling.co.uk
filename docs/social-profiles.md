@@ -10,9 +10,9 @@ Keynes / MK3 · his specific service combination (psychosexual therapy *plus* su
 NCPS or COSRT membership · his photograph matching `docs/source-assets/John-Goss-1.jpg`.
 One corroboration only is **PROBABLE**, and a PROBABLE is never rounded up.
 
-**Headline: he has exactly two social accounts — Facebook and Instagram — and six directory
-listings.** Both social accounts are verified. Nothing was found on X, YouTube, TikTok, Bluesky,
-Pinterest or Mastodon, and LinkedIn could not be resolved without logging in.
+**Headline: he has three social accounts — Facebook, Instagram and LinkedIn — and six directory
+listings.** All three are verified; LinkedIn was PROBABLE on the research alone and was settled by
+Ole on 2026-08-06. Nothing was found on X, YouTube, TikTok, Bluesky, Pinterest or Mastodon.
 
 ---
 
@@ -28,7 +28,7 @@ Pinterest or Mastodon, and LinkedIn could not be resolved without logging in.
 | 6 | COSRT directory | `https://www.cosrt.org.uk/members-2/john-goss/` | **VERIFIED** | phone, email, MK3 7DZ, domain, COSRT reg. no. — 5 |
 | 7 | Men's Therapy Hub | `https://menstherapyhub.co.uk/therapist/john-goss/` | **VERIFIED** | phone, domain, Milton Keynes, NCPS + COSRT, psychosexual — 5 |
 | 8 | Google Business Profile | Maps place `/g/11tdf6_cxg` | **VERIFIED** | phone, domain, MK3 7DZ Whaddon Way — 3 |
-| 9 | LinkedIn | `https://www.linkedin.com/in/john-goss-mncs-accred-521393118/` | **PROBABLE** | credential suffix + StopSO, but from an unloadable page — see below |
+| 9 | LinkedIn | `https://www.linkedin.com/in/john-goss-521393118/` | **VERIFIED** | confirmed by Ole, 2026-08-06 — see below |
 | 10 | Psychology Today UK | `…/gb/counselling/goss-counselling-milton-keynes-eng/396559` | **LAPSED** | was his; now dead |
 | 11 | BACP register | `https://www.bacp.co.uk/search/Register` | **NOT PRESENT** | confirmed absent; his register is NCPS |
 | 12 | TikTok | `https://www.tiktok.com/@gosscounselling` | **NOT FOUND** | "Couldn't find this account" |
@@ -182,9 +182,26 @@ Maps place `/g/11tdf6_cxg` (CID `0x6937e96caa10b56b`), name **`Goss Counselling 
 - **No rating and no reviews, and no photos.** For "counsellor near me" this is the highest-value
   and least-developed asset he has.
 
-### 9. LinkedIn — PROBABLE, not verified
+### 9. LinkedIn — VERIFIED (by Ole, 2026-08-06)
 
-`https://www.linkedin.com/in/john-goss-mncs-accred-521393118/`
+`https://www.linkedin.com/in/john-goss-521393118/`
+
+**Settled.** This entry was PROBABLE and said so: *"ask John directly whether that is his LinkedIn —
+one question, one answer, done."* Ole supplied the URL on 6 August 2026, which is that answer, and
+it is the URL now in `src/content/social.json`.
+
+Note it is a **different slug from the one the research found** — `john-goss-521393118` rather than
+`john-goss-mncs-accred-521393118` — but the **same profile**. LinkedIn vanity slugs are
+`<name>-<member id>`, and the numeric member id `521393118` is identical; only the name part, which
+a member can rewrite at will, differs. So he has changed his display name since the page was
+indexed, and the entry below is evidence about the same account.
+
+The evidence gathered before the confirmation is kept, because it is what a first-principles check
+would have to re-establish if the confirmation is ever doubted:
+
+---
+
+*Original finding, superseded by the confirmation above:*
 
 Loading it logged-out returns `Profilen "john-goss-mncs-accred-521393118" kan være privat` — the
 profile may be private or may not exist, log in to view. **The task forbids logging in, so I stopped
@@ -201,11 +218,11 @@ That is suggestive — the pairing of that credential with that charity would be
 otherwise, and StopSO fits his documented training in working with sexual offending. But **both
 facts come from a single source I could not open**, so they are not two *independent*
 corroborations in the sense the bar requires. There is no location, phone, email or domain
-confirmation. **PROBABLE. Do not put this in the footer as it stands.**
+confirmation. **PROBABLE at the time. It was not put in the footer until the confirmation above.**
 
 *To settle it:* ask John directly whether that is his LinkedIn — one question, one answer, done.
 Failing that, a logged-in look at the profile for "Milton Keynes" plus a link to either domain, or
-his photograph, would move it to VERIFIED. It should not be linked until one of those happens.
+his photograph, would move it to VERIFIED. Asking him was the route taken.
 
 ### 10. Psychology Today UK — LAPSED
 
@@ -265,12 +282,13 @@ It ships: `instagram`, `linkedin`, `youtube`, `facebook`, `x`, `tiktok`, `thread
 | Facebook | VERIFIED | **Yes** — `facebook`, already in the component, copy it across unchanged |
 | Instagram | VERIFIED | **Yes** — `instagram`, already in the component |
 | WhatsApp (not a profile, but he publishes it) | — | **Yes** — `whatsapp`, if the footer offers WhatsApp contact |
-| LinkedIn | PROBABLE | Yes — `linkedin` — but do not render it until the verdict improves |
+| LinkedIn | VERIFIED | **No** — Simple Icons dropped the LinkedIn mark at LinkedIn's request, so the footer draws its NAME. `SocialIcon.svelte` falls back to a label for any platform it has no path for, which is why adding it needed no icon work |
 | Counselling Directory, NCPS, COSRT, Men's Therapy Hub | VERIFIED | **No.** Not social networks and not in Simple Icons. Link them as text, or as their own membership marks — the NCPS and COSRT logos are already in `docs/source-assets/` (`NCPS_RGB.png`, `cosrt.webp`) |
 | Google Business Profile | VERIFIED | Not in the component. Simple Icons does carry `google`/`googlemaps` if a glyph is ever wanted, but a GBP is not conventionally a footer link |
 
-**So the footer needs exactly two glyphs today — Facebook and Instagram — and both already exist in
-the reference component.** No new icon work is required.
+**So the footer needs exactly two glyphs — Facebook and Instagram — and both already exist in the
+reference component.** LinkedIn is a third link with no glyph available anywhere, and is drawn as a
+name. No new icon work is required.
 
 ---
 
