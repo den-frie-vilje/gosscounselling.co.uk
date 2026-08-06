@@ -259,7 +259,17 @@ export interface Home {
   /** The section's framing only. The services themselves are their own
    *  entries — see `services` below. */
   services: { kicker: string; heading: string; intro: string; navLabel?: string };
-  about: { kicker: string; heading: string; body: string; navLabel?: string; photoAlt: string };
+  about: {
+    kicker: string;
+    heading: string;
+    body: string;
+    navLabel?: string;
+    /** Public path into `static/img/photos/`, so scripts/gen-photos.ts gives it
+     *  a srcset. Optional: an empty field renders no photograph rather than a
+     *  gap where one was. */
+    photo?: string;
+    photoAlt: string;
+  };
   fees: {
     kicker: string;
     heading: string;

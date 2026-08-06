@@ -202,6 +202,20 @@ collections:
               editor_components: [],
               modes: [rich_text]
             }
+          # Goes into static/img/photos/, which scripts/gen-photos.ts watches:
+          # whatever he uploads is downscaled into AVIF and WebP srcsets at
+          # prebuild, so a photograph straight off a phone does not ship at
+          # 3000px. The circle is CSS, so any shape works — it is cropped to
+          # a square from the centre and rounded.
+          - {
+              name: photo,
+              label: Your photo,
+              widget: image,
+              required: false,
+              media_folder: '/static/img/photos',
+              public_folder: '/img/photos',
+              hint: 'Shown as a circle, cropped from the middle. Leave empty for no photo.'
+            }
           - {
               name: photoAlt,
               label: Photo description,

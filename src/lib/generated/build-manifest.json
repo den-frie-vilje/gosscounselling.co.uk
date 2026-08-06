@@ -3,8 +3,8 @@
   "steps": {
     "cutouts": {
       "key": "6a1681142afd",
-      "ranAt": "2026-08-06T12:00:10.667Z",
-      "seconds": 9.26,
+      "ranAt": "2026-08-06T12:31:54.654Z",
+      "seconds": 9.73,
       "inputs": {
         "scripts/keyer.ts": "da6d27dfa8cb",
         "scripts/gen-cutouts.ts": "3bfbd2ced675",
@@ -13,14 +13,13 @@
       },
       "outputs": {
         "static/img/john-cutout.webp": "b1c92a4cfa9f",
-        "static/img/john-portrait-round.webp": "fde29c2b3fb7",
         "assets/portrait/john-knockout.webp": "ed7f3053b58c"
       }
     },
     "og": {
-      "key": "6e31b943ddb5",
-      "ranAt": "2026-08-06T12:00:21.622Z",
-      "seconds": 10.9,
+      "key": "3e88510f4526",
+      "ranAt": "2026-08-06T12:32:01.511Z",
+      "seconds": 6.57,
       "inputs": {
         "scripts/gen-og.ts": "af1db53a730a",
         "src/content/site.json": "8ba5cadeee47",
@@ -28,22 +27,20 @@
         "src/content/home/hero.json": "8a7ee371b628",
         "src/lib/generated/portrait-geometry.json": "c0a057a56d04",
         "pnpm-lock.yaml": "7c732c191de5",
-        "static/img/john-cutout.webp": "b1c92a4cfa9f",
-        "static/img/john-portrait-round.webp": "fde29c2b3fb7"
+        "static/img/john-cutout.webp": "b1c92a4cfa9f"
       },
       "outputs": {
         "static/img/og/home.png": "7190a90eb49e"
       }
     },
     "portrait-geometry": {
-      "key": "fd9f70021d7d",
-      "ranAt": "2026-08-06T10:49:38.439Z",
-      "seconds": 0.17,
+      "key": "fe262e297b70",
+      "ranAt": "2026-08-06T12:31:54.928Z",
+      "seconds": 0.26,
       "inputs": {
         "scripts/check-portrait-fit.ts": "6af778e5c0eb",
         "src/lib/portrait.config.json": "5415beaa6ffe",
         "static/img/john-cutout.webp": "b1c92a4cfa9f",
-        "static/img/john-portrait-round.webp": "fde29c2b3fb7",
         "assets/portrait/john-knockout.webp": "ed7f3053b58c"
       },
       "outputs": {

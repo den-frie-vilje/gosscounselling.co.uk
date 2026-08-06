@@ -20,6 +20,7 @@
   import SeoHead from '$lib/components/SeoHead.svelte';
   import Section from '$lib/components/Section.svelte';
   import Prose from '$lib/components/Prose.svelte';
+  import Photo from '$lib/components/Photo.svelte';
   import FaqAccordion from '$lib/components/FaqAccordion.svelte';
   import ContactBand from '$lib/components/ContactBand.svelte';
   import Testimonials from '$lib/components/Testimonials.svelte';
@@ -274,9 +275,14 @@
 <Section id="about" surface="mist" kicker={home.about.kicker} heading={home.about.heading}>
   <div class="aboutGrid">
     <Prose md={home.about.body} class="prose-lead" />
-    <figure class="aboutPhoto">
-      <img src="/img/john-portrait-round.webp" alt={home.about.photoAlt} width="600" height="600" />
-    </figure>
+    {#if home.about.photo}
+      <figure class="aboutPhoto">
+        <!-- 300px at most, so a 2x screen wants 600 and nothing larger is
+             worth sending. The photograph is his to replace in the editor;
+             whatever he uploads is downscaled by scripts/gen-photos.ts. -->
+        <Photo src={home.about.photo} alt={home.about.photoAlt} sizes="min(300px, 62vw)" />
+      </figure>
+    {/if}
   </div>
 </Section>
 
@@ -1188,7 +1194,13 @@
     position: relative;
     isolation: isolate;
   }
-  .aboutPhoto img {
+  /* `:global(img)`, because the <img> is inside <Photo> now and Svelte's
+     scoping only reaches this component's own markup. Still confined to
+     .aboutPhoto, which is local, so it cannot leak to another image. */
+  .aboutPhoto :global(picture) {
+    display: block;
+  }
+  .aboutPhoto :global(img) {
     width: 100%;
     height: auto;
     aspect-ratio: 1;

@@ -1,1 +1,17 @@
-{}
+{
+  "/img/photos/john-about.webp": {
+    "fallback": "/img/photos/_gen/john-about-620.jpg",
+    "width": 620,
+    "height": 620,
+    "variants": [
+      {
+        "type": "image/avif",
+        "srcset": "/img/photos/_gen/john-about-320.avif 320w, /img/photos/_gen/john-about-480.avif 480w, /img/photos/_gen/john-about-620.avif 620w"
+      },
+      {
+        "type": "image/webp",
+        "srcset": "/img/photos/_gen/john-about-320.webp 320w, /img/photos/_gen/john-about-480.webp 480w, /img/photos/_gen/john-about-620.webp 620w"
+      }
+    ]
+  }
+}
