@@ -124,7 +124,13 @@ for (const file of sources) {
   // than every target, emit it at its native width so there is still a
   // fallback to point at.
   const widths = TARGET_WIDTHS.filter((w) => w <= srcW);
-  if (widths.length === 0) widths.push(srcW);
+  // And keep the native width when it falls BETWEEN two targets, which used
+  // to be silently discarded. A 620px source matched 320 and 480 and stopped
+  // there, so the best variant shipped was 480 — softer on a 2x screen than
+  // the original file it was made from, which is a downgrade disguised as an
+  // optimisation. The largest thing offered is now never smaller than the
+  // source, and still never larger.
+  if (widths.length === 0 || Math.max(...widths) < srcW) widths.push(srcW);
   const maxW = Math.max(...widths);
   const maxH = Math.round((maxW * srcH) / srcW);
 
