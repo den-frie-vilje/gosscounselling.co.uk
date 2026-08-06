@@ -175,7 +175,7 @@
                  What ships now is solved rather than graded — the backing is
                  measured, so alpha follows from John's own colour and the
                  foreground follows in closed form from alpha; see
-                 scripts/build-cutouts.py, solid_matte(). Nothing in the file
+                 scripts/keyer.ts, solid_matte(). Nothing in the file
                  knows what it will be composited over. At the drawn size, of
                  the fringe pixels that depart from a composite of John's own
                  colour by more than 10 levels: knockout 61.0%, the old keyed
@@ -772,7 +772,7 @@
   /* One matte on every ground, which is what a straight-alpha cutout with the
      backdrop taken out of its COLOUR as well as its matte is for. The plain
      knockout is still the master the geometry is measured from and the input
-     scripts/build-cutouts.py keys, but nothing paints it: its fringe carries
+     scripts/keyer.ts keys, but nothing paints it: its fringe carries
      the white cyclorama, and over the plate that composites brighter than the
      plate itself. See the note on .layerIn in the markup for the numbers. */
 

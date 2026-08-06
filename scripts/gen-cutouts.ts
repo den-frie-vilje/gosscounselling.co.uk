@@ -15,7 +15,7 @@
  * John replaces his portrait. That folder is EMPTY today and its absence is the normal
  * state, exactly as `static/img/photos/` is in `scripts/gen-photos.ts`: nothing to do is
  * not a build failure. Until he uploads one, the committed assets are the hand-tuned ones
- * `scripts/build-cutouts.py` produced and nothing here overwrites them. The day he
+ * the deleted Python hand pass produced and nothing here overwrites them. The day he
  * uploads one, this takes over, because the hand pass cannot: its first input is a matte
  * a person already pulled.
  *
@@ -49,7 +49,7 @@ const PHOTO_EXT = /\.(jpe?g|png|webp|tiff?)$/i;
  * `scripts/keyer.ts` produces a foreground that is the subject's own colour at every
  * coverage, which is right on every ground at once.
  *
- * What is written now is what `scripts/build-cutouts.py` writes, and for the same two
+ * What is written now is what the deleted Python hand pass writes, and for the same two
  * reasons. `OUT_ASSET` is the one file the page paints, on every ground it uses.
  * `OUT_MASTER` is the plain knockout — the photograph's own pixels under the same matte,
  * with nothing solved and the backing still in its fringe. Nothing paints it. It is the

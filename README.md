@@ -96,40 +96,54 @@ five it must refuse.
 - [docs/domain-and-email.md](docs/domain-and-email.md) — DNS findings and the migration order
 - [docs/information-architecture.md](docs/information-architecture.md) — detail pages, URL
   structure, SEO and the redirect map
-- [docs/source-assets/](docs/source-assets/) — his portraits and membership logos from the old site
+- [docs/copy-to-confirm.md](docs/copy-to-confirm.md) — every line that is OURS and not his, for
+  him to approve or overrule. §0 is live on the site and replaced a sentence of his own
+- [docs/social-profiles.md](docs/social-profiles.md) — the profiles claimed as his, with the
+  evidence for each. `check-seo.ts` refuses a `sameAs` URL this file does not record as VERIFIED
+- [docs/content-coverage.md](docs/content-coverage.md) — what the old site said and where it went
+- [docs/emails/](docs/emails/) — drafted for Ole to send, facts checked against the scrapes
+- [docs/source-assets/](docs/source-assets/) — his portraits and membership logos from the old
+  site. READ-ONLY: the hand-retouched crown lives here and nothing regenerates it
 
 ## Portrait assets
 
-Two paths, and they are not rivals. `scripts/keyer.ts` is the general one, described above: it
-keys whatever photograph it is given, measuring the backdrop rather than assuming it, and it is
-what a photo John uploads goes through. `scripts/build-cutouts.py` is the original hand pass
-over his current portrait, and it still owns the one thing the general keyer will not do —
-inventing the top of his head, which the photograph clips. It takes one argument, the height of
-the reconstructed crown as a fraction of the fitted arc (currently `0.5`):
+**One path.** `scripts/keyer.ts` keys whatever photograph it is given, measuring the backdrop
+rather than assuming one, and `scripts/gen-cutouts.ts` runs it over whatever is in
+`static/img/portrait/`. There used to be a second, a Python hand pass over his current portrait;
+it is gone, and what replaced it is the rule below.
 
-```sh
-python3 scripts/build-cutouts.py 0.5
-```
-
-- **The light frame is knocked out.** Background removed via macOS Vision subject lifting, then
-  decontaminated against the white backdrop. His shoulders are cut by the edges of the original
-  photograph, so it is always placed in a frame narrower than the image: the crop you see is made
-  by the frame or by the viewport, never by a line floating mid-section.
-- **The crown is reconstructed.** The photograph clips the top of his head, leaving a flat 137px
-  chord. A circle fitted to the local edge slope on both sides of the gap restores the arc, at
-  half its fitted height, with edge fuzz matched to the measured statistics of his real
-  silhouette (ramp 6.4px vs 6.5px real, roughness 0.41px vs 0.42px real).
-- **One asset is painted, on every ground** — `static/img/john-cutout.webp`, and it is the only
-  cut-out in the directory the build copies from. The knockout it is measured against lives in
-  `assets/portrait/`, because a visitor never fetches it and it shipped for months at 316 KB that
-  nothing on the site referenced. There used to be a light/dark pair, each with its own edge treatment
-  — colour edge-extend, matte choke, negative light wrap — and that is gone from both the hand
-  pass and the general keyer. Instead the foreground is pinned to John's own colour, carried
-  across the fringe geodesically from the opaque interior, and coverage is solved against the
-  measured backing; `F*a + ground*(1-a)` is then right on the light plate and the deep band at
-  once, by arithmetic rather than by grading. Nothing in the file knows what it will sit on.
-- **The dark studio frame keeps its background**, levelled with a tone curve that lifts the mids
-  (median 38 → 55) while leaving the highlights where they were, and is only used small and round.
+- **A photograph is keyed. A cut-out is not.** If the upload already carries a real matte — a
+  substantial area transparent, a substantial area solid — there is nothing to key, and keying it
+  anyway is destructive rather than merely wasteful: the solve estimates a backing that is not
+  there and removes a spill that does not exist. Measured on exactly that case, a hand matte
+  flattened onto green and re-solved came back with 43.77% of its fringe in the violet band and
+  2,273 blown pixels, against 10.85% and 40 for the matte it started from.
+- **A given matte keeps its coverage and gets its colour carried.** A matte settles coverage and
+  says nothing about what is underneath it, and the two often disagree — cutting someone out
+  changes the shape, not the pixels. So the alpha is used exactly as given (0.0000 drift) and the
+  fringe colour is pulled outward from the part the matte calls solid. A finished cut-out passed
+  through comes out at 7 blown pixels; the Python hand pass it replaced managed 40.
+- **This is also the escape hatch.** Any photograph the solver gets wrong can be masked by hand
+  and uploaded, and the pipeline stops arguing. It has to be finished, edges included: whatever is
+  in that file is what appears on the site.
+- **The source is a committed file in the folder the CMS writes to** —
+  `static/img/portrait/john-goss.webp`. The file John sees in the editor, the file he replaces,
+  and the file the build reads are one file rather than three that have to agree.
+- **The crown was reconstructed by hand**, once, in `docs/source-assets/john-light-decontaminated.png`.
+  The photograph clips the top of his head, and the keyer will not invent it — it says so and
+  carries on. That reconstruction now enters the pipeline as ordinary pixels, like any other
+  upload, rather than through a script that knew about it.
+- **One asset is painted, on every ground** — `static/img/john-cutout.webp`, the only cut-out in
+  the directory the build copies from. There used to be a light/dark pair, each with its own edge
+  treatment. Instead the foreground is pinned to John's own colour, carried across the fringe from
+  the opaque interior, and coverage is solved against the measured backing; `F*a + ground*(1-a)`
+  is then right on the light plate and the deep band at once, by arithmetic rather than grading.
+  Nothing in the file knows what it will sit on.
+- **The hero's geometry is solved, not typed.** `scripts/check-portrait-fit.ts` reads the cut-out's
+  own alpha and emits the tokens the page uses — how wide he is drawn, where his head centres,
+  where `.layerOut`'s fade begins and ends. The fade is a fraction of the gap between his crown
+  and his shoulders, so a portrait of different proportions gets a shorter fade rather than a
+  failed build.
 
 ## Intended stack
 
