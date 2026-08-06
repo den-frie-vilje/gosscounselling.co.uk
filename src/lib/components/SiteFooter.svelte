@@ -78,7 +78,10 @@
       <p class="m-0">{footerNote(year)}</p>
       {#if PUBLIC_GIT_SHA}
         <p class="stamp m-0">
-          {PUBLIC_GIT_SHA.slice(0, 7)}{#if buildDate} · {buildDate}{/if}
+          <!-- The separator carries its own non-breaking space: Svelte trims
+               the whitespace at the start of an {#if}, so a plain space here
+               vanishes and the sha runs into the middot. -->
+          {PUBLIC_GIT_SHA.slice(0, 7)}{#if buildDate}{' · '}{buildDate}{/if}
         </p>
       {/if}
     </div>
