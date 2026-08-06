@@ -205,14 +205,19 @@
     text-transform: uppercase;
     color: var(--color-gold);
   }
+  /* Book weight, not the 600 a heading takes. These are the titles of two
+     posts you are not reading — a footnote offering somewhere to go next — and
+     set at heading weight in the display face they read as two more headings
+     competing with the one above them. Fraunces at 400 is the same weight the
+     testimonial quotations use, and it is the register this wants. */
   .what {
     display: block;
     margin-top: 6px;
     font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 18px;
+    font-weight: 400;
+    font-size: 17.5px;
     line-height: var(--leading-heading-small);
-    color: var(--color-ink);
+    color: var(--color-muted);
   }
   .sequence a:hover .what {
     color: var(--color-teal);
