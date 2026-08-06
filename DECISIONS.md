@@ -72,6 +72,11 @@ full height looked like a bump. Edge fuzz is synthesised to the measured statist
 silhouette rather than left clean. Reproducible via `scripts/build-cutouts.py`.
 
 ## 12. Dark grounds get their own cutout with keyer-style edge treatment
+> **Superseded by §27, 6 August 2026.** There is one cutout now, and no edge treatment in it at
+> all. The measurements below are still true of what was built, and `scripts/gen-cutouts.ts` and
+> `scripts/keyer.ts` cite this section for the choke figure as a matter of record — but the
+> approach it describes is not what ships.
+
 A matte pulled from a white backdrop carries light wrap on the silhouette, which glows when
 composited onto a dark ground — the same problem as green spill. Treated the standard way:
 colour edge-extend (partially covered pixels take the nearest opaque colour, so no backdrop-
@@ -148,61 +153,11 @@ resolves because of `deploy/nginx.conf` is a URL that is broken on the other hos
 until its secrets exist. What does not survive the move is the Sveltia editor, which needs the
 GitHub OAuth broker that runs in the staging compose stack.
 
-## 21. Drafts are private at build time; scheduling is a client-side gate
-Two different things were being run together, and they want different answers.
-
-A **draft** is private. It is excluded at build time, so it is not in `build/` at all, has no
-page, and is not in the sitemap. `scripts/check-posts.ts` greps the build output for the text of
-every draft and fails if it finds any, so the guarantee is enforced rather than intended.
-
-A **scheduled** post is not private, it is merely not shown yet. It ships in the HTML and a
-client-side gate reveals it once its `publishAt` has passed. The cost is that its text is in the
-source before it is on the page; the benefit is that it appears at the minute it is due without
-waiting for a build. Ole's call, made after the tradeoff was put to him in those words.
-
-The gate renders server-side as not-yet-published and reveals on mount, so there is no hydration
-mismatch and no post that flashes up and disappears. "Publish now" needs nothing special: saving
-in the CMS is a commit, a commit is a build, and a past date is live immediately.
-
-## 22. Detail pages and the blog exist only when there is something to put in them
-Both are built as capabilities rather than as pages, and neither asks John to type a URL or to
-keep two pieces of copy in step.
-
-The address of a service page is derived in code from its slug; he never sees it. And the summary
-on the front page is the SAME field the detail page opens with, so there is nothing to keep in
-sync: he writes the short version once, and anything he adds in the longer field appears
-underneath it on that service's own page.
-
- A service renders a "More about" link and
-gets a route only when its `page` field has content; the blog section, the `/blog` index, the nav
-entry and the sitemap entries all appear only once a post is published.
-
-The reason is the same one behind `docs/copy-to-confirm.md`: the alternative is writing 800 words
-per service in John's voice about how he works, which is the failure this repo has already made
-once and caught. Empty pages are worse than absent ones for search, and invented ones are worse
-than both.
-
-## 23. He types external links; internal ones are the code's job
-The rule, in Ole's words: John may fill out URLs for external links, and the CMS structure must
-never ask him to refer to his own site's addresses.
-
-External links are his and stay editable: a register listing, an organisation he trained with, a
-link out of a blog post. Anything that addresses gosscounselling.co.uk is derived from the route
-tree in code, because the route tree already knows it. He never types a service page's address, a
-post's address, or an in-page anchor, and there is no "link to" field pointing inward.
-
-The same rule catches a subtler case, which is a field whose value the code already knows. His
-phone number was in the content three times, as the number to display, as a `tel:` link and
-inside a `wa.me` link; his email twice, as the address and as a `mailto:`. That is not a URL he
-should be typing either, and three copies of one fact drift the moment he changes it. He types
-the number once and the links are built from it.
-
-
 ## 21. Detail pages are prepared, not written, and the summary is written once
 Each service can carry a `detail` body. Its presence is what creates the page: with none,
 the home row renders exactly as it always has and there is no link, which is what ships. The
 four services have no `detail`, because writing their copy is John's job and inventing it is
-the failure §19 records.
+the failure §19 records. The alternative is writing 800 words per service in John's voice about how he works, which is the failure this repo has already made once and caught. Empty pages are worse than absent ones for search, and invented ones are worse than both — see `docs/copy-to-confirm.md`, which is where the questions went instead.
 
 Two things follow, and both are about not making him keep two things in step.
 
@@ -233,6 +188,8 @@ deliberately, and the listings hide it until its moment passes, in the browser. 
 decision taken with the cost known: its text is in the HTML from the day it is written. What
 it buys is that a post appears at the time it says, without a deploy and without anyone being
 at a keyboard.
+
+"Publish now" needs nothing special: saving in the CMS is a commit, a commit is a build, and a past date is live immediately.
 
 The clock starts at `PUBLIC_BUILD_TIME` and moves to the real time on mount, so the server
 and the browser's first render agree, and the set of visible posts can only grow. A reader
@@ -309,3 +266,51 @@ a step whose dependency list no longer matches the tree cannot be gated honestly
 that are legitimately absent — John has not uploaded a photograph yet — are declared
 optional, and their absence is itself recorded, so the day one appears the key changes and
 the keyer runs.
+
+## 26. He types external links; internal ones are the code's job
+The rule, in Ole's words: John may fill out URLs for external links, and the CMS structure must
+never ask him to refer to his own site's addresses.
+
+External links are his and stay editable: a register listing, an organisation he trained with, a
+link out of a blog post. Anything that addresses gosscounselling.co.uk is derived from the route
+tree in code, because the route tree already knows it. He never types a service page's address, a
+post's address, or an in-page anchor, and there is no "link to" field pointing inward.
+
+The same rule catches a subtler case, which is a field whose value the code already knows. His
+phone number was in the content three times, as the number to display, as a `tel:` link and
+inside a `wa.me` link; his email twice, as the address and as a `mailto:`. That is not a URL he
+should be typing either, and three copies of one fact drift the moment he changes it. He types
+the number once and the links are built from it.
+
+## 27. One cutout, correct on every ground, because nothing in it knows the ground
+This reverses §12, which had a light matte and a dark one, each carrying its own edge treatment —
+colour edge-extend, a matte choke, a negative light wrap — tuned for the ground it would sit on.
+Two files for one photograph, and each of them wrong everywhere except where it was aimed.
+
+The reason it took two was a wrong choice inside the solve, not a fact about mattes. Smith &
+Blinn's compositing equation is underdetermined by one observation, and the pipeline pinned ALPHA
+and let the foreground absorb the deficit: before any de-lighting at all, a direct unpremultiply
+came out 45.5 levels dark at mid coverage, and the grading existed to hide that. Pin **F** instead
+— his own colour, carried across the fringe from the opaque interior, alpha following by
+projection against the measured backing — and the foreground comes back in closed form. Then
+`F·a + ground·(1-a)` is right on the light plate and the deep band at once, by arithmetic rather
+than by grading, and nothing in the file needs to know what it will sit on.
+
+Measured at the size he is drawn: fringe departing from his own colour by more than 10 levels fell
+from 40.9% to 2.7%, the dark line on the band from 40.7% to 2.2%, and reproduction of the source
+photograph in linear light from 16.95 to 1.07.
+
+Two things followed that are worth recording as decisions in their own right.
+
+**Where there is no photograph, there is nothing to read.** John's crown is painted above the top
+of the frame — his file is twelve rows taller than the photograph — and `solid_matte()` fills those
+rows of the observed image with a constant 255 standing in for the blown-out cyclorama. `F == I` at
+alpha 1 is true of any real photograph and copied that fabricated white straight into the
+foreground: 41 fully-opaque pixels reading pure white on the top of his head. The rule is not about
+alpha. It keys off the MASTER's alpha and takes the MASTER's colour, and the confidence map — which
+already knew, and was being bypassed by an `alpha >= 0.995` shortcut — decides everywhere else.
+
+**A gate that only looks at the fringe cannot see an opaque defect.** Every check in
+`check-mattes.ts` lived in the edge band, which is why that white shipped green. There is one for
+the interior now: where the master calls a pixel solid, the asset must be within the encoder's own
+floor over those same pixels plus a margin. Fed the broken asset it fails and names the pixel.
