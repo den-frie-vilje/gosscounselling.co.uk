@@ -11,10 +11,8 @@
 
 **Status: preliminary, and two things are outstanding.**
 
-1. **The signed-in editor screens are missing.** They need a GitHub session that `capture.sh` does
-   not have, so they are taken by hand in a signed-in editor at the same 1100px width. What is
-   wanted: the collection list, one entry open for editing, the Save button, and a picture field
-   with its file picker.
+1. **The signed-in editor screens are missing**, and `capture.sh` can now take them:
+   `capture.sh login` once, then `capture.sh editor`.
 2. **It is not yet the Pages document Ole asked for.** The intended shape is his whitepaper
    template, filled in with `cupertino-files` — which writes .pages without needing Pages
    installed. The template was not in this repo, in `~/Library/.../Templates`, or anywhere else
