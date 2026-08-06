@@ -28,6 +28,10 @@
     http-equiv="content-security-policy"
     content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://avatars.githubusercontent.com https://*.githubusercontent.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.github.com https://github.com https://avatars.githubusercontent.com https://*.githubusercontent.com; worker-src 'self' blob:; base-uri 'self';"
   />
+  <!-- Editor typography. Same-origin, so `style-src 'self'` above already
+       covers it. See static/admin/editor.css for what it touches and why it
+       is safe for it to stop applying. -->
+  <link rel="stylesheet" href="/admin/editor.css" />
   <!-- Classic, non-module script: Sveltia ships a UMD bundle. It is vendored
        into static/admin/ by scripts/copy-sveltia.ts at prebuild rather than
        loaded from a CDN, so the editor has no third-party runtime dependency

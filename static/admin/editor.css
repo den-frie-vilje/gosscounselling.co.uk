@@ -1,0 +1,36 @@
+/*
+  A little typography for the editor itself.
+
+  Sveltia has no styling options — its config schema has nothing for
+  appearance, type or theme — and it labels a top-level section with exactly
+  the same rule as a leaf field: both are an <h4> at 12px/625. So scrolling
+  the Home entry, "How I can help" and "Small label above the heading" look
+  alike, and there is nothing to catch the eye on the way past.
+
+  It renders entirely in the light DOM, though — not one shadow root in 3,597
+  elements — so a same-origin stylesheet reaches it, and `style-src 'self'` in
+  the page's CSP already allows this file without opening anything.
+
+  THIS IS COUPLED TO SVELTIA'S MARKUP, which is not an API. The class hashes
+  (`svelte-wzztxu`) are deliberately not used, because those change on any
+  rebuild upstream; `section.field` and `header > h4` are the structural names
+  and are far more likely to survive. If a Sveltia upgrade renames them this
+  file quietly stops applying and the editor looks exactly as it does today.
+  That is the failure mode on purpose: nothing here is load-bearing.
+*/
+
+/*
+  Only the outermost fields that CONTAIN other fields — the page's sections.
+  Verified against the real Home entry: 122 fields in the form, 10 outermost,
+  7 of those holding others, and this selector matches those 7 exactly —
+  Top of the page, What happens when you get in touch, How I can help, About
+  me, Fees, Qualifications and memberships, Questions people ask.
+*/
+section.field:not(section.field section.field):has(section.field) > header > h4 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  /* Sveltia sets its own colour on these; inheriting keeps whichever theme,
+     light or dark, the editor is in. */
+  color: inherit;
+}
