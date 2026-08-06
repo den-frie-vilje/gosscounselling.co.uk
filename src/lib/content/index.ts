@@ -123,6 +123,10 @@ export interface ServiceDetail {
 }
 
 export interface Service {
+  /** Where it sits on the front page. Numbered in tens so one can be slid
+   *  between two without renumbering the rest. A folder has no order of its
+   *  own, so this is the only thing that gives them one. */
+  order?: number;
   /** Identifier, not copy: it is what the detail page's address is built
    *  from, which is why it is not an editable field in the CMS. */
   slug: string;
@@ -181,7 +185,9 @@ export interface Home {
     portraitAlt: string;
   };
   steps: { kicker: string; heading: string; intro: string; items: Step[] };
-  services: { kicker: string; heading: string; intro: string; navLabel?: string; items: Service[] };
+  /** The section's framing only. The services themselves are their own
+   *  entries — see `services` below. */
+  services: { kicker: string; heading: string; intro: string; navLabel?: string };
   about: { kicker: string; heading: string; body: string; navLabel?: string; photoAlt: string };
   fees: {
     kicker: string;
@@ -249,6 +255,14 @@ export interface Post {
   /** Plain text. The home feed and the index show this and nothing else, so
    *  there is no second, "featured" copy of a post to keep in step. */
   excerpt: string;
+  /** Optional, and shown in exactly two places: the Blog page and the post's
+   *  own page. Deliberately NOT on the home page's teaser, where the posts are
+   *  a short list and a row of pictures would take the section over. */
+  image?: string;
+  /** Empty is a legitimate answer: a picture that says nothing the words do
+   *  not is decoration, and `alt=""` is how you tell a screen reader to skip
+   *  it rather than read a filename at somebody. */
+  imageAlt?: string;
   /** Markdown. */
   body: string;
   /** Optional. Falls back to the title and the excerpt. */
@@ -351,20 +365,39 @@ export const testimonials: Testimonials = resolveDeep(
  *  which is not in the file and is not a field. */
 type HomeSource = Omit<Home, 'seo'> & { seo: { title: string } };
 
-function withMockDetail(detail: Record<string, ServiceDetail>): HomeSource {
-  return {
-    ...homeData,
-    services: {
-      ...homeData.services,
-      items: homeData.services.items.map((item) =>
-        detail[item.slug] ? { ...item, detail: detail[item.slug] } : item
-      )
-    }
-  };
-}
+const homeResolved = resolveDeep(homeData as HomeSource, COPY);
 
-const homeSource: HomeSource = mockServiceDetail ? withMockDetail(mockServiceDetail) : homeData;
-const homeResolved = resolveDeep(homeSource, COPY);
+/**
+ * What he offers, one file each.
+ *
+ * They were four entries in a list inside the home page's own record, which
+ * made the Home entry in the editor a scroll of twenty-one nested fields and
+ * gave a service no page of its own to be edited on. Now that a service can
+ * carry a detail page, it is a thing in its own right and is filed as one.
+ *
+ * A folder has no order. `order` is what gives them one, ascending, with the
+ * title as a tiebreak so the build is reproducible when two share a number —
+ * filesystem order is not guaranteed and must never reach the output.
+ */
+const serviceFiles = import.meta.glob<Partial<Service>>('/src/content/services/*.json', {
+  eager: true,
+  import: 'default'
+});
+
+export const services: Service[] = resolveDeep(
+  Object.values(serviceFiles).filter((s): s is Service => Boolean(s?.title)),
+  COPY
+)
+  .map((service: Service) =>
+    mockServiceDetail?.[serviceSlug(service)]
+      ? { ...service, detail: mockServiceDetail[serviceSlug(service)] }
+      : service
+  )
+  .sort(
+    (a, b) =>
+      (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) ||
+      a.title.localeCompare(b.title)
+  );
 
 /**
  * The home page.
@@ -435,7 +468,7 @@ export function servicePath(service: Service): string {
 
 /** The services that have a page. Ships empty: no service has a `detail`. */
 export function detailServices(): Service[] {
-  return home.services.items.filter((s) => s.detail);
+  return services.filter((s) => s.detail);
 }
 
 export const BLOG_PATH = '/blog/';

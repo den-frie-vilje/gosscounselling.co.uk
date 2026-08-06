@@ -69,6 +69,18 @@
               <a href={postPath(post)}>{post.title}</a>
             </h2>
             <p class="excerpt">{post.excerpt}</p>
+            {#if post.image}
+              <!-- Below the words, not beside them: the row is a title and a
+                   sentence, and a picture in the left column would fight the
+                   date for the same job. `alt=""` when he left the
+                   description empty, which is how a screen reader is told to
+                   pass over decoration rather than read a filename aloud.
+                   Dimensions are unknown at build time, so `aspect-ratio`
+                   holds the space instead and the row cannot jump. -->
+              <a class="shot" href={postPath(post)} tabindex="-1" aria-hidden="true">
+                <img src={post.image} alt={post.imageAlt ?? ''} loading="lazy" decoding="async" />
+              </a>
+            {/if}
           </div>
         </article>
       {/each}
@@ -81,6 +93,25 @@
 <ContactBand />
 
 <style>
+  /* The picture is a second link to the same post, so it is out of the tab
+     order and hidden from assistive tech: the title above it already goes
+     there, and two stops on one row is noise to anyone tabbing through. */
+  .shot {
+    display: block;
+    margin-top: 18px;
+    max-width: 560px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--color-mist);
+    aspect-ratio: 16 / 9;
+  }
+  .shot img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
   .row {
     min-width: 0;
     display: grid;

@@ -158,87 +158,6 @@ collections:
                   hint: 'What this section is called in the menu at the top. Keep it short: the menu has room for about 50 characters across all of it, and if it stops fitting the site falls back to the ☰ button. Leave it empty to use "How I can help".'
                 }
               - { name: intro, label: Line under the heading, widget: text }
-              - name: items
-                label: Services
-                widget: list
-                summary: '{{fields.title}}'
-                hint: >
-                  Each service can have a page of its own. Fill in "The longer version" at the
-                  bottom of a service and the page appears, with a link to it from this section;
-                  leave it empty and there is no page and no link. The web address of the page is
-                  fixed and set in the code, so there is nothing to type and nothing to keep in
-                  step.
-                fields:
-                  # Not an editable field, on purpose: this is what the page's
-                  # address is built from. It is declared so the editor keeps
-                  # it on save rather than deleting it, which is exactly the
-                  # failure scripts/check-cms.ts exists to catch.
-                  - { name: slug, widget: hidden }
-                  - { name: title, label: Title, widget: string }
-                  - { name: who, label: Who it is for, widget: string }
-                  - {
-                      name: body,
-                      label: Body,
-                      widget: markdown,
-                      buttons: [bold, italic, link],
-                      editor_components: [],
-                      modes: [rich_text],
-                      hint: 'What you write here appears on the front page; anything in the longer section below is added underneath it on the service’s own page. So this is written once and you never have to keep two versions of it saying the same thing.'
-                    }
-                  - name: detail
-                    label: The longer version
-                    widget: object
-                    required: false
-                    collapsed: true
-                    hint: 'Leave this empty and the service has no page of its own. Write something here and the page appears at the next deploy, opening with the body above and continuing with this.'
-                    fields:
-                      - {
-                          name: body,
-                          label: Body,
-                          widget: markdown,
-                          # Headings start at two. One is the page's own title,
-                          # which the site writes from the service name — a
-                          # second first-level heading inside the body would
-                          # give the page two titles and tell a search engine
-                          # the wrong one is the subject.
-                          buttons:
-                            [
-                              bold,
-                              italic,
-                              link,
-                              heading-two,
-                              heading-three,
-                              bulleted-list,
-                              numbered-list,
-                              quote
-                            ],
-                          editor_components: [],
-                          modes: [rich_text],
-                          required: false,
-                          hint: 'The long, specific page for one thing people search for. Use “Heading 2” for the main parts and “Heading 3” under them — the page already has its own title, so there is no Heading 1 to choose.'
-                        }
-                      - name: seo
-                        label: Search engine summary
-                        widget: object
-                        required: false
-                        collapsed: true
-                        hint: 'How this page looks in a Google result. You can leave the whole thing alone: left empty it uses this service’s own title and its opening lines, which is usually right. Fill it in when the search result should read differently from the page.'
-                        fields:
-                          - {
-                              name: title,
-                              label: Title in the search result,
-                              widget: string,
-                              required: false,
-                              hint: 'Also what shows in the browser tab. Around 60 characters — Google cuts it off after that.'
-                            }
-                          - {
-                              name: description,
-                              label: Description in search results,
-                              widget: text,
-                              required: false,
-                              hint: 'About 150 characters, written for the person reading the search result.'
-                            }
-
           - name: about
             label: About me
             widget: object
@@ -427,6 +346,104 @@ collections:
                   label: Headline on the card,
                   widget: string,
                   hint: 'Leave it empty and the card uses the headline from the top of your home page, which is usually what you want. Fill it in only when the card needs a shorter or different line.'
+                }
+
+
+  - name: services
+    label: Services
+    label_singular: Service
+    folder: src/content/services
+    create: true
+    extension: json
+    format: json
+    slug: '{{slug}}'
+    identifier_field: title
+    summary: '{{title}}'
+    sortable_fields: [order, title]
+    editor: { preview: false }
+    description: >
+      One entry per thing you offer. They appear on the front page under "How I can help", in the
+      order set below, and each can have a page of its own — fill in "The longer version" and the
+      page appears with a link to it from that section; leave it empty and there is no page and no
+      link. The web address is worked out from the title, so there is nothing to type and nothing
+      to keep in step.
+    fields:
+      - {
+          name: order,
+          label: Order on the page,
+          widget: number,
+          value_type: int,
+          default: 100,
+          hint: 'Lower numbers come first. They are numbered in tens — 10, 20, 30 — so a new one can be slid between two others without renumbering everything.'
+        }
+      # Not an editable field, on purpose: this is what the page's
+      # address is built from. It is declared so the editor keeps
+      # it on save rather than deleting it, which is exactly the
+      # failure scripts/check-cms.ts exists to catch.
+      - { name: slug, widget: hidden }
+      - { name: title, label: Title, widget: string }
+      - { name: who, label: Who it is for, widget: string }
+      - {
+          name: body,
+          label: Body,
+          widget: markdown,
+          buttons: [bold, italic, link],
+          editor_components: [],
+          modes: [rich_text],
+          hint: 'What you write here appears on the front page; anything in the longer section below is added underneath it on the service’s own page. So this is written once and you never have to keep two versions of it saying the same thing.'
+        }
+      - name: detail
+        label: The longer version
+        widget: object
+        required: false
+        collapsed: true
+        hint: 'Leave this empty and the service has no page of its own. Write something here and the page appears at the next deploy, opening with the body above and continuing with this.'
+        fields:
+          - {
+              name: body,
+              label: Body,
+              widget: markdown,
+              # Headings start at two. One is the page's own title,
+              # which the site writes from the service name — a
+              # second first-level heading inside the body would
+              # give the page two titles and tell a search engine
+              # the wrong one is the subject.
+              buttons:
+                [
+                  bold,
+                  italic,
+                  link,
+                  heading-two,
+                  heading-three,
+                  bulleted-list,
+                  numbered-list,
+                  quote
+                ],
+              editor_components: [],
+              modes: [rich_text],
+              required: false,
+              hint: 'The long, specific page for one thing people search for. Use “Heading 2” for the main parts and “Heading 3” under them — the page already has its own title, so there is no Heading 1 to choose.'
+            }
+          - name: seo
+            label: Search engine summary
+            widget: object
+            required: false
+            collapsed: true
+            hint: 'How this page looks in a Google result. You can leave the whole thing alone: left empty it uses this service’s own title and its opening lines, which is usually right. Fill it in when the search result should read differently from the page.'
+            fields:
+              - {
+                  name: title,
+                  label: Title in the search result,
+                  widget: string,
+                  required: false,
+                  hint: 'Also what shows in the browser tab. Around 60 characters — Google cuts it off after that.'
+                }
+              - {
+                  name: description,
+                  label: Description in search results,
+                  widget: text,
+                  required: false,
+                  hint: 'About 150 characters, written for the person reading the search result.'
                 }
 
   - name: general
@@ -719,6 +736,22 @@ collections:
           label: Summary,
           widget: text,
           hint: 'Two or three lines. This is what is shown in the list of posts and on the front page, so it is written once and never has to be repeated.'
+        }
+      - {
+          name: image,
+          label: Picture,
+          widget: image,
+          required: false,
+          media_folder: '/static/img/blog',
+          public_folder: '/img/blog',
+          hint: 'Optional. Shown on the Blog page and at the top of the post itself — not on the front page, where the posts are a short list and a row of pictures would take it over.'
+        }
+      - {
+          name: imageAlt,
+          label: Picture description,
+          widget: string,
+          required: false,
+          hint: 'Read out to anyone who cannot see the picture. A few words. Leave it empty if the picture is decoration and says nothing the words do not.'
         }
       - {
           name: body,
