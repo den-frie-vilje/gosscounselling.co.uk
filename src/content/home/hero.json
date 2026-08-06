@@ -6,5 +6,6 @@
   "reassure": "Phone, email or [WhatsApp]({whatsapp}) me directly.",
   "ctaPrimary": "Call {phone}",
   "ctaSecondary": "Email me",
-  "portraitAlt": "John Goss"
+  "portraitAlt": "John Goss",
+  "portrait": "/img/portrait/john-goss.webp"
 }

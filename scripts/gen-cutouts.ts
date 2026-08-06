@@ -35,7 +35,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { basename, dirname, extname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { DEFAULTS, UnkeyableError, key, srgbToLinear, linearToSrgb } from './keyer.ts';
+import { DEFAULTS, UnkeyableError, gauss, key, srgbToLinear, linearToSrgb } from './keyer.ts';
 import type { KeyResult } from './keyer.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -1141,6 +1141,85 @@ function alphaVerdict(alpha: Uint8Array): {
   return { preMatted, clear, solid, soft };
 }
 
+/**
+ * Carry the subject's own colour outward across a matte's fringe.
+ *
+ * A matte someone hands us settles the COVERAGE and says nothing about the
+ * colour underneath it. Very often the two disagree: the alpha is a clean
+ * silhouette while the fringe pixels still hold whatever was behind him,
+ * because cutting out changes the shape and not the pixels. Ole's own
+ * `john-knockout.webp` is exactly that — a matte over uncorrected pixels, its
+ * fringe still carrying the white cyclorama — and passed through untouched it
+ * put 11,450 blown pixels on the page.
+ *
+ * So where the matte says a pixel is only partly his, this replaces its colour
+ * with HIS, pulled outward from the part of him the matte calls solid. Push-
+ * pull rather than a search: blur the known colour and the known mask
+ * together, divide one by the other, and put the known pixels back — repeated
+ * from wide to narrow, so colour travels a long way where nothing is known and
+ * barely moves where something is. The same construction the hand pass used
+ * and the keyer's own foreground prior uses; only the seed is different,
+ * because here the coverage arrives already decided.
+ *
+ * NOTHING IS INVENTED. The output is a weighted average of pixels the matte
+ * itself calls fully his. Where alpha is high the given colour is kept — it is
+ * his and it is measured — and the carried colour takes over as coverage falls
+ * and the given pixel becomes mostly backdrop.
+ */
+function carryColourIntoFringe(
+  rgb: Uint8Array,
+  alpha: Uint8Array,
+  w: number,
+  h: number
+): Uint8Array {
+  const n = w * h;
+  const known = new Float32Array(n);
+  const chan = [new Float32Array(n), new Float32Array(n), new Float32Array(n)];
+  for (let i = 0; i < n; i++) {
+    // Only what the matte calls solid seeds the extension. 0.995 is the same
+    // bar the rest of this pipeline uses for "fully his".
+    const k = alpha[i] >= 254 ? 1 : 0;
+    known[i] = k;
+    for (let c = 0; c < 3; c++) chan[c][i] = k ? srgbToLinear(rgb[i * 3 + c]) : 0;
+  }
+
+  // Wide first, then narrower: a long reach fills the empty region, the short
+  // passes restore local detail near the edge it came from.
+  const scratch = [new Float32Array(n), new Float32Array(n)];
+  for (const sigma of [24, 12, 6, 3, 1.5]) {
+    const wt = Float32Array.from(known);
+    gauss(wt, w, h, sigma, scratch);
+    for (let c = 0; c < 3; c++) {
+      const v = Float32Array.from(chan[c]);
+      gauss(v, w, h, sigma, scratch);
+      for (let i = 0; i < n; i++) {
+        if (known[i] >= 1) continue;          // measured; never overwritten
+        if (wt[i] > 1e-6) chan[c][i] = v[i] / wt[i];
+      }
+    }
+    // Everything reached is now known for the next, narrower pass.
+    for (let i = 0; i < n; i++) if (wt[i] > 1e-6 && known[i] < 1) known[i] = 0.999;
+  }
+
+  const out = new Uint8Array(rgb.length);
+  out.set(rgb);
+  for (let i = 0; i < n; i++) {
+    const a = alpha[i] / 255;
+    if (a >= 0.995 || a <= 0) continue;
+    // Below `directLo` the given pixel is mostly backdrop and the carried
+    // colour is all there is; above it the two are mixed in proportion to how
+    // much of the pixel is actually him.
+    const t = Math.min(1, Math.max(0, (a - DEFAULTS.directLo) / (1 - DEFAULTS.directLo)));
+    for (let c = 0; c < 3; c++) {
+      const given = srgbToLinear(rgb[i * 3 + c]);
+      out[i * 3 + c] = Math.round(
+        Math.min(255, Math.max(0, linearToSrgb(t * given + (1 - t) * chan[c][i])))
+      );
+    }
+  }
+  return out;
+}
+
 const meta = await sharp(source).metadata();
 const loaded = await sharp(source).rotate().ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 const info = loaded.info;
@@ -1162,10 +1241,13 @@ if (verdict.preMatted) {
   const pc = (v: number) => `${((v / n) * 100).toFixed(1)}%`;
   console.log(`\ncutouts: ${rel(source)} IS ALREADY CUT OUT — nothing to key.`);
   console.log(`    transparent ${pc(verdict.clear)}   solid ${pc(verdict.solid)}   soft edge ${pc(verdict.soft)} (${verdict.soft} px)`);
-  console.log('    Its own matte and its own colour are used exactly as given: no backing is');
-  console.log('    estimated, no spill is removed, and nothing is solved. A matte that arrives');
+  console.log('    Its coverage is used exactly as given: no backing is estimated, no alpha is');
+  console.log('    solved, and the silhouette is whoever cut it out. A matte that arrives');
   console.log('    finished is better than one this script would recover from a composite.');
-  result = { alpha: srcAlpha, rgb, width: info.width, height: info.height } as KeyResult;
+  console.log('    Its fringe COLOUR is carried out of his solid interior, because a matte');
+  console.log('    settles coverage and says nothing about what is underneath it.');
+  const carried = carryColourIntoFringe(rgb, srcAlpha, info.width, info.height);
+  result = { alpha: srcAlpha, rgb: carried, width: info.width, height: info.height } as KeyResult;
 } else {
 try {
   result = key(rgb, info.width, info.height);
