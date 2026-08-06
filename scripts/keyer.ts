@@ -27,11 +27,25 @@
  *      largest connected component with its holes filled, which is what turns a
  *      per-pixel test into a figure.
  *
- *   3. FOREGROUND PRIOR by geodesic extension (Rhemann, Rother & Gelautz, BMVC 2008,
- *      §2.1) — the colour travels THROUGH the figure, so a crevice inherits from its own
- *      surface rather than across the gap.
+ *   3. HOW SOFT THE EDGE IS, MEASURED, before anything is called opaque. |C − B| is
+ *      a·|F − B| exactly, so the distance from the backing stops rising precisely where
+ *      coverage reaches 1: dilate it over doubling radii and the reach at which the rise
+ *      saturates IS the local width of the soft edge. That is the adaptive trimap radius
+ *      of Adobe's US8897562B2 — "all fractional alpha pixels in the local window" — and
+ *      the unknown-region DETECTION of Al-Kabbany & Dubois (ESWA 131, 2019), rather than
+ *      the fixed dilation both papers argue against. It replaces a constant fraction of
+ *      frame width, which could not know whether this photograph's edges were a shoulder
+ *      or a crown of hair, and which was therefore a claim about coverage made without
+ *      looking.
  *
- *   4. ALPHA, solved against the known backing: Wang & Cohen (CVPR 2007) eq. 2,
+ *   4. FOREGROUND PRIOR by geodesic extension (Rhemann, Rother & Gelautz, BMVC 2008,
+ *      §2.1) — the colour travels THROUGH the figure, so a crevice inherits from its own
+ *      surface rather than across the gap. Seeded ONLY from what step 3 measured as full
+ *      coverage: a prior sampled inside a soft edge is a mixture of the subject and the
+ *      backing, and the solve then over-reads alpha by exactly the factor the prior was
+ *      pulled toward B.
+ *
+ *   5. ALPHA, solved against the known backing: Wang & Cohen (CVPR 2007) eq. 2,
  *      alpha = (C - B)·(F - B) / ||F - B||², in linear light, with B measured rather
  *      than sampled. Where the equation cannot speak — the plate clipped at the same end
  *      the backing is, or F and B too close to tell apart from the backing's own noise —
@@ -39,20 +53,58 @@
  *      solved alpha over the pixels where the equation DOES speak. The fraction of the
  *      fringe that needed the fallback is reported, not hidden.
  *
- *   5. FOREGROUND COLOUR, in closed form: F = (C − B(1−a)) / a. Not an estimate — the
+ *   6. ENCLOSED SUB-OPACITY, CLOSED. A backing cannot be seen through a region the image
+ *      plane encloses in opaque subject: for light from the backdrop to arrive there it
+ *      would have to pass through the subject first. So sub-opacity with no descent to the
+ *      frame border is not coverage — it is the solve reading a bright specular highlight,
+ *      skin near the backing's own colour, as a mixture. Measured on John's delivered
+ *      matte: 568 such islands, 3,183 px, the largest 685 px at 58% opacity inside his
+ *      right ear. That is the transparency a person could see through solid flesh.
+ *
+ *      The repair is the operator that sentence names. GRAYSCALE HOLE FILLING — the
+ *      morphological reconstruction by erosion of Vincent (IEEE TIP 2(2), 1993) and Soille
+ *      (Morphological Image Analysis, 2nd ed. 2003, §6.3.7), computed here by the
+ *      priority-flood of Barnes, Lehman & Mulla (Computers & Geosciences 62, 2014), which
+ *      is the same operator under its terrain name, depression filling, with alpha for
+ *      elevation. Every minimum that does not drain to the frame border rises to its own
+ *      spill level and NOTHING that drains is touched. That is a theorem about the
+ *      operator, not a tolerance: the soft rim descends to the empty background, so it is
+ *      out of reach by construction rather than by a threshold that could be got wrong.
+ *
+ *      Filled to the SPILL LEVEL and not to 1, because the spill is exactly what the
+ *      topology licenses: an island can be no more transparent than the least opaque point
+ *      of the ring enclosing it, and if that ring is itself leaky the fill is leaky by the
+ *      same amount. This is `largestComponentFilled`'s topology (step 2) applied to the
+ *      ALPHA instead of to the binary figure. The file has always turned a per-pixel test
+ *      into a figure that way, and had never once turned it on the matte.
+ *
+ *      AND IT REFUSES TO CLOSE A REAL GAP. A subject may enclose one — the hole of a
+ *      handle, a gap inside a lock of hair, the lens of a pair of spectacles — and the
+ *      evidence that a gap is real is that THE BACKING IS VISIBLE IN IT: some pixel inside
+ *      sits within `keyLo` multiples of the measured backing noise, which is the identical
+ *      test step 2's figure is cut from. Over all 3,183 of John's islands the crude key
+ *      never falls below 1 at a single pixel, so not one of them is a gap. What the
+ *      operator cannot see is TRANSLUCENCY — a veil in front of the backing rather than
+ *      showing it — because a single backing is one equation short of telling transmission
+ *      from coverage at all (Smith & Blinn, SIGGRAPH 96; Zongker et al.'s environment
+ *      matting, SIGGRAPH 99, needs a whole structured backdrop to do it). So the area
+ *      closed is REPORTED rather than assumed away, and a large one says a person should
+ *      look at this photograph.
+ *
+ *   7. FOREGROUND COLOUR, in closed form: F = (C − B(1−a)) / a. Not an estimate — the
  *      definition of unassociated alpha against a known backing. Below `directLo` the
  *      1/a noise gain makes it unusable (at a = 0.05 one level of plate noise becomes
  *      twenty in F), so there it fades to the geodesically extended interior colour,
  *      which is the right answer at 5% coverage because F is 5% of what is drawn.
  *
- *   6. GAMUT BOUND. Spill only ever pushes the observed colour TOWARD the backing, so F
+ *   8. GAMUT BOUND. Spill only ever pushes the observed colour TOWARD the backing, so F
  *      may not sit further along (B − F_prior) than F_prior does by more than
  *      `gamutSlack`. The component perpendicular to that direction is untouched, so
  *      detail survives. This is the general form of build-cutouts.py's one-sided
  *      luminance cap: general because a backing may be DARKER than the subject, where
  *      "spill can only brighten" is false but "spill can only pull toward B" still holds.
  *
- *   7. COLOUR BLEED. Where the matte is empty the RGB still carries the extended interior
+ *   9. COLOUR BLEED. Where the matte is empty the RGB still carries the extended interior
  *      colour. VP8 is YUV 4:2:0, so the chroma of a one-pixel fringe is averaged with its
  *      neighbours whatever is put there, and that average wants the subject on the other
  *      side of it.
@@ -173,6 +225,22 @@ export interface KeyResult {
   /** How deep into the silhouette a pixel must be to count as interior, px of this image. */
   coreDepthPx: number;
   /**
+   * HOW SOFT THIS PHOTOGRAPH'S EDGES ACTUALLY ARE, measured: how far the partially covered
+   * band reaches inside the silhouette, in px of this image. Median, 99th percentile and
+   * worst. Nothing downstream hardens alpha inside this band, whatever its width — which
+   * is the whole difference from a constant interior depth, and the number to read when a
+   * crown of hair comes out solid. `capPx` is the measurement's own ceiling: a `maxPx` at
+   * the ceiling means the band ran off the end of what could be measured.
+   */
+  softBand: { medianPx: number; p99Px: number; maxPx: number; capPx: number };
+  /**
+   * THE SUB-OPACITY NOTHING COULD BE SEEN THROUGH, and what was done about it. `px` is the
+   * area closed by step 6; `gapPx` is the area left open because the backing really is
+   * visible in it. Read `frac` against `histogram.partial`: this is the part of the
+   * partial band that was never coverage at all.
+   */
+  enclosed: EnclosedFill;
+  /**
    * THE CLAIM, MEASURED ON THE OUTPUT: departure of the delivered foreground from the
    * subject's own colour, by coverage, in sRGB luminance levels. Positive is toward the
    * backing, which is the only direction contamination can push. A correct asset is flat
@@ -228,9 +296,13 @@ export interface KeyerParams {
   /** The width the spatial constants below were measured at. Everything scales off it. */
   refWidth: number;
   /**
-   * How far inside the silhouette a pixel must be before it is unambiguously interior,
-   * px at `refWidth`. It is NOT an edge band and nothing is treated inside it: it seeds
-   * the geodesic prior and it is the depth past which alpha is settled to 1.
+   * How far inside the silhouette a pixel must be before DEPTH stops being an objection,
+   * px at `refWidth`. It is NOT an edge band and nothing is treated inside it, and — since
+   * the soft-edge measurement — it is no longer on its own a claim that anything is
+   * opaque: it is the floor under `measureSoftBand`'s verdict, so that a one-pixel spur
+   * the dilation happens to call solid is still not seeded from or settled to 1. How soft
+   * this photograph's edges actually are is measured, not scaled off the frame; that
+   * number comes back as `softBand`.
    */
   coreDepth: number;
   /**
@@ -502,6 +574,449 @@ export function largestComponentFilled(mask: Uint8Array, w: number, h: number): 
   }
   for (let i = 0; i < w * h; i++) if (!out[i] && !seen[i]) out[i] = 1;
   return out;
+}
+
+/** What `fillEnclosedSubOpacity` closed, and what it deliberately did not. */
+export interface EnclosedFill {
+  /** Islands closed, and their total area in px and as a fraction of the frame. */
+  components: number;
+  px: number;
+  frac: number;
+  /** The largest one, px; the lowest alpha found in any of them; the deepest raise applied. */
+  largestPx: number;
+  largestAt: [number, number];
+  darkest: number;
+  deepestRaise: number;
+  /** Islands left alone because the backing is visible inside them — real gaps, not noise. */
+  gapComponents: number;
+  gapPx: number;
+  largestGapPx: number;
+}
+
+/**
+ * CLOSE THE SUB-OPACITY THAT NOTHING CAN BE SEEN THROUGH.
+ *
+ * A backing cannot be seen through a region the image plane encloses in opaque subject:
+ * light from the backdrop arriving at such a pixel would have to have passed through the
+ * subject. So an alpha minimum with no descending path to the frame border is not a
+ * measurement of coverage — it is the solve reading a bright specular highlight (skin
+ * near the backing's own colour, where the mixture equation's numerator collapses) as a
+ * mixture. Measured on John's delivered matte: 568 islands, 3,183 px, the largest 685 px
+ * at 58% opacity inside his right ear.
+ *
+ * THE OPERATOR IS GRAYSCALE HOLE FILLING, which is exactly that statement and no more:
+ * the morphological reconstruction by erosion of `alpha` from a marker that is `alpha` on
+ * the frame border and +infinity everywhere else (Vincent, IEEE TIP 2(2), 1993; Soille,
+ * Morphological Image Analysis, 2nd ed. 2003, §6.3.7). It is computed here by
+ * priority-flood (Barnes, Lehman & Mulla, Computers & Geosciences 62, 2014) — the same
+ * operator under its terrain name, depression filling, with alpha for elevation — because
+ * that formulation hands back each depression's spill level as a by-product, and the spill
+ * level is what the fill is worth.
+ *
+ * WHY THE SPILL LEVEL AND NOT 1. The topology licenses precisely this much: an island can
+ * be no more transparent than the least opaque point of the ring that encloses it, since
+ * that ring is the only way light gets in. Fill to 1 and the claim outruns the evidence
+ * wherever the enclosure is itself slightly leaky; fill to the spill and the operator is
+ * increasing, idempotent, and provably unable to touch anything that drains — which
+ * includes every soft edge in the picture, because a soft edge descends to the empty
+ * background and the empty background is the frame border. That is the whole reason this
+ * is a morphological operator and not a threshold: the genuine ramps are out of reach by
+ * construction, not by a tolerance somebody has to keep right.
+ *
+ * CONNECTIVITY. The drainage flood is 8-connected and the islands are labelled
+ * 4-connected. Kong & Rosenfeld's rule (Digital topology: introduction and survey, CVGIP
+ * 48, 1989) is that foreground and background may not share an adjacency or the digital
+ * Jordan curve theorem fails both ways; `largestComponentFilled` above takes the figure
+ * 4-connected, so its dual for anything draining past that figure is 8. It is also the
+ * conservative half of the pair: a diagonal chain of descent counts as an escape route, so
+ * the operator fills less rather than more.
+ *
+ * AND IT WILL NOT CLOSE A REAL GAP. A subject may enclose one — the hole of a handle, a
+ * gap inside a lock of hair, a spectacle lens — and the evidence that a gap is real is
+ * that the backing is VISIBLE in it: some pixel inside is one the crude key puts at the
+ * background, within `keyLo` multiples of the measured backing noise, which is the
+ * identical test the figure in step 2 is cut from. `backingVisible` is that test. Over all
+ * 3,183 of John's islands it is true at not one pixel — the crude key is saturated at 1
+ * throughout every one of them — so his margin here is total rather than narrow.
+ */
+export function fillEnclosedSubOpacity(
+  alpha: Float32Array,
+  w: number,
+  h: number,
+  backingVisible: Uint8Array
+): EnclosedFill {
+  const n = w * h;
+  // Elevation on the DELIVERED scale. The matte ships as a byte, so a difference below one
+  // level is not a difference anything can see, and quantising here makes the priority
+  // queue 256 plain buckets — exact, and O(n) rather than O(n log n), which matters at
+  // 2.6M px.
+  const lev = new Uint8Array(n);
+  for (let i = 0; i < n; i++) lev[i] = Math.round(Math.min(1, Math.max(0, alpha[i])) * 255);
+
+  const filled = new Uint8Array(n);
+  const queued = new Uint8Array(n);
+  const buckets: number[][] = Array.from({ length: 256 }, () => []);
+  const push = (p: number, L: number) => {
+    if (queued[p]) return;
+    queued[p] = 1;
+    filled[p] = L;
+    buckets[L].push(p);
+  };
+  for (let x = 0; x < w; x++) {
+    push(x, lev[x]);
+    push((h - 1) * w + x, lev[(h - 1) * w + x]);
+  }
+  for (let y = 0; y < h; y++) {
+    push(y * w, lev[y * w]);
+    push(y * w + w - 1, lev[y * w + w - 1]);
+  }
+  // Pop in non-decreasing water level. Every push is at max(lev[q], L) >= L, so a single
+  // upward sweep of the buckets is a correct priority queue and a bucket may grow while it
+  // is being drained.
+  for (let L = 0; L < 256; L++) {
+    const b = buckets[L];
+    for (let k = 0; k < b.length; k++) {
+      const p = b[k];
+      const x = p % w;
+      const y = (p / w) | 0;
+      const nb = (q: number) => {
+        if (queued[q]) return;
+        const v = lev[q] > L ? lev[q] : L;
+        push(q, v);
+      };
+      if (x > 0) nb(p - 1);
+      if (x < w - 1) nb(p + 1);
+      if (y > 0) nb(p - w);
+      if (y < h - 1) nb(p + w);
+      if (x > 0 && y > 0) nb(p - w - 1);
+      if (x < w - 1 && y > 0) nb(p - w + 1);
+      if (x > 0 && y < h - 1) nb(p + w - 1);
+      if (x < w - 1 && y < h - 1) nb(p + w + 1);
+    }
+    buckets[L].length = 0;
+  }
+
+  // The raised set: everything the flood had to hold up to get past it. Labelled
+  // 4-connected, the dual of the 8-connected drainage above.
+  const stack = new Int32Array(n);
+  const label = new Int32Array(n).fill(-1);
+  const out: EnclosedFill = {
+    components: 0,
+    px: 0,
+    frac: 0,
+    largestPx: 0,
+    largestAt: [0, 0],
+    darkest: 1,
+    deepestRaise: 0,
+    gapComponents: 0,
+    gapPx: 0,
+    largestGapPx: 0
+  };
+  const raised = (i: number) => filled[i] > lev[i];
+  for (let s = 0; s < n; s++) {
+    if (!raised(s) || label[s] >= 0) continue;
+    const id = s;
+    let sp = 0;
+    stack[sp++] = s;
+    label[s] = id;
+    let size = 0;
+    let sx = 0;
+    let sy = 0;
+    let low = 255;
+    let rise = 0;
+    let gap = false;
+    const px: number[] = [];
+    while (sp > 0) {
+      const p = stack[--sp];
+      const x = p % w;
+      const y = (p / w) | 0;
+      size++;
+      sx += x;
+      sy += y;
+      px.push(p);
+      if (lev[p] < low) low = lev[p];
+      if (filled[p] - lev[p] > rise) rise = filled[p] - lev[p];
+      if (backingVisible[p]) gap = true;
+      const nb = (q: number) => {
+        if (raised(q) && label[q] < 0) {
+          label[q] = id;
+          stack[sp++] = q;
+        }
+      };
+      if (x > 0) nb(p - 1);
+      if (x < w - 1) nb(p + 1);
+      if (y > 0) nb(p - w);
+      if (y < h - 1) nb(p + w);
+    }
+    if (gap) {
+      // A real gap. The backing is visible through it, so it is not enclosed by anything
+      // opaque and the premise of this whole operator does not hold there.
+      out.gapComponents++;
+      out.gapPx += size;
+      if (size > out.largestGapPx) out.largestGapPx = size;
+      continue;
+    }
+    out.components++;
+    out.px += size;
+    if (low / 255 < out.darkest) out.darkest = low / 255;
+    if (rise > out.deepestRaise) out.deepestRaise = rise;
+    if (size > out.largestPx) {
+      out.largestPx = size;
+      out.largestAt = [Math.round(sx / size), Math.round(sy / size)];
+    }
+    for (const p of px) alpha[p] = filled[p] / 255;
+  }
+  out.frac = out.px / n;
+  if (out.components === 0) out.darkest = 1;
+  return out;
+}
+
+/**
+ * Grey dilation: the maximum over a (2r+1)² square, separable, O(n) INDEPENDENT of r via
+ * van Herk / Gil-Werman's monotone deque. `tmp` is scratch of the same size.
+ *
+ * A square rather than a disc, and a maximum rather than a quantile, because the only
+ * thing it is asked is "is there anything within r of here that is further from the
+ * backing than this pixel is" — a statement about the largest value in reach, which a
+ * square answers in two passes and a disc would not.
+ */
+export function maxFilter(src: Float32Array, dst: Float32Array, tmp: Float32Array, w: number, h: number, r: number) {
+  if (r < 1) {
+    dst.set(src);
+    return;
+  }
+  const q = new Int32Array(Math.max(w, h) + 1);
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    let head = 0;
+    let tail = 0;
+    for (let x = 0; x <= Math.min(r, w - 1); x++) {
+      while (tail > head && src[row + q[tail - 1]] <= src[row + x]) tail--;
+      q[tail++] = x;
+    }
+    for (let x = 0; x < w; x++) {
+      const add = x + r;
+      if (x > 0 && add < w) {
+        while (tail > head && src[row + q[tail - 1]] <= src[row + add]) tail--;
+        q[tail++] = add;
+      }
+      while (q[head] < x - r) head++;
+      tmp[row + x] = src[row + q[head]];
+    }
+  }
+  for (let x = 0; x < w; x++) {
+    let head = 0;
+    let tail = 0;
+    for (let y = 0; y <= Math.min(r, h - 1); y++) {
+      while (tail > head && tmp[q[tail - 1] * w + x] <= tmp[y * w + x]) tail--;
+      q[tail++] = y;
+    }
+    for (let y = 0; y < h; y++) {
+      const add = y + r;
+      if (y > 0 && add < h) {
+        while (tail > head && tmp[q[tail - 1] * w + x] <= tmp[add * w + x]) tail--;
+        q[tail++] = add;
+      }
+      while (q[head] < y - r) head++;
+      dst[y * w + x] = tmp[q[head] * w + x];
+    }
+  }
+}
+
+/** What `measureSoftBand` found: where the figure is solid, and how wide its soft edge is. */
+export interface SoftBand {
+  /** Figure pixels the photograph says are at FULL coverage — the known-foreground region. */
+  solid: Uint8Array;
+  /** The partially-covered band, contiguous with the silhouette. `solid` is its complement. */
+  band: Uint8Array;
+  /** How far the band reaches inside the silhouette: median, 99th percentile and max, px. */
+  medianPx: number;
+  p99Px: number;
+  maxPx: number;
+  /** The measurement's own ceiling, px. `maxPx` at the ceiling means the band ran off it. */
+  capPx: number;
+}
+
+/**
+ * MEASURE HOW WIDE THE SOFT EDGE ACTUALLY IS, and with it the known-foreground region.
+ *
+ * The problem this solves is the one every trimap-based matte has: how wide is the
+ * unknown band. The literature is unanimous that a CONSTANT width is the wrong answer —
+ * Adobe's adaptive-trimap-propagation patent (US8897562B2) computes "a local inner and
+ * outer radius … which together can cover all fractional alpha pixels in the local
+ * window", and Al-Kabbany & Dubois (Expert Systems with Applications 131, 2019) build the
+ * unknown region by DETECTING it rather than by dilating the silhouette, precisely
+ * because a fixed dilation is simultaneously too narrow for hair and too wide for a
+ * shoulder. A constant is wrong here for a sharper reason still: a fixed fraction of
+ * frame width cannot know how soft this photograph's edges are, and everything
+ * downstream — the foreground prior's seed, and the depth past which alpha is settled to
+ * 1 — is a claim about exactly that.
+ *
+ * WHAT MAKES IT MEASURABLE WITHOUT A MATTE. Against a known backing the compositing
+ * equation gives |C − B| = a·|F − B| exactly, so the distance from the backing IS the
+ * coverage, up to one unknown scale per material. Nothing about the foreground has to be
+ * estimated first: within a patch where F does not change, the profile of |C − B| across
+ * an edge is the alpha profile, and full coverage is where that profile stops rising.
+ * (This is the honest form of the background subtraction Sengupta et al. (CVPR 2020, §3.1
+ * of the supplement) reject as a matte: it is not an alpha, but it is a sound test for
+ * a = 1, which is all that is asked of it.)
+ *
+ * SO: dilate |C − B| over a ladder of DOUBLING radii and watch the deficit
+ * `max_r|C − B| − |C − B|`. On a ramp that deficit doubles with the reach, because the
+ * ramp is monotone and the reach doubled; at the plateau it stops growing. The ladder
+ * stops at the first reach where the deficit comes in below half again the previous
+ * rung's — halfway between the 2x of a ramp and the 1x of a plateau — and the pixel is at
+ * full coverage when the deficit there is within the noise the backing was measured to
+ * have. The comparison is between RUNGS, not between neighbours, and that is what makes
+ * it scale free: a 24px ramp climbs by a third of a noise level per pixel, which no
+ * per-pixel threshold can see, but it still doubles from rung to rung. The test asks
+ * nothing about how wide the edge is, which is the thing being measured.
+ *
+ * (The noise also ends the ladder outright — `q1 <= max(1.5·q0, tol)` — because a rise
+ * that stays inside the noise over a doubled reach is not a ramp, and because on a plate
+ * clipped at the backing's own end the deficit is identically zero and the ratio test has
+ * nothing to divide. There the mixture equation says nothing anyway; depth is all there
+ * is, which is what `clippedFringe` reports.)
+ *
+ * THE BAND IS CONNECTED TO THE SILHOUETTE AND GROWS INWARD ONLY, deliberately. Texture
+ * inside the subject also fails a "nothing near me is further from the backing" test — a
+ * cheek beside an eyebrow does — and a band defined per pixel would eat the interior and
+ * bias the foreground prior toward whatever is locally darkest against the backing. The
+ * soft edge is the fractional region that REACHES the silhouette, so it is grown from
+ * there, in order of increasing depth, a pixel joins only from a NEIGHBOUR NEARER THE EDGE
+ * than itself, and the front may not advance past the radius its own boundary point
+ * measured. An isolated interior pixel that fails the test stays solid; a chain of failing
+ * texture cannot drag the band sideways into the subject; and a monotone shading gradient
+ * across a garment cannot drag it inward, because the edge it started from said how far
+ * this edge goes.
+ */
+export function measureSoftBand(
+  dlin: Float32Array,
+  tol: Float32Array,
+  figure: Uint8Array,
+  D: Float32Array,
+  w: number,
+  h: number
+): SoftBand {
+  const n = w * h;
+  // The ceiling on the measurement. A soft edge wider than an eighth of the short side is
+  // not an edge, and past that the dilation would be reaching across the subject into a
+  // different material rather than up its own ramp.
+  const capPx = Math.max(4, Math.round(Math.min(w, h) / 8));
+  const cur = new Float32Array(n);
+  const prev = new Float32Array(n);
+  const tmp = new Float32Array(n);
+  const done = new Uint8Array(n);
+  const deficit = new Float32Array(n);
+  /** The reach at which this pixel's rise saturated — how far away its own plateau is. */
+  const reachAt = new Float32Array(n);
+  // The first rung is the base the ratio test compares against, so it takes no decision.
+  maxFilter(dlin, prev, tmp, w, h, 1);
+  let reach = 1;
+  while (reach < capPx) {
+    const next = Math.min(capPx, reach * 2);
+    maxFilter(prev, cur, tmp, w, h, next - reach);
+    let open = 0;
+    for (let i = 0; i < n; i++) {
+      if (done[i]) continue;
+      const q0 = prev[i] - dlin[i];
+      const q1 = cur[i] - dlin[i];
+      if (q1 <= Math.max(1.5 * q0, tol[i])) {
+        done[i] = 1;
+        deficit[i] = q1;
+        reachAt[i] = next;
+      } else open++;
+    }
+    prev.set(cur);
+    reach = next;
+    if (open === 0) break;
+  }
+  for (let i = 0; i < n; i++) {
+    if (!done[i]) {
+      deficit[i] = prev[i] - dlin[i];
+      reachAt[i] = capPx;
+    }
+  }
+
+  // The soft edge: fractional pixels contiguous with the silhouette, taken in order of
+  // increasing depth so that the band is a front advancing inward from the edge and never
+  // a chain wandering sideways. A counting sort on the distance transform, quarter-pixel
+  // buckets, because a comparison sort of every figure pixel is not free at 1800px.
+  const band = new Uint8Array(n);
+  const partialAt = (i: number) => figure[i] && D[i] <= capPx && deficit[i] > tol[i];
+  const buckets = Math.ceil(capPx * 4) + 2;
+  const counts = new Int32Array(buckets + 1);
+  let eligible = 0;
+  for (let i = 0; i < n; i++) {
+    if (!partialAt(i)) continue;
+    counts[Math.min(buckets - 1, Math.floor(D[i] * 4))]++;
+    eligible++;
+  }
+  for (let b = 1; b < buckets; b++) counts[b] += counts[b - 1];
+  const order = new Int32Array(eligible);
+  for (let i = n - 1; i >= 0; i--) {
+    if (!partialAt(i)) continue;
+    order[--counts[Math.min(buckets - 1, Math.floor(D[i] * 4))]] = i;
+  }
+  // AND THE FRONT CARRIES A RADIUS, SET AT THE SILHOUETTE. This is Adobe US8897562B2's
+  // local trimap radius literally: the pixel ON the edge already saw its own plateau —
+  // that is what ended its ladder — so `D + reachAt` there is how far the fractional
+  // pixels reach in from THIS point of the boundary, and no pixel deeper than that belongs
+  // to the same soft edge. Without it the front follows any monotone rise it can find, and
+  // a shading gradient across a shirt is one: measured on John's plate, the band ran 123px
+  // in at its worst against a 3.2px median, which is a lit-to-shadowed shoulder and not an
+  // edge. The radius is inherited, never grown, because a radius that could grow as the
+  // front advanced would be the same runaway with an extra step in it.
+  const limit = new Float32Array(n);
+  for (let k = 0; k < order.length; k++) {
+    const p = order[k];
+    if (D[p] <= 1.5) {
+      band[p] = 1;
+      limit[p] = D[p] + reachAt[p];
+      continue;
+    }
+    const x = p % w;
+    const y = (p / w) | 0;
+    let lim = 0;
+    const from = (j: number) => {
+      if (band[j] && D[j] < D[p] && limit[j] > lim) lim = limit[j];
+    };
+    if (x > 0) from(p - 1);
+    if (x < w - 1) from(p + 1);
+    if (y > 0) from(p - w);
+    if (y < h - 1) from(p + w);
+    if (lim > 0 && D[p] <= lim) {
+      band[p] = 1;
+      limit[p] = lim;
+    }
+  }
+
+  // AND A PLATEAU AT THE BACKING IS NOT FULL COVERAGE. The ladder above tests whether the
+  // distance from the backing has STOPPED RISING, and it stops rising at both ends: at
+  // a = 1 because the mixture is over, and at a = 0 because there is no mixture. Outside
+  // the figure that is harmless, but `figure` is `largestComponentFilled`'s output and
+  // that fills enclosed holes — so a gap the subject encloses, which is background, comes
+  // back as a plateau INSIDE the figure and reads as solid. Measured before this line
+  // existed: a synthetic 20px-radius gap showing pure backing was settled to alpha 1
+  // across its whole width by `figure && D > corePx && solid`, and there is no coverage
+  // anywhere in it. So a pixel whose distance from the backing is inside the backing's own
+  // noise IS the backing, at either end of the ladder — the same `keyLo` multiples the
+  // crude key is cut from, carried into linear light. It matters twice: nothing is settled
+  // opaque there, and nothing seeds the foreground prior from a pixel that is the backing
+  // colour, which is the poisoning this measurement was added to prevent.
+  const solid = new Uint8Array(n);
+  const depths: number[] = [];
+  let maxPx = 0;
+  for (let i = 0; i < n; i++) {
+    solid[i] = figure[i] && !band[i] && dlin[i] > tol[i] ? 1 : 0;
+    if (band[i]) {
+      depths.push(D[i]);
+      if (D[i] > maxPx) maxPx = D[i];
+    }
+  }
+  depths.sort((a, b) => a - b);
+  const at = (f: number) => (depths.length ? depths[Math.min(depths.length - 1, Math.floor(depths.length * f))] : 0);
+  return { solid, band, medianPx: at(0.5), p99Px: at(0.99), maxPx, capPx };
 }
 
 /**
@@ -909,7 +1424,7 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
     if (any((y) => !!figure[y * w + w - 1], h) > h * 0.01) touchesEdges.push('right');
   }
 
-  // -- 3 and 4, twice ---------------------------------------------------------------
+  // -- 4 and 5, twice ---------------------------------------------------------------
   // The prior and the solve feed each other, so they are run as two passes.
   //
   // Pass one has to bootstrap from the crude key, and the crude key is a SILHOUETTE
@@ -920,9 +1435,14 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
   // over-reads alpha by exactly the factor the prior was pulled. Measured on John's
   // plate: the crude key's 0.95 bin corresponds to a solved alpha of 0.19.
   //
-  // So pass one seeds geometrically, from pixels a real distance INSIDE the silhouette,
-  // and pass two re-seeds from what pass one actually called opaque. Nothing is dialled;
-  // the second seed is the first pass's own answer.
+  // So pass one seeds from pixels the PHOTOGRAPH says are at full coverage — `solid`,
+  // measured above — a real distance inside the silhouette, and pass two re-seeds from
+  // what pass one actually called opaque, gated on the same measurement. Nothing is
+  // dialled. Both gates are needed and neither is redundant: seeding at a fixed depth
+  // pulls the prior toward B wherever the edge is softer than that depth (a 24px crown
+  // measured 4,662 px called opaque at a true coverage of 0.61), and re-seeding pass two
+  // from pass one's verdict alone would inherit that error rather than repair it, because
+  // the verdict is what the poisoned prior produced.
   const region = new Uint8Array(n);
   for (let i = 0; i < n; i++) region[i] = figure[i] || alpha0[i] > 0.005 ? 1 : 0;
   const corePx = (p.coreDepth * w) / p.refWidth;
@@ -951,6 +1471,36 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
     }
     sigLin[i] = Math.sqrt(s / 3);
   }
+
+  // -- 3. how soft the edge is -----------------------------------------------------
+  //
+  // HOW SOFT IS THIS EDGE, MEASURED. |C − B| in linear light is a·|F − B| exactly, so the
+  // distance from the backing is the coverage up to one scale per material, and the depth
+  // at which it stops rising is the depth at which the subject is solid. Lightly smoothed
+  // first: the ladder below compares against a MAXIMUM over a window, and the maximum of a
+  // grainy field is biased upward by roughly the grain, which would read as a ramp that is
+  // not there. One pixel of blur costs about one pixel of measured band width, in the
+  // conservative direction, and buys a factor of two on the grain.
+  const dlin = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    let s = 0;
+    for (let c = 0; c < 3; c++) {
+      const d = Ilin[i * 3 + c] - Blin[i * 3 + c];
+      s += d * d;
+    }
+    dlin[i] = Math.sqrt(s / 3);
+  }
+  gauss(dlin, w, h, 1);
+  // The tolerance is the same one the crude key is cut from — `keyLo` multiples of the
+  // MEASURED backing noise, carried into linear light at this pixel's own backing level.
+  // Expressed as coverage it is keyLo/SNR, so on John's plate (60x) a pixel counts as
+  // solid at a true alpha of 0.95 and better, and the claim degrades with the photograph
+  // rather than with a constant.
+  const solidTol = new Float32Array(n);
+  for (let i = 0; i < n; i++) solidTol[i] = p.keyLo * sigLin[i];
+  const soft = clock('softband', () => measureSoftBand(dlin, solidTol, figure, D, w, h));
+  const solid = soft.solid;
+
   let Fprior = new Float32Array(n * 3);
   let Fplin = new Float32Array(n * 3);
 
@@ -1069,12 +1619,28 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
       alpha[i] = conf[i] >= 1 ? alsArr[i] : conf[i] * alsArr[i] + (1 - conf[i]) * curve(alpha0[i]);
     }
 
-    // Settle the two ends. Deep inside the figure AND saturated on the crude key, the
-    // answer is not in doubt and a stray 0.99 would only cost bytes and put a hint of the
-    // ground through his shoulder. BOTH conditions, deliberately: a genuinely soft edge
-    // wider than `coreDepth` keeps alpha0 < 1, so nothing hardens it.
+    // Settle the two ends. Deep inside the figure AND at full coverage by the measurement
+    // above, the answer is not in doubt and a stray 0.99 would only cost bytes and put a
+    // hint of the ground through his shoulder.
+    //
+    // THE SECOND CONDITION USED TO BE `alpha0[i] >= 1`, AND THAT WAS VACUOUS. The comment
+    // here claimed a genuinely soft edge would keep alpha0 below 1 and so survive
+    // untouched, which is false in exactly the way this file documents twenty lines above:
+    // the crude key is ramped over the backing's NOISE, so on John's plate it saturates at
+    // a solved alpha of 0.13. Everything wider than `coreDepth` — a crown of hair — was
+    // therefore hardened to 1 by DEPTH alone, and every safeguard downstream is keyed off
+    // that same verdict: an opaque pixel leaves the fringe, so the gamut bound skips it,
+    // `purity` does not bucket it, and the self-test's foreground tolerance samples only
+    // pixels whose synthetic alpha is already 1. Measured on a synthetic 24px crown over a
+    // near-clipped cyclorama: 4,662 px called opaque at a TRUE coverage averaging 0.61,
+    // carrying +81 levels of backing in their foreground.
+    //
+    // `solid` is the same claim made from evidence that scales with the edge instead: the
+    // distance from the backing has stopped rising here, so this pixel is not a mixture.
+    // A soft edge wider than `coreDepth` now keeps alpha < 1 because the PHOTOGRAPH says
+    // it is still ramping, which is a statement the crude key was never able to make.
     for (let i = 0; i < n; i++) {
-      if (figure[i] && D[i] > corePx && alpha0[i] >= 1) alpha[i] = 1;
+      if (figure[i] && D[i] > corePx && solid[i]) alpha[i] = 1;
       else if (!figure[i] && alpha0[i] <= 0) alpha[i] = 0;
       if (alpha[i] < 1 / 510) alpha[i] = 0;
       // THE SUPPORT IS AN INVARIANT (build-cutouts.py makes the same one against its
@@ -1084,14 +1650,38 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
     }
   };
 
+  // BOTH SEEDS ARE GATED ON THE SAME MEASUREMENT, and they have to be. A seed depth that
+  // is a fixed fraction of frame width is the same wrong claim as the hardening above:
+  // seeded at 2px into a 24px crown, the prior is a mixture of the subject and the backing
+  // rather than the subject, and the solve — which divides by |B − F| — then over-reads
+  // alpha by exactly the factor the prior was pulled toward B. Pass two re-seeding from
+  // "what pass one called opaque" does not repair it, because that verdict came from the
+  // poisoned prior; the second seed inherits the first seed's error unless it is
+  // independently required to be at full coverage. Measured: letting the gamut bound run
+  // on those pixels moves the contamination by 0.01 of 81 levels, because the bound's own
+  // reference is this prior. The fault is here, so the fix is here.
   const seed1 = new Uint8Array(n);
   const seedDepth = Math.max(2, ((p.coreDepth * w) / p.refWidth) * 0.5);
-  for (let i = 0; i < n; i++) seed1[i] = figure[i] && D[i] >= seedDepth ? 1 : 0;
+  for (let i = 0; i < n; i++) seed1[i] = solid[i] && D[i] >= seedDepth ? 1 : 0;
   pass(seed1, 'geo-fprior-1');
 
   const seed2 = new Uint8Array(n);
-  for (let i = 0; i < n; i++) seed2[i] = alpha[i] > 0.99 && D[i] >= 1 ? 1 : 0;
+  for (let i = 0; i < n; i++) seed2[i] = alpha[i] > 0.99 && solid[i] && D[i] >= 1 ? 1 : 0;
   pass(seed2, 'geo-fprior-2');
+
+  // -- 6. the sub-opacity nothing can be seen through -------------------------------
+  //
+  // Before anything is counted or written, because every number below — the fringe
+  // accounting, the histogram, the mush gate, the purity audit — is a statement about
+  // the matte that ships, and this is part of it.
+  //
+  // `alpha0 <= 0` is the crude key at the background: within `keyLo` multiples of the
+  // measured backing noise, indistinguishable from the backdrop. It is the same test the
+  // figure in step 2 is cut from, and it is the whole of what tells a real gap from solve
+  // noise — see `fillEnclosedSubOpacity`.
+  const atBacking = new Uint8Array(n);
+  for (let i = 0; i < n; i++) atBacking[i] = alpha0[i] <= 0 ? 1 : 0;
+  const enclosed = clock('enclosed', () => fillEnclosedSubOpacity(alpha, w, h, atBacking));
 
   // How much of the fringe the known-backing solve could not speak for. This is the
   // number that tells a human the key is guessing — white hair on a white cyclorama.
@@ -1158,7 +1748,7 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
     );
   }
 
-  // -- 5. the foreground, in closed form at that alpha -----------------------------
+  // -- 7. the foreground, in closed form at that alpha -----------------------------
   //
   // F = (C − B(1−a)) / a is not an estimate. It is the definition of unassociated alpha
   // against a known backing, and with alpha already solved from a foreground prior that
@@ -1186,7 +1776,7 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
     }
   });
 
-  // -- 6. the gamut bound ----------------------------------------------------------
+  // -- 8. the gamut bound ----------------------------------------------------------
   clock('gamut', () => {
     for (let i = 0; i < n; i++) {
       const j = i * 3;
@@ -1219,7 +1809,7 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
     }
   });
 
-  // -- 7. the output, and the audit of it ------------------------------------------
+  // -- 9. the output, and the audit of it ------------------------------------------
   //
   // ONE asset. There is no second treatment and no ground-dependent term anywhere above:
   // the inverse light wrap that used to live here, and the light/dark pair it forced, are
@@ -1338,6 +1928,8 @@ export function key(rgb: Uint8Array, w: number, h: number, params?: Partial<Keye
     clippedFringe,
     transfer,
     coreDepthPx: corePx,
+    softBand: { medianPx: soft.medianPx, p99Px: soft.p99Px, maxPx: soft.maxPx, capPx: soft.capPx },
+    enclosed,
     purity,
     touchesEdges,
     timings
