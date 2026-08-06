@@ -1,6 +1,16 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, normalizePath, type Plugin } from 'vite';
+// This file is inside the type-checked project — `.svelte-kit/tsconfig.json`
+// includes it — and the project has no `@types/node`, deliberately: nothing
+// the SITE ships runs in node, and the node-side tooling in `scripts/` is run
+// rather than compiled. So the one node import this config needs is silenced
+// here rather than by pulling node's global types over every file in `src`,
+// where they would quietly change what `setTimeout` returns in a browser
+// component. If a future dependency brings @types/node in, TypeScript will
+// report this line as an unnecessary suppression and it can simply be deleted.
+// @ts-expect-error — no @types/node in this project; see above.
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 
 /**
  * Drafts never enter the bundle.
@@ -12,16 +22,139 @@ import { defineConfig, type Plugin } from 'vite';
  * rather than about the code. That build shipped the draft's title, summary
  * and body inside `_app/immutable/chunks/*.js`, on every page of the site.
  *
- * So the file is filtered on its way in, before Vite's own JSON plugin turns
- * it into a module. What is left is all that any code, on either side, could
- * ever see. A post published with a date in the future IS left in, on
- * purpose: that one is early rather than private, and the listings hold it
- * back in the browser (DECISIONS.md §22).
+ * A post published with a date in the future IS left in, on purpose: that one
+ * is early rather than private, and the listings hold it back in the browser
+ * (DECISIONS.md §22).
  *
- * It fails the build rather than passing through anything it cannot parse,
- * and scripts/check-posts.ts is the proof, run against the built output after
- * every build.
+ * There are now THREE things to do, because a post is now a file of its own
+ * and `$lib/content` reads the folder with `import.meta.glob`.
+ *
+ * 1. NARROW THE GLOB (`hideDraftsFromTheGlob`). A glob is expanded at compile
+ *    time into one import per matching file plus a record keyed by their
+ *    PATHS, and those path strings survive into the chunk whether or not
+ *    anything reads them — `Object.values(...)` still needs the object they
+ *    are keys of. Emptying a draft's contents therefore is not enough: the
+ *    second build with a draft in it shipped
+ *    `"/src/content/posts/notes-on-waiting-lists.json"` into
+ *    `_app/immutable/chunks/*.js`, which is the draft's title in hyphens, on
+ *    every page. So the pattern is rewritten before Vite expands it, to
+ *    exclude the files that are drafts today: a draft is not imported, not
+ *    keyed, and not named anywhere in the output.
+ *
+ * 2. EMPTY WHAT IS LEFT (`stripDraftPosts`). Belt as well as braces, and the
+ *    only guard the mock content has:
+ *
+ *      src/content/posts/<slug>.json  ONE post. Excluded by (1), so this
+ *                                     should never see a draft — and if it
+ *                                     ever does, the words go anyway.
+ *      src/content/mock/posts.json    the dev-only stand-ins, still a single
+ *                                     file with an array in it (see
+ *                                     src/lib/content/mock.ts for why it
+ *                                     cannot become a folder).
+ *
+ * 3. FAIL LOUDLY. Both hooks refuse anything they cannot parse, and (1)
+ *    refuses to run at all if the glob it is meant to narrow is not where it
+ *    expects it — a rewrite that silently matched nothing would be a rewrite
+ *    that silently published drafts.
+ *
+ * And `scripts/check-posts.ts` is the proof, run against the built output
+ * after every build. It is what caught the path-in-the-chunk leak above.
  */
+const POSTS_DIR = 'src/content/posts';
+const POST_FILE = /\/src\/content\/posts\/[^/]+\.json$/;
+const MOCK_POSTS = /\/src\/content\/mock\/posts\.json$/;
+
+/** Where the glob lives, and the exact pattern it is written with. Both are
+ *  asserted rather than assumed; see `hideDraftsFromTheGlob`. */
+const CONTENT_INDEX = 'src/lib/content/index.ts';
+const POSTS_GLOB = "'/src/content/posts/*.json'";
+
+/**
+ * The post files that are not published, as the root-relative paths the glob
+ * speaks in.
+ *
+ * Anything that is not exactly `published` counts as a draft, so a mistyped
+ * status hides a post rather than publishing one. A file that will not parse
+ * is not silently treated either way: it throws, and the caller turns that
+ * into a build error.
+ */
+function draftPaths(root: string): string[] {
+  const dir = `${root}/${POSTS_DIR}`;
+  if (!existsSync(dir)) return [];
+  const drafts: string[] = [];
+  for (const name of (readdirSync(dir) as string[]).sort()) {
+    if (!name.endsWith('.json')) continue;
+    let post: { status?: string };
+    try {
+      post = JSON.parse(readFileSync(`${dir}/${name}`, 'utf8')) as { status?: string };
+    } catch (error) {
+      throw new Error(`${POSTS_DIR}/${name} is not valid JSON: ${(error as Error).message}`);
+    }
+    if (post?.status !== 'published') drafts.push(`/${POSTS_DIR}/${name}`);
+  }
+  return drafts;
+}
+
+/**
+ * Runs before Vite expands `import.meta.glob`, so what it expands is already
+ * the narrowed pattern.
+ *
+ * The source is still TypeScript at that point, which is why this is a string
+ * replacement on a literal rather than anything cleverer: the alternative is
+ * rewriting the code Vite generated, and code generated by somebody else is
+ * the worst thing to own.
+ */
+function hideDraftsFromTheGlob(): Plugin {
+  /** Vite's own root, forward slashes, filled in before any transform runs. */
+  let root = '';
+  return {
+    name: 'hide-draft-posts-from-the-glob',
+    enforce: 'pre',
+    configResolved(config) {
+      root = config.root;
+    },
+    transform(code, id) {
+      if (!normalizePath(id.split('?')[0]).endsWith(`/${CONTENT_INDEX}`)) return null;
+
+      if (!code.includes(POSTS_GLOB)) {
+        this.error(
+          `${CONTENT_INDEX} no longer contains the literal ${POSTS_GLOB}, so the drafts could ` +
+            'not be excluded from it. Every draft in src/content/posts/ would have its filename ' +
+            'published in the JavaScript. Fix this plugin, or put the pattern back.'
+        );
+        return null;
+      }
+
+      let drafts: string[];
+      try {
+        drafts = draftPaths(root);
+      } catch (error) {
+        this.error((error as Error).message);
+        return null;
+      }
+      if (drafts.length === 0) return null;
+
+      // `['…/*.json', '!…/a-draft.json']` — Vite's own negation syntax, so the
+      // expansion is still Vite's and only the question asked of it changed.
+      const narrowed = JSON.stringify([
+        POSTS_GLOB.slice(1, -1),
+        ...drafts.map((path) => `!${path}`)
+      ]);
+      return { code: code.replace(POSTS_GLOB, narrowed), map: null };
+    },
+    handleHotUpdate({ file, server, modules }) {
+      if (!POST_FILE.test(normalizePath(file))) return;
+      // Which files the glob may see was decided when the module above was
+      // TRANSFORMED, so flipping a post between draft and published has to
+      // redo that decision rather than merely re-run the result of it.
+      const index = server.moduleGraph?.getModulesByFile?.(`${root}/${CONTENT_INDEX}`);
+      if (!index?.size) return;
+      for (const mod of index) server.moduleGraph.invalidateModule(mod);
+      return [...modules, ...index];
+    }
+  };
+}
+
 function stripDraftPosts(): Plugin {
   return {
     name: 'strip-draft-posts',
@@ -30,14 +163,20 @@ function stripDraftPosts(): Plugin {
     enforce: 'pre',
     transform(code, id) {
       const path = id.split('?')[0];
-      if (!/\/src\/content\/(mock\/)?posts\.json$/.test(path)) return null;
+      const single = POST_FILE.test(path);
+      if (!single && !MOCK_POSTS.test(path)) return null;
 
-      let data: { posts?: { status?: string }[] };
+      let data: { status?: string; posts?: { status?: string }[] };
       try {
         data = JSON.parse(code);
       } catch (error) {
         this.error(`${path} is not valid JSON: ${(error as Error).message}`);
         return null;
+      }
+
+      if (single) {
+        if (data.status === 'published') return null;
+        return { code: JSON.stringify({ status: 'draft' }), map: null };
       }
 
       const posts = (data.posts ?? []).filter((post) => post.status === 'published');
@@ -47,7 +186,7 @@ function stripDraftPosts(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [stripDraftPosts(), tailwindcss(), sveltekit()],
+  plugins: [hideDraftsFromTheGlob(), stripDraftPosts(), tailwindcss(), sveltekit()],
   server: {
     // Bound to every interface on purpose: the dev preview has to be
     // reachable from a phone on the LAN, not just from this machine.

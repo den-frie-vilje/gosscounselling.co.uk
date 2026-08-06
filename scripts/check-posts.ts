@@ -6,8 +6,11 @@
  *
  * Two kinds of unpublished post, and only one of them is a leak.
  *
- * A DRAFT is private. `src/lib/content` filters it out at build time, so it
- * has no page, is in no sitemap, and its words are in no HTML file. This
+ * A DRAFT is private. `stripDraftPosts` in vite.config.ts empties its file on
+ * the way into the bundle and `src/lib/content` drops what is left, so it has
+ * no page, is in no sitemap, and its words are in no built file at all — not
+ * the HTML, and not the JavaScript chunks either, which is the harder half.
+ * This
  * script is the proof of that, and the proof is the point: the source of this
  * site is public, so a draft that reached the build would be published twice
  * over, and the mechanism that removes it is worth exactly as much as the
@@ -33,7 +36,11 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
-const POSTS = 'src/content/posts.json';
+/** One file per post, one entry per post in the editor. The folder is read
+ *  rather than a list of files being kept somewhere: a post John writes is a
+ *  new file, and a check that only covered the ones somebody remembered to
+ *  list would not cover the drafts that matter most. */
+const POSTS_DIR = 'src/content/posts';
 const BUILD = 'build';
 
 interface Post {
@@ -53,6 +60,8 @@ interface Finding {
 
 interface Audit {
   findings: Finding[];
+  /** Drafts with nothing distinctive enough to search the build for. */
+  blind: Post[];
   draftsExamined: number;
   filesScanned: number;
 }
@@ -84,11 +93,30 @@ function normalise(text: string): string {
  *  accident: the title, the summary, each paragraph of the body, and the
  *  slug, which is what a leaked page's directory would be called. */
 function needlesFor(post: Post): string[] {
-  const candidates = [post.title, post.excerpt, ...(post.body ?? '').split(/\n\s*\n/)];
+  // `?? ''` on every one of them, not just the body. A post missing `title` or
+  // `excerpt` used to reach `normalise(undefined)` and take the whole run down
+  // with a stack trace — which is the worst possible failure for this script,
+  // because a crashed gate proves nothing and reads, in CI, like a broken build
+  // rather than like an unchecked draft. `checkable()` below reports the same
+  // post as a problem, so nothing is quietly skipped either.
+  const candidates = [post.title ?? '', post.excerpt ?? '', ...(post.body ?? '').split(/\n\s*\n/)];
   const needles = candidates.map(normalise).filter((n) => n.length >= 24);
   const slug = (post.slug ?? '').trim();
   if (slug.length >= 8) needles.push(normalise(slug));
   return [...new Set(needles)];
+}
+
+/**
+ * A draft this script cannot actually check.
+ *
+ * If every field it would search for is missing or too short to be
+ * distinctive, then finding nothing in the build says nothing at all. The rest
+ * of this file is built on refusing to pass on an absence — the canaries exist
+ * so that "zero drafts examined" and "zero files scanned" both FAIL — and this
+ * is the same rule one level down: an unsearchable draft is not a clean draft.
+ */
+function unsearchable(post: Post): boolean {
+  return needlesFor(post).length === 0;
 }
 
 function isDraft(post: Post): boolean {
@@ -98,6 +126,7 @@ function isDraft(post: Post): boolean {
 function audit(posts: Post[], files: Map<string, string>): Audit {
   const findings: Finding[] = [];
   const drafts = posts.filter(isDraft);
+  const blind = drafts.filter(unsearchable);
   const haystack = [...files].map(([path, text]) => [path, normalise(text)] as const);
 
   for (const draft of drafts) {
@@ -110,7 +139,7 @@ function audit(posts: Post[], files: Map<string, string>): Audit {
     }
   }
 
-  return { findings, draftsExamined: drafts.length, filesScanned: files.size };
+  return { findings, blind, draftsExamined: drafts.length, filesScanned: files.size };
 }
 
 function walk(dir: string): string[] {
@@ -124,6 +153,13 @@ function walk(dir: string): string[] {
 }
 
 function report(result: Audit, label: string): boolean {
+  for (const b of result.blind) {
+    console.error(
+      `UNSEARCHABLE  the draft "${b.title ?? b.slug ?? '(untitled)'}" has no title, summary, body or slug\n` +
+        '  long enough to look for. Finding nothing in the build would prove nothing, so this is a\n' +
+        '  failure rather than a pass. Give it a title, or delete it.'
+    );
+  }
   for (const f of result.findings) {
     console.error(`LEAKED    ${f.file}\n  carries "${f.needle.slice(0, 60)}…" from the draft "${f.post}"`);
   }
@@ -133,6 +169,12 @@ function report(result: Audit, label: string): boolean {
   }
   if (result.draftsExamined === 0) {
     console.error(`${label}: examined zero posts. That is a failure, not a pass.`);
+    return false;
+  }
+  if (result.blind.length) {
+    console.error(
+      `\n${label}: ${result.blind.length} draft(s) could not be searched for at all.`
+    );
     return false;
   }
   if (result.findings.length) {
@@ -235,17 +277,25 @@ if (!canary()) {
   process.exit(1);
 }
 
-if (!existsSync(POSTS)) {
-  console.error(`${POSTS} not found.`);
-  process.exit(1);
-}
-
-let posts: Post[];
-try {
-  posts = (JSON.parse(readFileSync(POSTS, 'utf8')) as { posts: Post[] }).posts ?? [];
-} catch (error) {
-  console.error(`check-posts: could not read ${POSTS}: ${(error as Error).message}`);
-  process.exit(1);
+/* An absent folder is not a failure: it is the state this site ships in,
+   before John has written anything. A folder that is there and will not parse
+   IS a failure — a post that cannot be read is a post whose draft status
+   cannot be known, and guessing is how a draft gets published. The canary
+   below guarantees there is always at least one draft examined either way. */
+let posts: Post[] = [];
+if (existsSync(POSTS_DIR)) {
+  const files = readdirSync(POSTS_DIR)
+    .filter((name) => name.endsWith('.json'))
+    .sort();
+  for (const name of files) {
+    const path = join(POSTS_DIR, name);
+    try {
+      posts.push(JSON.parse(readFileSync(path, 'utf8')) as Post);
+    } catch (error) {
+      console.error(`check-posts: could not read ${path}: ${(error as Error).message}`);
+      process.exit(1);
+    }
+  }
 }
 
 if (!existsSync(BUILD)) {
@@ -263,7 +313,7 @@ for (const path of walk(BUILD)) {
 }
 
 // The canary drafts join the real ones, so `draftsExamined` is never zero
-// even with an empty posts.json, which is the state this site ships in. Their
-// text is not in the real build, so a clean run stays clean.
+// even with an empty posts folder, which is the state this site ships in.
+// Their text is not in the real build, so a clean run stays clean.
 const result = audit([...posts, ...canaryPosts()], files);
 process.exit(report(result, 'check-posts') ? 0 : 1);
