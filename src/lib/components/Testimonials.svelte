@@ -23,10 +23,44 @@
 
   const items = testimonials.items;
   const many = items.length > 1;
-  let index = $state(0);
+
+  /**
+   * The strip, with a clone of the last quote before the first and a clone of
+   * the first after the last.
+   *
+   * That is what makes the wrap seamless in BOTH directions: dragging left off
+   * the end reveals a real quote rather than empty ground, and once the slide
+   * has finished the position is reset to the equivalent real slide with the
+   * transition off, so the jump is never rendered. Without the clones the only
+   * options are a hard snap back across the whole strip or no wrap at all.
+   */
+  const slides = $derived(many ? [items[items.length - 1], ...items, items[0]] : items);
+
+  /** Position in `slides`. 1 is the first real quote when there are clones. */
+  let pos = $state(many ? 1 : 0);
+  /** Which real quote that is, for the dots and the announcement. */
+  const index = $derived(many ? (pos - 1 + items.length) % items.length : 0);
+  /** Suppresses the transition for the one frame the wrap is corrected in. */
+  let jumping = $state(false);
 
   function go(to: number) {
-    index = (to + items.length) % items.length;
+    pos = many ? to + 1 : 0;
+  }
+
+  function step(by: number) {
+    pos += by;
+  }
+
+  /** After a slide finishes, step off a clone onto the real thing it copies. */
+  function onTransitionEnd() {
+    if (!many) return;
+    if (pos !== 0 && pos !== slides.length - 1) return;
+    jumping = true;
+    pos = pos === 0 ? items.length : 1;
+    // Two frames: one for the class to land, one for the browser to paint the
+    // new position with it applied. One frame is enough on Chrome and is not
+    // on Safari, which animates the correction.
+    requestAnimationFrame(() => requestAnimationFrame(() => (jumping = false)));
   }
 
   /* ---- dragging ----
@@ -84,9 +118,10 @@
       (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     }
 
-    // Damped, so the quote moves with the finger without travelling as far as
-    // it does: this is a hand-over, not a pane being pushed off screen.
-    drag = dx * 0.55;
+    // Undamped: the strip is a strip, and it goes exactly as far as the finger
+    // does. Damping made sense when a single quote was being nudged; on a track
+    // it would mean the thing under your thumb is not the thing you are moving.
+    drag = dx;
   }
 
   function onPointerUp(event: PointerEvent) {
@@ -95,7 +130,7 @@
     const dx = event.clientX - startX;
     dragging = false;
     if (horizontal && Math.abs(dx) > threshold(el)) {
-      go(dx < 0 ? index + 1 : index - 1);
+      step(dx < 0 ? 1 : -1);
     }
     drag = 0;
     horizontal = null;
@@ -106,10 +141,10 @@
   function onKeydown(event: KeyboardEvent) {
     if (!many) return;
     if (event.key === 'ArrowLeft') {
-      go(index - 1);
+      step(-1);
       event.preventDefault();
     } else if (event.key === 'ArrowRight') {
-      go(index + 1);
+      step(1);
       event.preventDefault();
     }
   }
@@ -140,14 +175,26 @@
         onpointercancel={onPointerUp}
       >
         <div class="viewport" aria-live="polite" aria-atomic="true">
-          {#each items as item, i (item.quote)}
-            <figure class="quote" class:is-current={i === index} aria-hidden={i !== index}>
-              <blockquote>{item.quote}</blockquote>
-              <figcaption>
-                {item.name}{#if item.detail}<span class="detail"> · {item.detail}</span>{/if}
-              </figcaption>
-            </figure>
-          {/each}
+          <div
+            class="track"
+            class:jumping
+            class:dragging
+            style="--pos: {pos}; --drag: {drag}px"
+            ontransitionend={onTransitionEnd}
+          >
+            {#each slides as item, i (i)}
+              <!-- Every slide but the current one is hidden from assistive
+                   tech. Two of them are clones of quotes already in the strip,
+                   and a screen reader reading the same testimonial twice at
+                   the seam would be worse than no carousel at all. -->
+              <figure class="quote" aria-hidden={i !== pos}>
+                <blockquote>{item.quote}</blockquote>
+                <figcaption>
+                  {item.name}{#if item.detail}<span class="detail"> · {item.detail}</span>{/if}
+                </figcaption>
+              </figure>
+            {/each}
+          </div>
         </div>
 
         {#if many}
@@ -227,34 +274,46 @@
      the section is as tall as the LONGEST of them and does not jump as they
      change. A slide would need a track and a translate; this shows one thing
      at a time, and a cross-fade says that with no layout at all. */
+  /* A strip that slides, not a stack that crossfades.
+
+     The mask is the "fading edges": a quote does not hit a hard boundary and
+     stop, it thins out into the ground it sits on. It is on the viewport
+     rather than the track so it stays put while the strip moves under it —
+     masking the track would drag the fade along with the quotes. */
   .viewport {
-    display: grid;
+    overflow: hidden;
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 8%,
+      #000 92%,
+      transparent 100%
+    );
+  }
+  /* The track is the viewport's width, and each slide is 100% of THAT, so a
+     `translateX` of one slide is exactly `-100%` — percentages in a transform
+     resolve against the element's own width, and this is the arrangement where
+     that number means what it says. */
+  .track {
+    display: flex;
+    width: 100%;
+    transform: translateX(calc(var(--pos) * -100% + var(--drag, 0px)));
+    transition: transform 460ms var(--ease-brand);
+  }
+  .track.dragging {
+    transition: none;
+  }
+  /* The one frame where the position is corrected from a clone to the real
+     slide it copies. Without this the correction is animated and the strip
+     visibly rewinds. */
+  .track.jumping {
+    transition: none;
   }
   .quote {
-    grid-area: 1 / 1;
+    flex: 0 0 100%;
     margin: 0;
+    padding: 0 4%;
     text-align: center;
-    opacity: 0;
-    visibility: hidden;
-    transition:
-      opacity var(--dur-base) var(--ease-brand),
-      visibility 0s linear var(--dur-base);
-  }
-  .quote.is-current {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(var(--drag, 0px));
-    transition:
-      opacity var(--dur-base) var(--ease-brand),
-      transform var(--dur-base) var(--ease-brand),
-      visibility 0s;
-  }
-  /* While the finger is down the quote tracks it exactly — a transition here
-     would make it lag behind the touch, which reads as the page being slow
-     rather than as easing. It comes back on release, which is what makes the
-     return a movement rather than a jump. */
-  .quotes.dragging .quote.is-current {
-    transition: none;
   }
   /* Only horizontal gestures are ours. Declared to the browser rather than
      only handled in JavaScript, so a vertical scroll that starts on a quote is
@@ -263,16 +322,8 @@
     touch-action: pan-y;
   }
   @media (prefers-reduced-motion: reduce) {
-    .quote,
-    .quote.is-current {
+    .track {
       transition: none;
-      transform: none;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .quote,
-    .quote.is-current {
-      transition: visibility 0s;
     }
   }
 
