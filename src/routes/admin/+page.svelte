@@ -21,6 +21,12 @@
   request to Google cost 3.9 MB of icon font in the build and a font pipeline
   to maintain, and bought nothing his visitors can tell the difference about.
 -->
+<script lang="ts">
+  // The build's own report on the last publish, in John's words. Renders
+  // nothing when there is nothing to say, which is the normal case.
+  import GateStatus from '$lib/components/GateStatus.svelte';
+</script>
+
 <svelte:head>
   <title>John Goss — Admin</title>
   <meta name="robots" content="noindex, nofollow" />
@@ -38,3 +44,5 @@
        and no floating semver tag. -->
   <script src="/admin/sveltia-cms.js"></script>
 </svelte:head>
+
+<GateStatus />
