@@ -151,6 +151,24 @@ function report(r: KeyResult, label: string) {
   console.log('                             Nothing is settled opaque inside it, whatever its width.');
   console.log(`    interior depth           ${r.coreDepthPx.toFixed(2)}px; the floor under that verdict, not a substitute for it`);
 
+  // Step 6. A backing cannot be seen through a region enclosed by opaque subject, so this
+  // area was never coverage — it was the solve reading a specular highlight as a mixture.
+  const e = r.enclosed;
+  console.log('\n  ENCLOSED SUB-OPACITY, CLOSED — alpha minima with no descent to the frame edge.');
+  console.log(`    closed                   ${e.components.toLocaleString()} islands, ${e.px.toLocaleString()} px, ` +
+    `${pct(e.frac, 3)} of the frame  (a person should look above 1.000%)`);
+  console.log(`    darkest one was          ${e.darkest.toFixed(3)} coverage; deepest raise ${e.deepestRaise} of 255 levels` +
+    (e.largestPx ? `; largest ${e.largestPx.toLocaleString()} px at (${e.largestAt[0]}, ${e.largestAt[1]})` : ''));
+  console.log(`    left open as real gaps   ${e.gapComponents.toLocaleString()} islands, ${e.gapPx.toLocaleString()} px` +
+    `${e.largestGapPx ? `, largest ${e.largestGapPx.toLocaleString()} px` : ''} — the backing is visible inside them`);
+  if (e.frac > 0.01) {
+    console.log('    WARNING: that is a lot of subject to declare opaque on topology alone. The');
+    console.log('             operator never closes anything the backing is visible through, so what');
+    console.log('             is left at this size is either a solve coming apart or a TRANSLUCENT');
+    console.log('             subject — a veil, a lens — which a single backing cannot tell from');
+    console.log('             coverage at all (Smith & Blinn 1996). Look at the picture.');
+  }
+
   if (r.transfer.length) {
     console.log('\n  THE FALLBACK CURVE, fitted from the pixels where the equation does speak');
     console.log('    crude    ' + r.transfer.map((a) => a.crude.toFixed(2).padStart(6)).join(''));
@@ -465,6 +483,12 @@ interface Synth {
   alpha: Float32Array;
   fg: [number, number, number];
   backing: [number, number, number];
+  /**
+   * Where `gap` was punched: x, y, and the radius within which the plate really IS the
+   * backdrop — the hole's own soft rim taken off, so an assertion about a hole is not
+   * quietly an assertion about the edge of one.
+   */
+  gapAt: [number, number, number] | null;
 }
 
 interface SynthOpts {
@@ -493,6 +517,26 @@ interface SynthOpts {
    * opaque leaves the backing inside the subject where no fringe audit looks.
    */
   crownRamp?: number;
+  /**
+   * AN EAR — a small lobe on the side of the head carrying a bright specular ridge a few
+   * pixels inside its own outline. This is the geometry of the defect, not a caricature of
+   * it: John's ear is where his matte went transparent, and it went transparent there
+   * because the ear is the one part of a face whose whole interior lies within `coreDepth`
+   * of a silhouette, so the settle-to-1 that covers the rest of him never reaches it.
+   *
+   * `r` is the lobe's vertical radius; `ridge` is how far inside the lobe's own outline the
+   * highlight peaks, px; `amt` is how far the highlight travels from the subject's colour
+   * TOWARD the backing, 0 to 1. The pixel is still fully covered — only its colour moved —
+   * so the true alpha under the ridge is exactly 1 and any transparency there is invented.
+   */
+  ear?: { r: number; ridge: number; amt: number };
+  /**
+   * A GENUINE ENCLOSED GAP, radius px: a hole punched clean through the subject, upper
+   * right of the head, that really does show the backdrop. The other half of the same
+   * assertion — a subject is allowed to have one of these, and closing it would be the bug
+   * that a topological repair invites.
+   */
+  gap?: number;
 }
 
 function synth(o: SynthOpts): Synth {
@@ -513,6 +557,14 @@ function synth(o: SynthOpts): Synth {
   const cy = h * 0.62;
   const rx = w * 0.26 * scale;
   const ry = h * 0.34 * scale;
+  // The ear hangs off the left of the head, a little above its centre; the gap is punched
+  // through the upper right, well clear of it, so one frame can carry both.
+  const ear = o.ear;
+  const earAspect = 0.62;
+  const earX = cx - rx + (ear?.r ?? 0) * earAspect * 0.6;
+  const earY = cy - ry * 0.3;
+  const gapX = cx + rx * 0.35;
+  const gapY = cy - ry * 0.35;
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
@@ -521,24 +573,88 @@ function synth(o: SynthOpts): Synth {
       // sharp edge and a soft one at once. The ramp is centred on the silhouette, so it
       // reaches half its width outside the ellipse and half inside.
       let a = 0;
+      let spec = 0;
       if (subject) {
         const d = Math.hypot((x - cx) / rx, (y - cy) / ry);
         const px = (1 - d) * Math.min(rx, ry);
         const u = Math.min(1, Math.max(0, ((cy - y) / ry - 0.35) / 0.3));
         const rw = ramp + (crownRamp - ramp) * (u * u * (3 - 2 * u));
         a = Math.min(1, Math.max(0, (px + rw / 2) / rw));
+        if (ear) {
+          // The lobe, and the specular ridge on it. `epx` is the depth inside the ear's own
+          // outline, so the highlight follows the rim the way a real one does rather than
+          // sitting as a blob in the middle: that is what puts it where the settle-to-1
+          // cannot reach, and what makes the ring around it opaque so the island is
+          // ENCLOSED. The ridge changes the COLOUR only — `a` is untouched by it.
+          const ed = Math.hypot((x - earX) / (ear.r * earAspect), (y - earY) / ear.r);
+          const epx = (1 - ed) * ear.r * earAspect;
+          a = Math.max(a, Math.min(1, Math.max(0, (epx + ramp / 2) / ramp)));
+          const rw2 = ear.ridge * 0.65;
+          spec = epx > -1 ? Math.exp(-((epx - ear.ridge) * (epx - ear.ridge)) / (2 * rw2 * rw2)) : 0;
+        }
+        if (o.gap) {
+          // Punched THROUGH: multiplying the coverage is what a hole is, and it leaves the
+          // backdrop itself in the plate at the middle of it.
+          const gd = Math.hypot(x - gapX, y - gapY) - o.gap;
+          a *= Math.min(1, Math.max(0, (gd + ramp / 2) / ramp));
+        }
       }
       alpha[i] = a;
       for (let c = 0; c < 3; c++) {
         const B = backing[c] + tilt * (x / w - 0.5) + tilt * 0.5 * (y / h - 0.5);
+        const F = fg[c] + spec * (ear?.amt ?? 0) * (backing[c] - fg[c]);
         // Composite in LINEAR light, which is where the mixture is actually linear.
-        const lin = a * srgbToLinear(fg[c]) + (1 - a) * srgbToLinear(B);
+        const lin = a * srgbToLinear(F) + (1 - a) * srgbToLinear(B);
         const v = linearToSrgb(lin) + noise * (rand() - 0.5) * 2;
         rgb[i * 3 + c] = Math.round(Math.min(255, Math.max(0, v)));
       }
     }
   }
-  return { rgb, w, h, alpha, fg, backing };
+  return { rgb, w, h, alpha, fg, backing, gapAt: o.gap ? [gapX, gapY, o.gap - ramp] : null };
+}
+
+/**
+ * THE ENCLOSED SUB-OPAQUE SET, exactly as the defect was reported: take every pixel below
+ * `sub`, flood that set inward from the frame border 4-connected, and whatever the flood
+ * cannot reach is enclosed by opaque subject.
+ *
+ * This is deliberately NOT the keyer's own priority-flood run again. A test that reuses the
+ * implementation it is testing proves that the implementation agrees with itself; this one
+ * asks the question the human asked — "can the ground be seen through him" — in the
+ * simplest form that has an answer, and it would still be red if `fillEnclosedSubOpacity`
+ * were correct about the wrong thing.
+ */
+function enclosedIslands(alpha: Uint8Array, w: number, h: number, sub = 250) {
+  const n = w * h;
+  const stack = new Int32Array(n);
+  const seen = new Uint8Array(n);
+  let sp = 0;
+  const push = (p: number) => {
+    if (alpha[p] < sub && !seen[p]) {
+      seen[p] = 1;
+      stack[sp++] = p;
+    }
+  };
+  for (let x = 0; x < w; x++) {
+    push(x);
+    push((h - 1) * w + x);
+  }
+  for (let y = 0; y < h; y++) {
+    push(y * w);
+    push(y * w + w - 1);
+  }
+  while (sp > 0) {
+    const p = stack[--sp];
+    const x = p % w;
+    const y = (p / w) | 0;
+    if (x > 0) push(p - 1);
+    if (x < w - 1) push(p + 1);
+    if (y > 0) push(p - w);
+    if (y < h - 1) push(p + w);
+  }
+  const px: number[] = [];
+  for (let i = 0; i < n; i++) if (alpha[i] < sub && !seen[i]) px.push(i);
+  return px;
 }
 
 function selfTest(): number {
@@ -766,6 +882,110 @@ function selfTest(): number {
     { minTrue: 0.9, fgTol: 12, alphaTol: 0.01 }
   );
 
+  console.log('\n  ENCLOSED SUB-OPACITY — the ground showing through solid subject, and the one\n' +
+    '  place a repair for it must not reach\n');
+
+  /**
+   * A BACKING CANNOT BE SEEN THROUGH A REGION ENCLOSED BY OPAQUE SUBJECT, and a subject is
+   * still allowed to have a hole in it. Both halves on ONE frame, because the operator's
+   * whole job is to tell them apart and a pair of frames would never make it choose.
+   *
+   * The ear carries a specular ridge whose TRUE coverage is 1 everywhere — only the colour
+   * moved, toward the backing, which is what a highlight on skin is. Every pixel of
+   * transparency the keyer finds under it is therefore invented, and it is enclosed by
+   * opaque ear, so nothing could have been seen through it. Measured on John's delivered
+   * matte before this was fixed: 568 such islands, 3,183 px, the largest 685 px at 58%
+   * opacity inside his right ear, which is the transparency he reported seeing.
+   *
+   * The gap is punched clean through the head and the plate at the middle of it IS the
+   * backdrop. Filling that would be the bug a topological repair invites, and it is the
+   * assertion that stops this becoming one.
+   *
+   * The frame is 960 wide rather than 480 because the defect lives at a real scale: the
+   * settle-to-1 reaches `coreDepth` px in (8.5 here, 16 on John's plate), the ear's
+   * interior has to be shallower than that for the highlight to survive to the output, and
+   * at 480 the whole ear is four pixels of skin. This is the one case in this file that
+   * cannot be shrunk without becoming a different case.
+   */
+  {
+    const core = (DEFAULTS.coreDepth * 960) / DEFAULTS.refWidth;
+    const s = synth({
+      w: 960,
+      h: 720,
+      ear: { r: 48, ridge: core * 0.55, amt: 0.95 },
+      gap: 14
+    });
+    let r: KeyResult | undefined;
+    try {
+      r = key(s.rgb, s.w, s.h);
+    } catch (err) {
+      ok('enclosed sub-opacity is closed', false, `refused a frame it should have keyed: ${(err as Error).message}`);
+      ok('a real gap is left open', false, 'not reached');
+      r = undefined;
+    }
+    if (r) {
+      // ---- the ridge: enclosed, truly opaque, and it must not let the ground through ----
+      // Counted ONLY where the true coverage is 1. The gap below is an enclosed sub-opaque
+      // island too — that is the whole point of it — so an assertion that counted every
+      // enclosed pixel would be asking for the gap to be closed and the ridge to be closed
+      // in the same breath. What is wrong is transparency where the subject is SOLID.
+      const px = enclosedIslands(r.alpha, s.w, s.h);
+      let leak = 0;
+      let worst = 0;
+      let trulyOpaque = 0;
+      for (const i of px) {
+        if (s.alpha[i] < 0.999) continue;
+        trulyOpaque++;
+        const t = 1 - r.alpha[i] / 255;
+        leak += t;
+        if (t > worst) worst = t;
+      }
+      // `worst` is a bound the METHOD admits, not a tolerance fitted to a run. The fill takes
+      // each island to the spill level of the ring around it, and on a ring the solve calls
+      // opaque that is 1 to within the delivered byte (1/255 = 0.4%) and the solve's own
+      // noise. 5% is ten times that, and it is also the floor of what an eye can find: at 95%
+      // opacity a dark ground contributes a twentieth of the pixel.
+      //
+      // `r.enclosed.px > 0` is the anti-vacuity clause, in the spirit of the soft-edge cases
+      // above: an empty enclosed set is only good news if the frame HAD one to close.
+      const fired = r.enclosed.px > 0;
+      ok(
+        'enclosed sub-opacity is closed',
+        fired && worst < 0.05 && leak < 10,
+        `${trulyOpaque} px of ${px.length} still enclosed and sub-opaque are really at full coverage; ` +
+          `worst leak ${(100 * worst).toFixed(1)}% of the ground (limit 5.0%), ${leak.toFixed(1)} px² of ground ` +
+          `total (limit 10.0); the keyer closed ${r.enclosed.components} islands / ${r.enclosed.px} px, ` +
+          `largest ${r.enclosed.largestPx} px at (${r.enclosed.largestAt[0]}, ${r.enclosed.largestAt[1]}), ` +
+          `deepest raise ${r.enclosed.deepestRaise} levels from a darkest ${r.enclosed.darkest.toFixed(3)}`
+      );
+
+      // ---- the gap: it really does show the backdrop, and it must still ----
+      let gapN = 0;
+      let gapSum = 0;
+      let gapWorst = 0;
+      const [gx, gy, gr] = s.gapAt!;
+      for (let i = 0; i < s.w * s.h; i++) {
+        if (s.alpha[i] > 0) continue; // the gap's core, where the plate IS the backdrop
+        // The empty background outside him is transparent too; only the hole is the hole.
+        if (Math.hypot((i % s.w) - gx, ((i / s.w) | 0) - gy) > gr) continue;
+        gapN++;
+        gapSum += r.alpha[i] / 255;
+        if (r.alpha[i] / 255 > gapWorst) gapWorst = r.alpha[i] / 255;
+      }
+      const gapMean = gapN ? gapSum / gapN : 1;
+      // 6/255 is the keyer's own support floor — `figure && alpha < 6/255` is lifted to it,
+      // and the hole is inside the figure because `largestComponentFilled` filled it. So the
+      // gap CANNOT read zero and 0.05 is that floor with room, not a slack.
+      ok(
+        'a real gap is left open',
+        gapN > 100 && gapMean < 0.05 && gapWorst < 0.1 && r.enclosed.gapComponents >= 1,
+        `${gapN} px of hole show the backdrop; the keyer left them at ${gapMean.toFixed(4)} mean / ` +
+          `${gapWorst.toFixed(3)} worst coverage (limits 0.05 / 0.10), and named ${r.enclosed.gapComponents} ` +
+          `component(s) / ${r.enclosed.gapPx} px as gaps rather than closing them`
+      );
+    }
+  }
+
   console.log('\n  REFUSES — the path that matters, because a bad matte does not announce itself\n');
   refuses('a noisy backing', synth({ noise: 40 }), 'too uneven');
   refuses('a backing gradient just over tolerance', synth({ backing: [206, 202, 196], tilt: 24 }), 'varies too much');
@@ -976,6 +1196,18 @@ const audit = {
       p99: Number(result.softBand.p99Px.toFixed(2)),
       max: Number(result.softBand.maxPx.toFixed(2)),
       measurableTo: result.softBand.capPx
+    },
+    enclosedSubOpacity: {
+      closedComponents: result.enclosed.components,
+      closedPx: result.enclosed.px,
+      closedFraction: Number(result.enclosed.frac.toFixed(6)),
+      largestPx: result.enclosed.largestPx,
+      largestAt: result.enclosed.largestAt,
+      darkestBefore: Number(result.enclosed.darkest.toFixed(4)),
+      deepestRaiseLevels: result.enclosed.deepestRaise,
+      gapComponents: result.enclosed.gapComponents,
+      gapPx: result.enclosed.gapPx,
+      largestGapPx: result.enclosed.largestGapPx
     },
     fallbackCurve: result.transfer.map((t) => ({
       crude: Number(t.crude.toFixed(4)),
