@@ -10,13 +10,26 @@
  * only dev ever sees.
  *
  * `import.meta.env.DEV` is a COMPILE-TIME constant: Vite substitutes the
- * literal `false` into a build, and the dead branch plus the dynamic import
- * inside it are then removed by the bundler. A top-level
- * `import mock from '../../content/mock/posts.json'` would NOT be removed,
- * because the binding is referenced further down the file; only a dynamic
- * import inside a branch that provably cannot run is dropped. That is the
- * difference between "the mock content is skipped at runtime" and "the mock
- * content is not in the artefact", and it is the whole point.
+ * literal `false` into a build, so `dev ? posts : null` folds to `null`, the
+ * binding goes unreferenced, and the JSON — which has no side effects — is
+ * tree-shaken out. That is the difference between "the mock content is skipped
+ * at runtime" and "the mock content is not in the artefact", and it is the
+ * whole point.
+ *
+ * THESE USED TO BE `await import(...)`, and that was a bug for eight months.
+ * The comment here claimed a static import "would NOT be removed, because the
+ * binding is referenced further down the file". That is wrong: the reference
+ * is inside a ternary whose condition folds to `false`, so the branch and the
+ * binding both go. It is checked rather than argued — see check-mock below.
+ *
+ * The cost of being wrong was three top-level awaits, which made this module
+ * async, which made `$lib/content` async, which made EVERY ROUTE NODE async,
+ * in dev only. SvelteKit's client router reads `node.component` off that
+ * namespace during a navigation, and WebKit hands it over before the async
+ * graph has settled: "Cannot access 'component' before initialization", on
+ * every client-side navigation, in Safari, for months. Chromium waits, so
+ * nobody saw it. Direct page loads were fine, which is what made it look like
+ * a routing problem rather than a module-shape one.
  *
  * Intent is not proof. Every string in these files carries a sentinel, and
  * `scripts/check-mock.ts` greps the built output for it after every build.
@@ -29,11 +42,14 @@
  * module is compiled, not when the branch runs: eager, it emits a static
  * import per file, and lazy, it emits a dynamic import per file that becomes
  * a chunk of its own. Either way the mock copy is in the artefact and
- * check-mock.ts fails, which is the check doing its job. So the stand-ins
- * keep the `{ posts: [...] }` envelope and stay behind the one thing that can
- * be eliminated: a single dynamic import inside a dead branch.
+ * check-mock.ts fails, which is the check doing its job. So the stand-ins keep
+ * the `{ posts: [...] }` envelope: one file, one static import, one dead
+ * ternary the bundler can fold.
  */
 import type { Post, ServiceDetail, Testimonials } from './index';
+import posts from '../../content/mock/posts.json';
+import servicesDetail from '../../content/mock/services-detail.json';
+import testimonials from '../../content/mock/testimonials.json';
 
 /** The dev-only envelope. Deliberately NOT the shape of `src/content/posts/`;
  *  see the note above. */
@@ -46,15 +62,12 @@ type MockServiceDetail = Record<string, ServiceDetail>;
 
 const dev = import.meta.env.DEV;
 
-export const mockPosts: MockPosts | null = dev
-  ? ((await import('../../content/mock/posts.json')).default as unknown as MockPosts)
-  : null;
+export const mockPosts: MockPosts | null = dev ? (posts as unknown as MockPosts) : null;
 
 export const mockServiceDetail: MockServiceDetail | null = dev
-  ? ((await import('../../content/mock/services-detail.json'))
-      .default as unknown as MockServiceDetail)
+  ? (servicesDetail as unknown as MockServiceDetail)
   : null;
 
 export const mockTestimonials: Testimonials | null = dev
-  ? ((await import('../../content/mock/testimonials.json')).default as unknown as Testimonials)
+  ? (testimonials as unknown as Testimonials)
   : null;
