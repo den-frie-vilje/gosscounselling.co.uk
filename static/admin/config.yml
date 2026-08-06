@@ -85,7 +85,7 @@ collections:
       field is words rather than layout.
     files:
       - name: hero
-        label: Top of the page
+        label: Hero
         file: src/content/home/hero.json
         hint: 'The dark band at the very top, and the first thing anybody reads.'
         fields:
@@ -118,7 +118,12 @@ collections:
               widget: string,
               hint: 'Write {phone} where the number should appear and it is filled in from Contact details. Typing the number out instead is how the button ends up reading one number and dialling another.'
             }
-          - { name: ctaSecondary, label: Second button, widget: string }
+          - {
+              name: ctaSecondary,
+              label: Second button — it opens an email,
+              widget: string,
+              hint: 'This button ALWAYS opens a new email to you, whatever it says on it, and it carries an envelope beside the words. So the words have to be about writing to you: "Email me", "Send me a message", "Drop me a line". If it said something else — "come by on Wednesdays" — the button would still open an email, and someone expecting an address would get a blank message instead.'
+            }
           # The upload that drives the whole portrait pipeline. A photograph
           # dropped here is keyed, cut out and composited by the build; see
           # scripts/keyer.ts, which measures the backdrop rather than
