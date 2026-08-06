@@ -5,7 +5,8 @@
  * is the command that reads a file, calls `key()`, audits the numbers it returns and
  * decides whether to write anything.
  *
- * WHAT THIS IS FOR. `scripts/build-cutouts.py` produced today's two assets from a matte
+ * WHAT THIS IS FOR. A Python hand pass (`scripts/build-cutouts.py`, since deleted) produced
+ * the first assets from a matte
  * that a person had already pulled by hand: it re-solves, de-lights and verifies that
  * matte, but it cannot make one. So the moment John replaces his photograph through the
  * CMS the pipeline stops, because its first input no longer exists. This module supplies
@@ -15,7 +16,7 @@
  * or scaled off its width here.
  *
  * It is the same physics, in the same order, and the papers are the ones cited in
- * build-cutouts.py's own docstring:
+ * that hand pass's own docstring:
  *
  *   1. BACKING. Robust plane fit to a border band (median/MAD outlier rejection, then
  *      three IRLS rounds). A plane rather than a constant because a real backdrop falls
@@ -100,7 +101,7 @@
  *   8. GAMUT BOUND. Spill only ever pushes the observed colour TOWARD the backing, so F
  *      may not sit further along (B − F_prior) than F_prior does by more than
  *      `gamutSlack`. The component perpendicular to that direction is untouched, so
- *      detail survives. This is the general form of build-cutouts.py's one-sided
+ *      detail survives. This is the general form of the hand pass's one-sided
  *      luminance cap: general because a backing may be DARKER than the subject, where
  *      "spill can only brighten" is false but "spill can only pull toward B" still holds.
  *
@@ -117,7 +118,7 @@
  * inverse light wrap confined to an edge band, which is why it had to emit a light/dark
  * PAIR: an edge treatment baked for one ground is wrong on the other.
  *
- * build-cutouts.py measured all three of those and none survived. The multi-level
+ * The hand pass measured all three of those and none survived. The multi-level
  * estimator left +16 to +42 levels of white backing in F, because its smoothness prior is
  * satisfied by a partly-white foreground. The de-lighting ran the fringe 24-41 levels
  * darker than John's own colour at EVERY coverage, which no shading explains. And a
@@ -128,7 +129,7 @@
  * ground it will sit on. Hence ONE asset, on every ground, by arithmetic: the departure
  * from a correct composite is (F − F_john)·a, which has no ground term in it.
  *
- * WHAT IT DELIBERATELY DOES NOT DO. build-cutouts.py's dichromatic subtraction on the
+ * WHAT IT DELIBERATELY DOES NOT DO. The hand pass's dichromatic subtraction on the
  * navy tee is not here, and neither is anything else that was ever a look rather than a
  * solve. Nor is the crown reconstruction of DECISIONS §11: a photograph that clips the
  * top of the head needs a person, and the only responsible thing an automatic pass can do
@@ -484,7 +485,7 @@ function edt1d(f: Float64Array, d: Float64Array, v: Int32Array, z: Float64Array,
 
 /**
  * Exact Euclidean distance from every set pixel of `mask` to the nearest unset one —
- * scipy's `distance_transform_edt(mask)`, which is what build-cutouts.py calls `D`.
+ * scipy's `distance_transform_edt(mask)`, which is what the hand pass called `D`.
  */
 export function distanceTransform(mask: Uint8Array, w: number, h: number): Float32Array {
   const INF = 1e20;
@@ -1022,7 +1023,7 @@ export function measureSoftBand(
 /**
  * Diffuse `vals` outward from `known` across `mask` by normalised convolution — the
  * geodesic extension of Rhemann et al. (BMVC 2008, §2.1), ported from
- * build-cutouts.py's `_geodesic_extend`.
+ * the hand pass's `_geodesic_extend`.
  *
  * Geodesic, not Euclidean: the value travels THROUGH the mask, so a pixel in the
  * ear/skull crevice inherits from its own surface and not from the bright cheek on the
@@ -1077,7 +1078,7 @@ export function geodesicExtend(
   const s1 = new Float32Array(n);
   const acc = new Float32Array(n);
   for (const [sigma, iters] of schedule) {
-    // The mask never changes, so its blur is the same every iteration. build-cutouts.py
+    // The mask never changes, so its blur is the same every iteration. The hand pass
     // recomputes it inside the loop; hoisting is exact and saves a quarter of the work.
     const wgt = Float32Array.from(mk);
     gauss(wgt, sw, sh, sigma, [s0, s1]);
