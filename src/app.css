@@ -95,6 +95,37 @@
      viewport width. */
   --text-h3: clamp(20px, 2vw, 24px);
 
+  /* Leading for headings, and it is two numbers rather than one because the
+     right answer changes with size. Display type sets long lines and wants
+     them held together; a 20–24px heading that WRAPS — a blog title, a service
+     name, a question in the FAQ — wants the opposite, or the two lines read as
+     one dense block. The headings inherit `--leading-heading`; anything at
+     `--text-h3` and below takes the looser one. */
+  --leading-heading: 1.14;
+  --leading-heading-small: 1.32;
+
+  /* How far the x-height band's centre sits BELOW the centre of a line box,
+     per typeface, in em. This is the second half of the alignment principle
+     below: the first half handles a marker that is a text sibling and can be
+     baseline-aligned, and this one handles a marker that is not — a drawn
+     glyph, an icon, an absolutely positioned shape — which has no baseline to
+     align to and must be placed.
+
+     It is a constant of the FACE, not of the size: from the line box's centre,
+     the band's centre is `(ascent - descent) / 2 - xHeight / 2`, and all three
+     of those scale with the size. Measured on the rendered page at 200, 400
+     and 800px, where the browser's rounding of the line box is a negligible
+     fraction of the quantity and the figure converges:
+
+       Fraunces  0.1252  0.1265  0.1265
+       Inter     0.0921  0.0908  0.0908
+
+     Measured at ordinary sizes it looks like it drifts — 0.109 to 0.124 for
+     Fraunces between 19px and 48px — and that is the line box being rounded to
+     whole pixels, not the face changing its mind. */
+  --band-shift-display: 0.1265em;
+  --band-shift-sans: 0.0908em;
+
   /* Layout rhythm */
   --spacing-section: 96px;
   --container-page: 1120px;
@@ -158,6 +189,25 @@
    with different x-height-to-size ratios, set `--mark-ratio` to the measured
    ratio of their x-heights rather than of their sizes.
 
+   ---- AND FOR A MARK THAT IS NOT TEXT ----
+
+   The rule is the same and the mechanism cannot be: a drawn plus, an icon, a
+   rule, an absolutely positioned shape has no baseline for the browser to
+   align, so its centre has to be computed. `.mark-band` gives that centre,
+   measured from the top of the element whose first line the mark belongs to:
+
+       centre = padding-top  +  half a line box  +  the face's band shift
+
+   Half a line box is `0.5lh`, which is the browser's own line height and so
+   follows the leading without being told. The band shift is the constant in
+   the token block above, because the type does not sit in the middle of its
+   line: ascent and descent are not equal, and the x-height band is lower still.
+
+   Use it by setting `--mark-band-top` to the padding above the first line, and
+   `--band-shift` to whichever face the TITLE is set in — then position the
+   mark's centre on `--mark-band-centre`. The FAQ's plus is the worked example;
+   it sat 9.5px high before this, at a `top` somebody had judged by eye.
+
    Two attempts worth not repeating. Font units resolve against the element
    that USES them, so an offset written on a 15px numeral measures the numeral
    and not the 20px heading. And a calc over `1lh`, `1cap` and `1ex` hoisted
@@ -167,6 +217,12 @@
    centring wearing a costume. It measured 5.47px out. */
 .mark-row {
   align-items: baseline;
+}
+/* The non-text half of the rule. See the note above. */
+.mark-band {
+  --mark-band-centre: calc(
+    var(--mark-band-top, 0px) + 0.5lh + var(--band-shift, var(--band-shift-display))
+  );
 }
 .mark-row > .mark {
   /* Zero when marker and title are the same size. */
@@ -286,7 +342,7 @@ h3,
 h4 {
   font-family: var(--font-display);
   font-weight: 600;
-  line-height: 1.14;
+  line-height: var(--leading-heading);
   letter-spacing: -0.015em;
   text-wrap: balance;
   margin: 0;
@@ -310,6 +366,17 @@ h4 {
 }
 .t-h3 {
   font-size: var(--text-h3);
+  /* The looser of the two. It applies everywhere `.t-h3` does — the services
+     on the home page, the blog titles on the index and in the home feed — and
+     that is the point: this is a decision about type at this size, not about
+     one list.
+
+     `.mark-row` alignment follows it rather than breaking on it. The date and
+     the numeral sit on the title's FIRST baseline, and more leading moves that
+     baseline down within the heading's box; the browser aligns to wherever it
+     now is. Measured after the change to be sure, rather than reasoned about
+     and left. */
+  line-height: var(--leading-heading-small);
 }
 .t-kicker {
   font-family: var(--font-sans);

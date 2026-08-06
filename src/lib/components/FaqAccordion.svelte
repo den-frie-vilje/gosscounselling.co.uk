@@ -33,7 +33,7 @@
   summary {
     cursor: pointer;
     list-style: none;
-    padding: 22px 44px 22px 0;
+    padding: var(--faq-pad, 22px) 44px var(--faq-pad, 22px) 0;
     position: relative;
     font-family: var(--font-display);
     font-size: 19px;
@@ -48,12 +48,30 @@
   }
   /* A plus that becomes a minus: two bars, and the upright is dropped when
      the item opens. Drawn rather than typed so it cannot pick up the font's
-     own idea of where a plus sign sits. */
+     own idea of where a plus sign sits.
+
+     WHERE IT SITS VERTICALLY is the site's alignment rule, not a number that
+     looked right: a marker beside a title, at a different size, is centred on
+     the x-height band of that title's first line (DECISIONS.md §18). It was at
+     a flat `top: 30px`, which put its centre 9.5px above that band — measured,
+     and visible as the plus floating over the question rather than sitting
+     with it.
+
+     `.mark-band` in app.css is the general form of it, and this is the worked
+     example named there: set the padding above the first line, name the face
+     the QUESTION is set in, and the centre comes back. Nothing here knows what
+     the constant is or why, which is the point of it being a rule rather than
+     a calculation copied between components. */
+  summary {
+    --faq-pad: 22px;
+    --mark-band-top: var(--faq-pad);
+    --band-shift: var(--band-shift-display);
+  }
   summary::after {
     content: '';
     position: absolute;
     right: 8px;
-    top: 30px;
+    top: calc(var(--mark-band-centre) - 1px);
     width: 14px;
     height: 2px;
     background: var(--color-teal);
@@ -62,7 +80,7 @@
     content: '';
     position: absolute;
     right: 14px;
-    top: 24px;
+    top: calc(var(--mark-band-centre) - 7px);
     width: 2px;
     height: 14px;
     background: var(--color-teal);

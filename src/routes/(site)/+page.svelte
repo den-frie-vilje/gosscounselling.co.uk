@@ -741,16 +741,31 @@
         animation-timeline: view();
         animation-range: entry 30% entry 55%;
       }
+      /* Held at zero by the action when the page OPENS with a sliver of him
+         showing. It overrides the timeline rather than deferring to it,
+         because a timeline resolves to wherever this scroll position falls and
+         would render him half-faded — the fault this whole arrangement exists
+         to avoid. */
+      .heroCut:global(.is-held) {
+        opacity: 0;
+        animation: none;
+      }
       .heroCut:global(.is-revealed) {
         opacity: 1;
         animation: none;
+        /* From held to opaque is a real fade, once, on the scroll that brings
+           him in. The timeline does this itself in the ordinary case; this is
+           for the case the timeline was taken away from. */
+        transition: opacity 700ms var(--ease-brand);
       }
     }
     @media (prefers-reduced-motion: reduce) {
       .heroCut,
+      .heroCut:global(.is-held),
       .heroCut:global(.is-revealed) {
         opacity: 1;
         animation: none;
+        transition: none;
       }
     }
   }
