@@ -57,6 +57,77 @@ const SHOTS = [
     ready: `[...document.querySelectorAll('*')].some(e => e.textContent.trim() === 'Menu wording')`
   },
   {
+    // An edit in progress, with the way out of it open. `act` runs in the page
+    // after `ready` and before the shutter — it types into a field and opens
+    // that field's own menu, so the picture shows the undo where John will
+    // meet it rather than described from memory.
+    //
+    // It NEVER SAVES. Nothing here clicks Save, and the browser is a throwaway
+    // copy of the profile, so the entry is untouched either way.
+    file: '07-undo.png',
+    path: '/admin/#/collections/home/entries/services',
+    height: 700,
+    ready: `[...document.querySelectorAll('*')].some(e => e.textContent.trim() === 'Menu wording')`,
+    // Find the field by its VALUE, then walk up to the smallest ancestor that
+    // holds both it and its own ⋮ button. Going up a fixed number of levels
+    // from the label was the first attempt and it landed one row early, so the
+    // picture showed "How I can help you" typed into "Small label above the
+    // heading" — a coherent-looking screenshot of nonsense, which is the worst
+    // kind to put in a manual.
+    act: `(() => {
+      const input = [...document.querySelectorAll('input')].find(
+        (i) => i.value === 'How I can help'
+      );
+      if (!input) return false;
+      let row = input.parentElement;
+      while (row && !row.querySelector('button[aria-label="Show Field Options"]')) {
+        row = row.parentElement;
+      }
+      if (!row) return false;
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      setter.call(input, 'How I can help you');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      row.querySelector('button[aria-label="Show Field Options"]').click();
+      return true;
+    })()`
+  },
+  {
+    // The saved history of one entry: who changed it and when.
+    file: '08-history.png',
+    path: '/admin/#/collections/home/entries/services',
+    height: 700,
+    ready: `[...document.querySelectorAll('*')].some(e => e.textContent.trim() === 'Menu wording')`,
+    act: `(() => {
+      const b = document.querySelector('button[aria-label="History"]');
+      if (!b) return false;
+      b.click();
+      return true;
+    })()`
+  },
+  {
+    // The account menu, which carries both "Sign In with Mobile" and
+    // "Sign Out".
+    //
+    // THE QR CODE ITSELF IS DELIBERATELY NOT CAPTURED. It encodes a live
+    // session for whoever scans it; a screenshot of one committed to a public
+    // repository is a published credential. The manual describes that step in
+    // words instead, which costs a picture and no security.
+    file: '09-account-menu.png',
+    path: '/admin/#/collections/home',
+    height: 700,
+    ready: `!!document.querySelector('button[aria-label="Show Account Menu"]')`,
+    act: `(() => {
+      document.querySelector('button[aria-label="Show Account Menu"]').click();
+      return true;
+    })()`
+  },
+  {
+    file: '06-all-assets.png',
+    path: '/admin/#/assets/-/all',
+    height: 820,
+    ready: `[...document.querySelectorAll('*')].some(e => e.textContent.trim() === 'All Assets')`
+  },
+  {
     file: '05-picture-field.png',
     path: '/admin/#/collections/home/entries/hero',
     height: 1000,
@@ -182,6 +253,19 @@ try {
         `${shot.file}: the page never drew what was asked for. Either the editor is signed out ` +
           `(run: docs/manual/capture.sh login) or the \`ready\` test in this file is stale.`
       );
+    }
+
+    // Anything the shot needs done to it — typing, opening a menu — happens
+    // here, once the page has drawn and before the shutter.
+    if (shot.act) {
+      const { result } = await call('Runtime.evaluate', {
+        expression: shot.act,
+        returnByValue: true
+      });
+      if (result?.value !== true) {
+        throw new Error(`${shot.file}: its \`act\` did not report success — the markup it reaches for has probably moved.`);
+      }
+      await sleep(500);
     }
 
     // Let the last of the type settle before the shutter.

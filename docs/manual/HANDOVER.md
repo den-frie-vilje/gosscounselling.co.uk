@@ -52,7 +52,8 @@ footers and named styles come along without being re-specified.
 `manual.md` was written to survive this conversion without editing:
 
 - **One H1**, the document title.
-- **An H2 per chapter**, numbered 1–8, plus an unnumbered opener and closer.
+- **An H2 per chapter**, numbered 1–10, plus an unnumbered opener and closer.
+- **H3s inside chapters 5 and 6 only**, where a chapter has genuine subsections. Nowhere else.
 - **No H3s and no nested lists** — one level only, so it maps onto a template's named styles
   without inventing any.
 - **Short paragraphs**, no long runs.
@@ -78,15 +79,17 @@ Chrome keeps its session in a profile directory, so `capture.sh login` opens a r
 in once and every headless run afterwards is signed in. Sveltia routes by URL hash, so each screen
 has an address and nothing needs clicking. The profile lives outside the repo; it holds a token.
 
-| # | What | Where |
-| --- | --- | --- |
-| 02 | The collection list — Home / Services / General / Blog in the sidebar, Home's eight sections listed | `/admin/` after signing in |
-| 03 | An entry open for editing — "Home > How I can help" is a good one: it shows a field, its hint, and the Save button top right | click any Home entry |
-| 04 | The Save button, close up, after a change has made it active | same screen |
-| 05 | A picture field with its chooser | Home → Hero, "Your photograph" |
+All nine are taken and placed. `capture.sh public` does the sign-in screen; `capture.sh login`
+signs a throwaway Chrome profile in once, by hand; `capture-editor.mjs` does the rest by driving
+Chrome over the DevTools protocol, including the two that need something DONE to the page first —
+the undo shot types into a field and opens its menu, the history shot opens the history panel.
 
-They come out at **1100px wide, 2× scale**, matching 01. Chapter 2 is where 01 already sits;
-02–03 belong in chapter 3, 04 in chapter 4, 05 in chapter 5.
+**The sign-in QR code is deliberately not among them.** It encodes a live session for whoever
+scans it, so a screenshot of one committed here would be a published credential. Chapter 9
+describes that step in words. Do not add a picture of it.
+
+They are all **1100px wide at 2× scale**, and each is already placed in the markdown at the point
+it belongs.
 
 The `editor` mode refuses a signed-OUT capture rather than writing it, because that failure looks
 like a success: a real png, of a sign-in screen, in the slot where the collection list should be.
