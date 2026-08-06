@@ -16,6 +16,7 @@ import contactData from '../../content/contact.json';
 import homeData from '../../content/home.json';
 import testimonialsData from '../../content/testimonials.json';
 import socialData from '../../content/social.json';
+import { SOCIAL_BY_ID } from '$lib/generated/social-icons';
 import postsData from '../../content/posts.json';
 import { mockPosts, mockServiceDetail, mockTestimonials } from './mock';
 import { mailtoHref, telHref, whatsappHref } from '$lib/phone';
@@ -259,9 +260,11 @@ export interface Posts {
  * The evidence for each is in docs/social-profiles.md.
  */
 export interface SocialProfile {
-  /** Lowercase id, matched against SocialIcon's glyph table. */
+  /** Lowercase id, from `SOCIAL_PLATFORMS` in $lib/generated/social-icons. */
   platform: string;
-  label: string;
+  /** What a screen reader says in place of the logo. Optional in the editor:
+   *  empty means the platform's own name, which is nearly always right. */
+  label?: string;
   url: string;
 }
 
@@ -269,7 +272,21 @@ export interface Social {
   profiles: SocialProfile[];
 }
 
-export const social: Social = socialData;
+/**
+ * His profiles, with the name filled in where he left it empty.
+ *
+ * Asking a counsellor to type "Facebook" beside a dropdown that already says
+ * Facebook is asking him to do the computer's job, and the field exists at all
+ * only for the case where the platform's name is not the right thing to hear:
+ * two accounts on one platform, say.
+ */
+export const social: Social = {
+  ...socialData,
+  profiles: (socialData as Social).profiles.map((p) => ({
+    ...p,
+    label: p.label?.trim() || SOCIAL_BY_ID[p.platform]?.title || p.platform
+  }))
+};
 
 /**
  * The contact block, with the three links worked out rather than typed.
