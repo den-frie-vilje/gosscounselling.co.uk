@@ -17,7 +17,7 @@
 // preserved by construction. Pictures are fitted to the body measure
 // (399.6 pt) — the picture scales, never the margin.
 
-import { PagesDocument } from "cupertino-files";
+import { PagesDocument, findDrawableCore, tsdSchema, RawMessage } from "cupertino-files";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -234,12 +234,7 @@ const blocks = parse(readFileSync(SOURCE, "utf-8"));
 const page = doc.pageSetup();
 const bodyIndent = doc.bodyOrUndefined.sheet().style("Normal")?.resolved?.()?.paragraph?.leftIndent ?? 0;
 const BODY_LEFT = page.leftMargin + bodyIndent;   // page coordinate of the text's left edge
-// Pictures span the full measure between the page margins, which is what the
-// template's own body picture does (456.3 pt). An anchored picture is drawn
-// from the page margin whatever geometry it is given, so a narrower one
-// leaves a gap the following text wraps into; at the full measure nothing
-// fits beside it and each picture sits square in the flow.
-const BODY_MEASURE = page.pageWidth - page.leftMargin - page.rightMargin;
+const BODY_MEASURE = page.pageWidth - BODY_LEFT - page.rightMargin; // the text column
 
 const titleBlock = blocks.find((b) => b.kind === "title");
 const subtitleBlock = blocks.find((b) => b.kind === "subtitle");
@@ -296,8 +291,10 @@ doc.createParagraphStyle({
 // page. `SITE_PICTURE` is optional — run `capture.sh site` to make it.
 const frontPictures = [];
 if (existsSync(SITE_PICTURE)) {
+  doc.paragraph(doc.appendParagraph("", "Normal")).setListStyle("None");
+  doc.paragraph(doc.appendParagraph("", "Normal")).setListStyle("None");
   const index = doc.appendParagraph("", "Normal");
-  doc.paragraph(index).setListStyle("None").format({ spaceBefore: 28 });
+  doc.paragraph(index).setListStyle("None");
   frontPictures.push({ index, src: "images/00-homepage.png" });
 }
 
@@ -319,8 +316,11 @@ const firstChapter = rest.find((b) => b.kind === "h2");
 
 for (const block of rest) {
   if (block.kind === "image") {
+    // An empty line above and below, which is all the spacing a picture needs.
+    doc.paragraph(doc.appendParagraph("", "Normal")).setListStyle("None");
     const index = doc.appendParagraph("", "Normal");
     doc.paragraph(index).setListStyle("None");
+    doc.paragraph(doc.appendParagraph("", "Normal")).setListStyle("None");
     pictures.push({ index, src: block.src, alt: block.alt });
     continue;
   }
@@ -344,6 +344,33 @@ for (const { index, s, e, format } of formatting) {
   doc.range(start + s, start + e).format(format);
 }
 
+// A picture arrives with `exterior_text_wrap` set to 4 — a floating wrap — so
+// Pages draws it from the page margin rather than the text column, and lets
+// the next paragraph run up its side. Apple writes 0 there for a picture that
+// sits in the text. That one field is the whole difference; geometry and its
+// flags are recomputed by layout and do not move it.
+const { Drawable } = tsdSchema;
+function setInline(imageId) {
+  const object = doc.store.resolve(imageId);
+  const core = object && findDrawableCore(object.message);
+  if (!core) return false;
+  // A freshly inserted picture carries no wrap archive at all, and Pages
+  // supplies its own default — a floating wrap — the first time it saves the
+  // document. Writing the archive here, with the shape Apple writes and 0
+  // where it puts 4, is what keeps the picture in the text.
+  let wrap = core.getMessage(Drawable.EXTERIOR_TEXT_WRAP);
+  if (!wrap) wrap = RawMessage.create();
+  wrap.setVarint(1, 0); // 0 sits in the text; 4 floats beside it
+  wrap.setVarint(2, 2);
+  wrap.setVarint(3, 1);
+  wrap.setFloat(4, 0);
+  wrap.setFloat(5, 0.5);
+  wrap.setVarint(6, 0);
+  core.setMessage(Drawable.EXTERIOR_TEXT_WRAP, wrap);
+  object.message.markDirty();
+  return true;
+}
+
 // 5. Pictures last, back to front: each insert shifts only what follows it.
 for (const picture of [...pictures].reverse()) {
   const bytes = new Uint8Array(readFileSync(join(HERE, picture.src)));
@@ -351,12 +378,7 @@ for (const picture of [...pictures].reverse()) {
     fileName: picture.src.split("/").pop(),
     maxWidth: BODY_MEASURE,
   });
-  // An inserted picture is left at x = 0, which is outside the text column:
-  // it draws from the page margin and the following text wraps up its side.
-  // The template's own logo shows the convention — x is the page coordinate of
-  // the picture's left edge, so it belongs at the body column's left edge.
-  const image = doc.drawables().find((d) => d.id === imageId);
-  image?.setGeometry({ x: BODY_LEFT });
+  setInline(imageId);
 }
 
 // 6. The appends leave a trailing newline, and Pages draws the empty
@@ -423,6 +445,16 @@ const titleShaped = titleText.includes(LINE_BREAK) && titleText.endsWith(TITLE_S
 
 const trailingBlank = text.endsWith("\n");
 
+// Every picture must sit in the text, not float beside it.
+const floating = check
+  .drawables()
+  .filter((x) => String(x.id) !== LOGO_ID)
+  .filter((x) => {
+    const core = findDrawableCore(check.store.resolve(x.id)?.message);
+    const wrap = core?.getMessage(Drawable.EXTERIOR_TEXT_WRAP);
+    return wrap ? Number(wrap.getVarint(1) ?? 0) !== 0 : true; // missing = Pages will float it
+  }).length;
+
 // A picture wider than the column overflows to the left of the text instead of
 // lining up with it, so measure what was actually written.
 const anchored = new Set(check.bodyOrUndefined.attachments().map((a) => String(a.drawableId)));
@@ -452,6 +484,7 @@ console.log("  body column          :", BODY_MEASURE.toFixed(1), "pt | widest pi
 // call to delete a drawable that no list owns. It is invisible and costs a few
 // kilobytes, so it is reported rather than fatal.
 console.log("  detached leftovers   :", strandedPictures, "(invisible)");
+console.log("  pictures floating    :", floating, "(must be 0 — they belong in the text)");
 console.log("  contents entries     :", expectedHeadings, "| front picture:", frontPictures.length ? "yes" : "MISSING — run capture.sh site");
 
 const ok =
@@ -464,6 +497,7 @@ const ok =
   !trailingBlank &&
   !footerStale &&
   !picturesOverflow &&
+  floating === 0 &&
   titleShaped &&
   counts.headings === expectedHeadings &&
   counts.subheadings === expectedSubheadings;
