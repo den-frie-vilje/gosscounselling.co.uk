@@ -183,6 +183,12 @@ and body inside `_app/immutable/chunks/*.js` on every page, because a bundler ca
 array entries that only the data says are unused. The repository is public, so a draft that
 reached the build would have been published twice over.
 
+Each post is now its own file in `src/content/posts/`, read with `import.meta.glob`, which
+makes that stripping load-bearing rather than a belt over braces: the glob imports every file
+in the folder by name, so a draft is a module in the graph whether anything reads it or not.
+The plugin replaces its contents with `{ "status": "draft" }` before Vite's JSON plugin runs,
+so the module that survives carries the fact and none of the words.
+
 A post PUBLISHED with a date in the future is not private, it is early. It is in the build
 deliberately, and the listings hide it until its moment passes, in the browser. That is a
 decision taken with the cost known: its text is in the HTML from the day it is written. What

@@ -29,7 +29,7 @@
  * and injected faults for each of the content rules, because a checker that
  * has never been seen to fail is not a checker.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { parsePhone, parseEmail, telHref, whatsappHref, mailtoHref } from '../src/lib/phone.ts';
@@ -95,13 +95,31 @@ for (const bad of ['', 'info at example.com', 'info@example', 'in fo@example.com
 // JSON, so the rules can be stated once and self-tested against a made-up
 // object rather than against whatever happens to be in the repo today.
 
+/**
+ * The posts, one file each.
+ *
+ * Read from the folder rather than written down here: a post is a file John
+ * makes in the editor, so a list somebody has to remember to extend is a list
+ * that will be one post short exactly when it matters. An absent folder is
+ * the state the site ships in and is not an error; the fail-closed check is
+ * further down, on the copy actually read.
+ */
+function postFiles(): string[] {
+  const dir = 'src/content/posts';
+  if (!existsSync(resolve(root, dir))) return [];
+  return readdirSync(resolve(root, dir))
+    .filter((name) => name.endsWith('.json'))
+    .sort()
+    .map((name) => `${dir}/${name}`);
+}
+
 const CONTENT = [
   'src/content/contact.json',
   'src/content/home.json',
   'src/content/site.json',
-  'src/content/posts.json',
   'src/content/social.json',
-  'src/content/testimonials.json'
+  'src/content/testimonials.json',
+  ...postFiles()
 ];
 
 /** The number and the address are John's to write HERE and nowhere else.

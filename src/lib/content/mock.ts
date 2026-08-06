@@ -22,9 +22,21 @@
  * `scripts/check-mock.ts` greps the built output for it after every build.
  * A mechanism that is supposed to remove something is worth exactly as much
  * as the check that it did.
+ *
+ * WHY THE MOCK POSTS ARE STILL ONE FILE. The real posts moved to one file per
+ * post in `src/content/posts/`, read with `import.meta.glob` — and a glob is
+ * exactly what cannot be used here. `import.meta.glob` is resolved when the
+ * module is compiled, not when the branch runs: eager, it emits a static
+ * import per file, and lazy, it emits a dynamic import per file that becomes
+ * a chunk of its own. Either way the mock copy is in the artefact and
+ * check-mock.ts fails, which is the check doing its job. So the stand-ins
+ * keep the `{ posts: [...] }` envelope and stay behind the one thing that can
+ * be eliminated: a single dynamic import inside a dead branch.
  */
 import type { Post, ServiceDetail, Testimonials } from './index';
 
+/** The dev-only envelope. Deliberately NOT the shape of `src/content/posts/`;
+ *  see the note above. */
 interface MockPosts {
   posts: Post[];
 }

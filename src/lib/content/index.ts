@@ -17,7 +17,6 @@ import homeData from '../../content/home.json';
 import testimonialsData from '../../content/testimonials.json';
 import socialData from '../../content/social.json';
 import { SOCIAL_BY_ID } from '$lib/generated/social-icons';
-import postsData from '../../content/posts.json';
 import { mockPosts, mockServiceDetail, mockTestimonials } from './mock';
 import { mailtoHref, telHref, whatsappHref } from '$lib/phone';
 import { resolveDeep, resolveTokens, type TokenValues } from '$lib/copy-tokens';
@@ -230,10 +229,18 @@ export interface Testimonials {
   items: Testimonial[];
 }
 
+/**
+ * One post, and one file: `src/content/posts/<slug>.json`.
+ *
+ * A folder collection in the CMS, so each post is an entry of its own in the
+ * sidebar rather than a card inside a single entry, and saving one post
+ * rewrites one file.
+ */
 export interface Post {
   /** Identifier, not copy: the post's address is built from it, so it is not
    *  an editable field in the CMS. Optional because a post written in the
-   *  editor arrives without one, and `postSlug()` makes it from the title. */
+   *  editor arrives without one, and `postSlug()` makes it from the title —
+   *  which is also what the filename is made from, so the two agree. */
   slug?: string;
   title: string;
   /** ISO 8601. */
@@ -246,10 +253,6 @@ export interface Post {
   body: string;
   /** Optional. Falls back to the title and the excerpt. */
   seo?: { title: string; description: string };
-}
-
-export interface Posts {
-  posts: Post[];
 }
 
 /**
@@ -469,23 +472,64 @@ export function postPath(post: Post): string {
  */
 export const BUILD_TIME: number = Date.parse(PUBLIC_BUILD_TIME) || Date.now();
 
+/**
+ * Every post file in `src/content/posts/`, imported at build time.
+ *
+ * A glob rather than one import per post, because the set of files is John's
+ * to decide: he presses "New post" and there is another one. `eager`, because
+ * these are baked into the page like the rest of the copy — a lazy glob would
+ * make each post a chunk the browser fetches, which is the opposite of what a
+ * static site is for.
+ *
+ * A DRAFT never arrives here at all, and the reason is worth knowing before
+ * anyone edits this line. A glob is expanded when this module is compiled,
+ * into one import per file plus a record keyed by their PATHS — and those
+ * path strings are in the chunk whether or not anything reads them, because
+ * `Object.values` needs the object they are keys of. Emptying a draft's
+ * contents is therefore not enough: the filename alone is the title in
+ * hyphens, published on every page. So `hideDraftsFromTheGlob` in
+ * vite.config.ts narrows this pattern before Vite expands it, and it is
+ * matched by its exact text — if you change the string below, change it
+ * there, or the build will stop and tell you to.
+ *
+ * The filter beneath is then belt as well as braces: a draft that somehow
+ * reached this point would still not reach a page.
+ */
+const postFiles = import.meta.glob<Partial<Post>>('/src/content/posts/*.json', {
+  eager: true,
+  import: 'default'
+});
+
 /* Through the same resolver as the rest of the copy, so a post can say "call
    me on {phone}" and mean whatever the number is on the day it is read. */
 const allPosts: Post[] = resolveDeep(
-  [...(postsData as Posts).posts, ...(mockPosts ? mockPosts.posts : [])],
+  [
+    ...Object.values(postFiles).filter((post): post is Post => post.status === 'published'),
+    ...(mockPosts ? mockPosts.posts : [])
+  ],
   COPY
 );
 
 /**
  * Everything in the build, newest first. Drafts are gone by here.
  *
- * A post whose `publishAt` will not parse sorts last and is never live:
- * `Date.parse` returns NaN and every comparison against it is false, so a
- * malformed date hides a post rather than publishing it early.
+ * The order is settled here and nowhere else. A glob hands its files back in
+ * whatever order the filesystem gave them, which is not guaranteed and is not
+ * the same on two machines, so a list that kept it would make the built HTML
+ * differ between builds of identical content. Newest first, and by slug where
+ * two posts share a moment, so the same files always produce the same page.
+ *
+ * A post whose `publishAt` will not parse sorts by slug alone and is never
+ * live: `Date.parse` returns NaN, `NaN || …` falls through to the slug, and
+ * every comparison against NaN in `livePosts` is false, so a malformed date
+ * hides a post rather than publishing it early.
  */
 export const builtPosts: Post[] = allPosts
   .filter((post) => post.status === 'published')
-  .sort((a, b) => Date.parse(b.publishAt) - Date.parse(a.publishAt));
+  .sort(
+    (a, b) =>
+      Date.parse(b.publishAt) - Date.parse(a.publishAt) || postSlug(a).localeCompare(postSlug(b))
+  );
 
 /** The posts that are live at a given moment. */
 export function livePosts(at: number): Post[] {

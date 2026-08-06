@@ -654,97 +654,102 @@ collections:
                   hint: 'Your public listing on their register. Leave empty and the name shows unlinked.'
                 }
 
-  # One file rather than one file per post: the list is short, it is edited in
-  # one place, and scripts/check-cms.ts diffs a `files:` entry against its JSON
-  # in both directions. A `folder:` collection is a different check and this
-  # site has none.
+  # A blog is a FOLDER collection: one file per post in `src/content/posts/`,
+  # one entry per post in the sidebar, a New post button, a search across the
+  # posts, and a save that writes the one post John edited rather than
+  # rewriting every post he has ever published.
+  #
+  # It was a `files:` entry holding a list of sortable cards inside a single
+  # `posts.json`, and that was the shape of the CHECK rather than the shape of
+  # the content: scripts/check-cms.ts could only diff a `files:` entry against
+  # a JSON file and reported every other collection shape as a fault, so the
+  # content was bent to fit the gate. The gate has been taught folder
+  # collections instead.
+  #
+  # JSON rather than frontmatter markdown, on purpose. Every other content
+  # file here is JSON, the body is already a markdown STRING rendered by
+  # `marked` through $lib/markdown, and a second content format would fork the
+  # pipeline — a second parser, a second set of checks — for nothing gained.
   - name: blog
     label: Blog
+    label_singular: Post
     editor: { preview: false }
-    files:
-      - name: posts
-        label: Posts
-        file: src/content/posts.json
-        hint: >
-          There is no blog on the site until there is a post on it: with the list empty, the
-          Blog link, the blog page and the section on the front page are all absent, and the
-          site simply does not have one. The first published post brings all three into being.
+    folder: src/content/posts
+    create: true
+    extension: json
+    format: json
+    # The filename, and so the post's address. Sveltia settles it when the post
+    # is created and leaves it alone afterwards, so retitling a post that is
+    # already out in the world cannot break a link somebody has shared.
+    slug: '{{title}}'
+    summary: '{{title}} — {{status}}'
+    sortable_fields: [publishAt, title]
+    description: >
+      There is no blog on the site until there is a post on it: with nothing published here,
+      the Blog link, the blog page and the section on the front page are all absent, and the
+      site simply does not have one. The first published post brings all three into being.
+    fields:
+      # Not an editable field, on purpose: this is what the post's address is
+      # built from. Optional because a post made in the editor arrives without
+      # one, and the address is then made from the title — which is also what
+      # the filename is made from, so the two agree without either being typed.
+      - { name: slug, widget: hidden, required: false }
+      - { name: title, label: Title, widget: string }
+      - {
+          name: status,
+          label: Status,
+          widget: select,
+          default: draft,
+          options:
+            [
+              { label: 'Draft — only you can see it', value: draft },
+              { label: 'Published', value: published }
+            ],
+          hint: 'A draft stays on your side of the fence: it is not built into the site at all, so there is no page for it and nothing to find. Set it to Published with a date in the past and it goes live at the next build, within minutes of saving.'
+        }
+      - {
+          name: publishAt,
+          label: Publish on,
+          widget: datetime,
+          default: '{{now}}',
+          hint: 'A date and time in the future means the post appears on the site at that moment, and not before. You do not have to be there: it shows up on its own. A date in the past means it is live as soon as the site rebuilds.'
+        }
+      - {
+          name: excerpt,
+          label: Summary,
+          widget: text,
+          hint: 'Two or three lines. This is what is shown in the list of posts and on the front page, so it is written once and never has to be repeated.'
+        }
+      - {
+          name: body,
+          label: Body,
+          widget: markdown,
+          # Same rule as a service's own page: headings start at two, because
+          # the post's title is the page's only first-level one.
+          buttons:
+            [bold, italic, link, heading-two, heading-three, bulleted-list, numbered-list, quote],
+          editor_components: [],
+          modes: [rich_text],
+          hint: 'Use “Heading 2” to break a long post into parts, and “Heading 3” under those. The post’s own title is the page’s Heading 1, so there is not one to choose here.'
+        }
+      - name: seo
+        label: Search engine summary
+        widget: object
+        required: false
+        collapsed: true
+        hint: 'How this post looks in a Google result. You can leave the whole thing alone: left empty it uses the post’s own title and summary, which is usually right. Fill it in when the search result should read differently from the post.'
         fields:
-          - name: posts
-            label: Posts
-            widget: list
-            summary: '{{fields.title}}'
-            collapsed: true
-            fields:
-              # Not an editable field, on purpose: this is what the post's
-              # address is built from. Left empty on a new post, the address
-              # is made from the title instead.
-              - { name: slug, widget: hidden }
-              - { name: title, label: Title, widget: string }
-              - {
-                  name: status,
-                  label: Status,
-                  widget: select,
-                  default: draft,
-                  options:
-                    [
-                      { label: 'Draft — only you can see it', value: draft },
-                      { label: 'Published', value: published }
-                    ],
-                  hint: 'A draft stays on your side of the fence: it is not built into the site at all, so there is no page for it and nothing to find. Set it to Published with a date in the past and it goes live at the next build, within minutes of saving.'
-                }
-              - {
-                  name: publishAt,
-                  label: Publish on,
-                  widget: datetime,
-                  default: '{{now}}',
-                  hint: 'A date and time in the future means the post appears on the site at that moment, and not before. You do not have to be there: it shows up on its own. A date in the past means it is live as soon as the site rebuilds.'
-                }
-              - {
-                  name: excerpt,
-                  label: Summary,
-                  widget: text,
-                  hint: 'Two or three lines. This is what is shown in the list of posts and on the front page, so it is written once and never has to be repeated.'
-                }
-              - {
-                  name: body,
-                  label: Body,
-                  widget: markdown,
-                  # Same rule as a service's own page: headings start at two,
-                  # because the post's title is the page's only first-level one.
-                  buttons:
-                    [
-                      bold,
-                      italic,
-                      link,
-                      heading-two,
-                      heading-three,
-                      bulleted-list,
-                      numbered-list,
-                      quote
-                    ],
-                  editor_components: [],
-                  modes: [rich_text],
-                  hint: 'Use “Heading 2” to break a long post into parts, and “Heading 3” under those. The post’s own title is the page’s Heading 1, so there is not one to choose here.'
-                }
-              - name: seo
-                label: Search engine summary
-                widget: object
-                required: false
-                collapsed: true
-                hint: 'How this post looks in a Google result. You can leave the whole thing alone: left empty it uses the post’s own title and summary, which is usually right. Fill it in when the search result should read differently from the post.'
-                fields:
-                  - {
-                      name: title,
-                      label: Title in the search result,
-                      widget: string,
-                      required: false,
-                      hint: 'Also what shows in the browser tab. Around 60 characters — Google cuts it off after that.'
-                    }
-                  - {
-                      name: description,
-                      label: Description in search results,
-                      widget: text,
-                      required: false,
-                      hint: 'About 150 characters, written for the person reading the search result.'
-                    }
+          - {
+              name: title,
+              label: Title in the search result,
+              widget: string,
+              required: false,
+              hint: 'Also what shows in the browser tab. Around 60 characters — Google cuts it off after that.'
+            }
+          - {
+              name: description,
+              label: Description in search results,
+              widget: text,
+              required: false,
+              hint: 'About 150 characters, written for the person reading the search result.'
+            }
