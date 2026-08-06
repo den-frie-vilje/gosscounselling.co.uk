@@ -101,5 +101,6 @@
   }
   .back a:hover .arrow {
     transform: rotate(180deg) translateX(4px);
+    color: var(--color-accent-ink);
   }
 </style>
