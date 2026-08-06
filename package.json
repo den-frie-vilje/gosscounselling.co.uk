@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "prepare": "svelte-kit sync || echo ''",
     "precheck": "node scripts/gen-assets.ts",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && node scripts/check-contrast.ts && node scripts/run-gates.ts",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && node scripts/check-contrast.ts && node scripts/check-copy.ts && node scripts/run-gates.ts",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "og": "node scripts/gen-og.ts",
     "photos": "node scripts/gen-photos.ts",
@@ -33,8 +33,10 @@
     "check:mattes": "node scripts/check-mattes.ts",
     "postbuild": "node scripts/gen-404.ts",
     "social:icons": "node scripts/gen-social-icons.ts",
-    "check:publish": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && node scripts/check-contrast.ts && node scripts/run-gates.ts --advisory",
-    "check:content": "node scripts/run-gates.ts"
+    "check:publish": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && node scripts/check-contrast.ts && node scripts/check-copy.ts && node scripts/run-gates.ts --advisory",
+    "check:content": "node scripts/run-gates.ts",
+    "check:copy": "node scripts/check-copy.ts",
+    "check:copy:selftest": "node scripts/check-copy.ts --self-test"
   },
   "engines": {
     "node": "~25",

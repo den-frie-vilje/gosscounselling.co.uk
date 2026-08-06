@@ -4,7 +4,12 @@
 import { PUBLIC_SITE_URL } from '$env/static/public';
 import { site, contact, home, memberships, search, social, testimonials } from '$lib/content';
 import { parsePhone } from '$lib/phone';
-import { entitySameAs, memberOfOrganizations, priceRangeFrom } from '$lib/seo/entity';
+import {
+  entitySameAs,
+  memberOfOrganizations,
+  postalPartsFrom,
+  priceRangeFrom
+} from '$lib/seo/entity';
 
 /*
   `$env/static/public`, not dynamic. Static env is sourced from the committed
@@ -99,11 +104,14 @@ function siteGraph(): object[] {
       url: `${SITE_URL}/`,
       telephone: TELEPHONE,
       email: contact.email,
+      // Parsed off the one line he types, never written twice. See
+      // $lib/seo/entity's `postalPartsFrom`: the locality, region and postcode
+      // used to be literals here while `contact.location` said the same thing,
+      // which meant a move of practice would have changed every page a visitor
+      // reads and left the graph insisting on the old town.
       address: {
         '@type': 'PostalAddress',
-        addressLocality: 'Bletchley',
-        addressRegion: 'Milton Keynes',
-        postalCode: 'MK3',
+        ...postalPartsFrom(contact.location),
         addressCountry: 'GB'
       },
       ...(fees ? { priceRange: fees } : {}),

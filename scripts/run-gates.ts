@@ -33,6 +33,18 @@
  * publish went through clean — rather than the answer living in a CI log. See
  * src/lib/components/GateStatus.svelte.
  *
+ * HE IS ONLY SHOWN WHAT IS HIS. The record separates `forJohn` from `forUs`,
+ * and the editor page renders the first only. Showing him ours as well was
+ * tried, on the reasoning that a problem he later spots having never been
+ * mentioned is worse than one he was told about — and it is exactly backwards
+ * on a first visit. He opened the editor for the first time and read that our
+ * tooling was not cutting the edges of his photograph properly: a fault he
+ * cannot see on the page, cannot act on, and did not cause, phrased as
+ * something wrong with his picture. What it bought him was doubt about a
+ * photograph that looks fine. Ours stay in this log and in the record, for us.
+ * If one of ours ever makes the page visibly wrong, that is not a banner —
+ * that is us telling him.
+ *
  * `svelte-check` and `check-contrast` are NOT in this file and stay strict on
  * every path. They judge code and design tokens, neither of which John can
  * change, so they cannot fail him.
@@ -62,49 +74,49 @@ const CONTENT_GATES = [
     script: 'check-cms.ts',
     owner: 'ours',
     why: 'a field he filled in that the editor config does not describe',
-    tellJohn: 'One of the fields in this editor does not line up with how the site stores it.',
+    tellJohn: 'A field in this editor does not line up with how the site stores it.',
   },
   {
     script: 'check-nav.ts',
     owner: 'his',
     why: 'a section heading or nav label that is long, or one section too many',
     tellJohn:
-      'The menu at the top of the page is getting long — either too many sections, or a section name that is longer than the bar likes. The page still works: the menu shortens itself to fit on smaller screens. Shorter section names would read better.',
+      'The top menu is getting long. It still fits itself to the screen, but shorter section names would read better.',
   },
   {
     script: 'check-social.ts',
     owner: 'his',
     why: 'a profile on a platform we have no mark for',
     tellJohn:
-      "One of your social profiles is on a service we have no logo for, so it shows as its name in the footer instead. That is fine — it is just worth knowing it will not look like the others.",
+      "One social profile has no logo, so the footer shows its name instead.",
   },
   {
     script: 'check-contact.ts',
     owner: 'his',
     why: 'a phone number or address typed in a shape we did not expect',
     tellJohn:
-      'Your phone number or email address is written in a way we could not turn into a working link. Worth checking, because the buttons people tap to reach you are built from it.',
+      'Your number or email could not be turned into a working link. Worth checking — the Call and Email buttons are built from it.',
   },
   {
     script: 'check-seo.ts',
     owner: 'ours',
     why: 'a social profile he added that our own notes have not verified yet',
     tellJohn:
-      'One of your profile links has not been through our checks yet, so search engines are not being told about it for now. Nothing on your page is affected.',
+      'A profile link is not verified yet, so search engines are not told about it. Your page is unaffected.',
   },
   {
     script: 'check-portrait-fit.ts',
     owner: 'his',
     why: 'a photograph whose crop puts his head somewhere new',
     tellJohn:
-      'The photograph you uploaded sits differently in the circle than we expect — usually because there is more or less space above the head than in the last one. Have a look at the top of the page and see whether it looks right to you.',
+      'Your photograph sits differently in the circle than expected. Worth a look at the top of the page.',
   },
   {
     script: 'check-mattes.ts',
     owner: 'ours',
     why: "a photograph whose edges our keyer handles less well than his last one",
     tellJohn:
-      'Our tooling is not cutting the edges of the photograph as cleanly as it should. The picture is on the page and most people will not see anything wrong; it is ours to fix, not yours.',
+      'The photograph’s edges are not cut as cleanly as they should be.',
   },
 ] as const;
 
@@ -135,7 +147,10 @@ writeFileSync(
       note: 'Written by scripts/run-gates.ts on every check. Read by the editor page so John hears about a problem where he works, rather than in a build log. Committed so a dev server has something to render.',
       sha,
       checked: results.length,
-      findings: failed.map((f) => ({ owner: f.owner, message: f.tellJohn })),
+      // Split at the source rather than filtered at the page, so what he is
+      // shown and what is ours to fix cannot drift apart.
+      forJohn: failed.filter((f) => f.owner === 'his').map((f) => f.tellJohn),
+      forUs: failed.filter((f) => f.owner === 'ours').map((f) => f.tellJohn),
     },
     null,
     2

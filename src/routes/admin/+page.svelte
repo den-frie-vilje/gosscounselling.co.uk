@@ -25,10 +25,11 @@
   // The build's own report on the last publish, in John's words. Renders
   // nothing when there is nothing to say, which is the normal case.
   import GateStatus from '$lib/components/GateStatus.svelte';
+  import { site } from '$lib/content';
 </script>
 
 <svelte:head>
-  <title>John Goss — Admin</title>
+  <title>{site.name} — Admin</title>
   <meta name="robots" content="noindex, nofollow" />
   <meta
     http-equiv="content-security-policy"
@@ -43,6 +44,11 @@
        loaded from a CDN, so the editor has no third-party runtime dependency
        and no floating semver tag. -->
   <script src="/admin/sveltia-cms.js"></script>
+  <!-- Reveals the gate notice, and only once somebody is signed in. Its own
+       same-origin file because `script-src 'self'` forbids an inline one, and
+       because this route sets `csr = false` so nothing of SvelteKit's runs
+       here. See static/admin/gate-status.js. -->
+  <script src="/admin/gate-status.js" defer></script>
 </svelte:head>
 
 <GateStatus />

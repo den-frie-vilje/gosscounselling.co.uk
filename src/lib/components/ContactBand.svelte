@@ -10,7 +10,7 @@
   go in a column and broke mid-word.
 -->
 <script lang="ts">
-  import { contact, home } from '$lib/content';
+  import { contact, home, labels } from '$lib/content';
   import { registerSection } from '$lib/nav-sections.svelte';
   import Icon from './Icon.svelte';
 
@@ -32,7 +32,7 @@
         <a href={contact.phoneHref}>
           <span class="ico"><Icon name="phone" /></span>
           <span class="txt">
-            <span class="k">Phone</span>
+            <span class="k">{labels.contactRows.phone}</span>
             <span class="v">{contact.phone}</span>
             <span class="h">{contact.phoneNote}</span>
           </span>
@@ -43,7 +43,7 @@
         <a href={contact.emailHref}>
           <span class="ico"><Icon name="mail" /></span>
           <span class="txt">
-            <span class="k">Email</span>
+            <span class="k">{labels.contactRows.email}</span>
             <span class="v">{contact.email}</span>
             <span class="h">{contact.emailNote}</span>
           </span>
@@ -58,7 +58,7 @@
           <a href={contact.whatsappHref}>
             <span class="ico"><Icon name="whatsapp" /></span>
             <span class="txt">
-              <span class="k">WhatsApp</span>
+              <span class="k">{labels.contactRows.whatsapp}</span>
               <span class="v">{contact.phone}</span>
               <span class="h">{contact.whatsappNote}</span>
             </span>
@@ -70,7 +70,7 @@
         <span class="place">
           <span class="ico"><Icon name="pin" /></span>
           <span class="txt">
-            <span class="k">Where</span>
+            <span class="k">{labels.contactRows.location}</span>
             <span class="v">{contact.location}</span>
             <span class="h">{contact.locationNote}</span>
           </span>
