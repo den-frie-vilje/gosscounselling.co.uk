@@ -196,11 +196,26 @@ collections:
                           name: body,
                           label: Body,
                           widget: markdown,
-                          buttons: [bold, italic, link, bulleted-list],
+                          # Headings start at two. One is the page's own title,
+                          # which the site writes from the service name — a
+                          # second first-level heading inside the body would
+                          # give the page two titles and tell a search engine
+                          # the wrong one is the subject.
+                          buttons:
+                            [
+                              bold,
+                              italic,
+                              link,
+                              heading-two,
+                              heading-three,
+                              bulleted-list,
+                              numbered-list,
+                              quote
+                            ],
                           editor_components: [],
                           modes: [rich_text],
                           required: false,
-                          hint: 'Headings are welcome here; this is the long, specific page for one thing people search for.'
+                          hint: 'The long, specific page for one thing people search for. Use “Heading 2” for the main parts and “Heading 3” under them — the page already has its own title, so there is no Heading 1 to choose.'
                         }
                       - name: seo
                         label: Search
@@ -665,9 +680,22 @@ collections:
                   name: body,
                   label: Body,
                   widget: markdown,
-                  buttons: [bold, italic, link, bulleted-list, quote],
+                  # Same rule as a service's own page: headings start at two,
+                  # because the post's title is the page's only first-level one.
+                  buttons:
+                    [
+                      bold,
+                      italic,
+                      link,
+                      heading-two,
+                      heading-three,
+                      bulleted-list,
+                      numbered-list,
+                      quote
+                    ],
                   editor_components: [],
-                  modes: [rich_text]
+                  modes: [rich_text],
+                  hint: 'Use “Heading 2” to break a long post into parts, and “Heading 3” under those. The post’s own title is the page’s Heading 1, so there is not one to choose here.'
                 }
               - name: seo
                 label: Search
