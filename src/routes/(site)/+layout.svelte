@@ -3,10 +3,49 @@
   outside it, /admin and /publish, render bare.
 -->
 <script lang="ts">
+  import { afterNavigate, beforeNavigate } from '$app/navigation';
   import SiteHeader from '$lib/components/SiteHeader.svelte';
   import SiteFooter from '$lib/components/SiteFooter.svelte';
 
   let { children } = $props();
+
+  /* Smooth scrolling is for MOVING WITHIN a page, not for arriving at one.
+     `html { scroll-behavior: smooth }` in app.css is what makes the nav glide
+     down to a section, and it is right for that — but it also caught
+     SvelteKit's own scroll-to-top on a navigation, so following a service or a
+     blog link animated the whole page back up before the new one appeared.
+     That reads as the site losing its place, not as polish.
+
+     So it is turned off for the duration of a navigation that CHANGES the
+     path, and left alone for one that only changes the fragment, which is the
+     in-page case.
+
+     RESTORED TWO WAYS, and that is not belt-and-braces for its own sake. The
+     right moment is the frame after the navigation — SvelteKit applies its
+     scroll while `afterNavigate` runs, and putting the property back any
+     earlier hands the animation straight back — but `requestAnimationFrame`
+     does not fire in a tab the browser has throttled or backgrounded. Measured
+     exactly that: the suppression went on and never came off, which would have
+     left smooth scrolling dead for the rest of the session, on every anchor,
+     silently. The timeout is later than ideal and cannot be paused. */
+  let suppressed = false;
+
+  function restoreScrollBehaviour() {
+    document.documentElement.style.scrollBehavior = '';
+  }
+
+  beforeNavigate(({ from, to }) => {
+    if (!to || from?.url.pathname === to.url.pathname) return;
+    document.documentElement.style.scrollBehavior = 'auto';
+    suppressed = true;
+  });
+
+  afterNavigate(() => {
+    if (!suppressed) return;
+    suppressed = false;
+    requestAnimationFrame(restoreScrollBehaviour);
+    setTimeout(restoreScrollBehaviour, 120);
+  });
 
   // The open menu is an opaque, full-viewport panel, so everything behind it
   // has to leave the tab order and the accessibility tree. `inert` on the
