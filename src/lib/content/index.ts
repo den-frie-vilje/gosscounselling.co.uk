@@ -173,6 +173,15 @@ export interface Step {
 export interface ServiceDetail {
   /** Markdown. Rendered UNDER `Service.body` on the service's own page. */
   body: string;
+  /** Optional picture, shown ONLY here. It lives on `detail` rather than on
+   *  `Service` for that reason: the front page lists the services as a short
+   *  column of words, and a row of pictures down it would take the page over.
+   *  A service with no longer version has no `detail`, so there is nowhere
+   *  for a picture that could never be seen to be stored. */
+  photo?: string;
+  /** Empty means decoration, and the image is given `alt=""` — the honest
+   *  signal, and better than reading a filename at somebody. */
+  photoAlt?: string;
   /** Optional. Falls back to the service title and the site description. */
   seo?: { title: string; description: string };
 }
