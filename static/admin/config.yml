@@ -218,18 +218,18 @@ collections:
                           hint: 'The long, specific page for one thing people search for. Use “Heading 2” for the main parts and “Heading 3” under them — the page already has its own title, so there is no Heading 1 to choose.'
                         }
                       - name: seo
-                        label: Search
+                        label: Search engine summary
                         widget: object
                         required: false
                         collapsed: true
-                        hint: 'Optional. Left empty, the page uses its own title and its opening lines.'
+                        hint: 'How this page looks in a Google result. You can leave the whole thing alone: left empty it uses this service’s own title and its opening lines, which is usually right. Fill it in when the search result should read differently from the page.'
                         fields:
                           - {
                               name: title,
-                              label: Page title,
+                              label: Title in the search result,
                               widget: string,
                               required: false,
-                              hint: 'Browser tab and search result. Under about 60 characters.'
+                              hint: 'Also what shows in the browser tab. Around 60 characters — Google cuts it off after that.'
                             }
                           - {
                               name: description,
@@ -394,22 +394,28 @@ collections:
               - { name: intro, label: Line under the heading, widget: text }
 
           - name: seo
-            label: Search
+            label: Search engine summary
             widget: object
             hint: >
-              Only the title. The description under it in a search result is the one under
-              General → Site: this page IS the site, and the two boxes held the same 150
-              characters word for word, which meant editing one of them and not the other.
+              How this page looks in a Google result: this is the blue line people click, and
+              the line in the browser tab. The sentence underneath it comes from “Description
+              in search results” under General → Site, because for the home page that is the
+              same sentence — so it is written once, there.
             fields:
               # Same reason as the slug fields: it is read straight from the
               # file by scripts/gen-og.ts as the share card's fallback title,
               # so a placeholder must never appear here (check-contact.ts).
-              - { name: title, label: Page title, widget: string, hint: 'Browser tab and search result.' }
+              - {
+                  name: title,
+                  label: Title in the search result,
+                  widget: string,
+                  hint: 'Also what shows in the browser tab. Around 60 characters — Google cuts it off after that.'
+                }
 
           - name: og
             label: Social-share card
             widget: object
-            hint: 'The card shown when someone shares this page in a chat or on social media. Rebuilt automatically on the next deploy. Only the title: the card also carries your name and the small label from the top of the page, and it takes those from where you already wrote them rather than asking twice.'
+            hint: 'The picture people see when your site is shared in a chat or on social media. It is redrawn on its own each time the site publishes. There is one thing to write here — the card also shows your name and the “Bletchley, Milton Keynes” line, and it takes those from where you already wrote them rather than asking twice.'
             fields:
               # The card is drawn by scripts/gen-og.ts, in plain node, straight
               # from the JSON — so it never sees the {phone}-style
@@ -698,18 +704,18 @@ collections:
                   hint: 'Use “Heading 2” to break a long post into parts, and “Heading 3” under those. The post’s own title is the page’s Heading 1, so there is not one to choose here.'
                 }
               - name: seo
-                label: Search
+                label: Search engine summary
                 widget: object
                 required: false
                 collapsed: true
-                hint: 'Optional. Left empty, the post uses its own title and summary.'
+                hint: 'How this post looks in a Google result. You can leave the whole thing alone: left empty it uses the post’s own title and summary, which is usually right. Fill it in when the search result should read differently from the post.'
                 fields:
                   - {
                       name: title,
-                      label: Page title,
+                      label: Title in the search result,
                       widget: string,
                       required: false,
-                      hint: 'Browser tab and search result. Under about 60 characters.'
+                      hint: 'Also what shows in the browser tab. Around 60 characters — Google cuts it off after that.'
                     }
                   - {
                       name: description,
