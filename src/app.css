@@ -525,6 +525,37 @@ h4 {
 .prose-clear a:hover {
   color: var(--color-deep);
 }
+/* A quote — one of the eight controls John's editor offers on a long body,
+   and the only one that drew NOTHING. A blockquote came out as a paragraph in
+   a slightly different grey: same face, same size, no rule, no indent. He
+   would have pressed the button, seen no change, and concluded the editor was
+   broken. Found by writing a realistic page with every control on it, which is
+   the only way a control that does nothing shows up.
+
+   It takes the hero aside's treatment, because that is already the site's way
+   of setting a line apart: the display face, italic, hung off the same 4px
+   rule at the same 16px. The rule is `accent-ink` rather than the acid lime
+   itself — the lime is a dark-ground colour and reads at 1.4:1 on paper, where
+   accent-ink is 4.62:1. `.prose-on-deep` puts the lime back, on the ground it
+   was chosen for. */
+.prose-clear :where(blockquote) {
+  margin-block: 1.5em;
+  margin-inline: 0;
+  padding-left: 16px;
+  border-left: 4px solid var(--color-accent-ink);
+  font-family: var(--font-display);
+  font-size: 1.05em;
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--color-ink);
+}
+.prose-clear :where(blockquote > :first-child) {
+  margin-top: 0;
+}
+.prose-clear :where(blockquote > :last-child) {
+  margin-bottom: 0;
+}
+
 /* The opening paragraph of a body carries the full ink, so the eye has
    somewhere to land before the text settles to the muted tone. */
 .prose-lead > p:first-of-type {
@@ -538,6 +569,10 @@ h4 {
 .prose-on-deep :where(h2, h3),
 .prose-on-deep strong {
   color: #fff;
+}
+.prose-on-deep :where(blockquote) {
+  border-left-color: var(--color-accent);
+  color: var(--color-on-deep);
 }
 .prose-on-deep a {
   color: var(--color-on-deep-kicker);
