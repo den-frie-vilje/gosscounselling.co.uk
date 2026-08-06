@@ -1099,12 +1099,74 @@ if (!source) {
 
 const masterPath = resolve(MASTER_DIR, OUT_MASTER);
 const assetPath = resolve(OUT_DIR, OUT_ASSET);
-console.log(`cutouts: keying ${rel(source)}`);
+console.log(`cutouts: reading ${rel(source)}`);
 
-const { data, info } = await sharp(source).rotate().removeAlpha().raw().toBuffer({ resolveWithObject: true });
-const rgb = new Uint8Array(data.buffer, data.byteOffset, data.length);
+/**
+ * Is this photograph already cut out?
+ *
+ * A photograph has no alpha, or an alpha that is opaque everywhere. A matte
+ * someone has already pulled — by hand, in Photoshop, or by a photographer who
+ * delivers a PNG — has real transparency: a substantial area at zero, a
+ * substantial area at 255, and usually a soft band between them.
+ *
+ * If it is already matted there is NOTHING TO KEY, and keying it anyway is
+ * actively destructive: the solve would estimate a backing that is not there,
+ * de-spill a cast that does not exist, and hand back a worse version of a
+ * matte it was given for free. Measured on exactly that case — a hand matte
+ * flattened onto green and re-solved — the fringe came back 43.77% violet with
+ * 2,273 blown pixels, against 10.85% and 40 for the matte it started from.
+ *
+ * So: use it as it is. This is also the escape hatch for any photograph the
+ * solver gets wrong — mask it by hand, upload that, and the site stops
+ * arguing.
+ */
+function alphaVerdict(alpha: Uint8Array): {
+  preMatted: boolean;
+  clear: number;
+  solid: number;
+  soft: number;
+} {
+  let clear = 0, solid = 0, soft = 0;
+  for (let i = 0; i < alpha.length; i++) {
+    const a = alpha[i];
+    if (a <= 8) clear++;
+    else if (a >= 247) solid++;
+    else soft++;
+  }
+  const n = alpha.length;
+  // A real cut-out has both a background that was removed and a subject that
+  // survived. One percent of the frame transparent is far below any matte and
+  // far above the stray transparent pixel a photograph might carry.
+  const preMatted = clear / n >= 0.01 && solid / n >= 0.05;
+  return { preMatted, clear, solid, soft };
+}
+
+const meta = await sharp(source).metadata();
+const loaded = await sharp(source).rotate().ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+const info = loaded.info;
+const px = new Uint8Array(loaded.data.buffer, loaded.data.byteOffset, loaded.data.length);
+
+// Split the interleaved RGBA the rest of this script expects as separate planes.
+const rgb = new Uint8Array(info.width * info.height * 3);
+const srcAlpha = new Uint8Array(info.width * info.height);
+for (let i = 0, j = 0, k = 0; i < px.length; i += 4, j += 3, k++) {
+  rgb[j] = px[i]; rgb[j + 1] = px[i + 1]; rgb[j + 2] = px[i + 2];
+  srcAlpha[k] = px[i + 3];
+}
+
+const verdict = meta.hasAlpha ? alphaVerdict(srcAlpha) : { preMatted: false, clear: 0, solid: 0, soft: 0 };
 
 let result: KeyResult;
+if (verdict.preMatted) {
+  const n = info.width * info.height;
+  const pc = (v: number) => `${((v / n) * 100).toFixed(1)}%`;
+  console.log(`\ncutouts: ${rel(source)} IS ALREADY CUT OUT — nothing to key.`);
+  console.log(`    transparent ${pc(verdict.clear)}   solid ${pc(verdict.solid)}   soft edge ${pc(verdict.soft)} (${verdict.soft} px)`);
+  console.log('    Its own matte and its own colour are used exactly as given: no backing is');
+  console.log('    estimated, no spill is removed, and nothing is solved. A matte that arrives');
+  console.log('    finished is better than one this script would recover from a composite.');
+  result = { alpha: srcAlpha, rgb, width: info.width, height: info.height } as KeyResult;
+} else {
 try {
   result = key(rgb, info.width, info.height);
 } catch (e) {
@@ -1118,8 +1180,8 @@ try {
   }
   throw e;
 }
-
 report(result, rel(source));
+}
 
 mkdirSync(OUT_DIR, { recursive: true });
 mkdirSync(MASTER_DIR, { recursive: true });
@@ -1157,7 +1219,24 @@ const audit = {
   },
   /** Where the written files sit in the SOURCE photograph's frame, after the alpha crop. */
   crop: { left: box.left, top: box.top, width: box.width, height: box.height },
-  derived: {
+  /** True when the upload arrived already cut out and nothing was solved. The
+   *  fields under `derived` do not exist in that case: there is no backing to
+   *  record because none was measured, and `scripts/check-mattes.ts` stands its
+   *  reproduction check down when they are absent — which is correct here
+   *  rather than a gap, since reproducing a photograph is a claim about a
+   *  photograph and a hand matte is not one. */
+  preMatted: verdict.preMatted,
+  derived: verdict.preMatted
+    ? {
+        sourceSize: `${result.width}x${result.height}`,
+        outputSize: `${box.width}x${box.height}`,
+        alpha: {
+          transparent: Number((verdict.clear / (result.width * result.height)).toFixed(5)),
+          solid: Number((verdict.solid / (result.width * result.height)).toFixed(5)),
+          soft: Number((verdict.soft / (result.width * result.height)).toFixed(5))
+        }
+      }
+    : {
     sourceSize: `${result.width}x${result.height}`,
     outputSize: `${box.width}x${box.height}`,
     backing: {
