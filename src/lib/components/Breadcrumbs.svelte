@@ -15,6 +15,16 @@
 
   The separator is a pseudo-element, so it is decoration the screen reader
   never reads: "Home slash Blog slash" is not how anyone would say it.
+
+  THE LAST CRUMB IS NOT PRINTED. The trail reads "Home / Blog /" and stops,
+  because the thing it would say next is the <h1> immediately below it, set
+  three times the size. Printing it twice in two lines is the kind of
+  repetition you stop seeing after a week and a reader never stops seeing.
+
+  It is still IN the trail: `.vh` hides it from the eye and from nothing else,
+  so a screen reader hears the whole path and so does the BreadcrumbList,
+  which has no heading below it to finish the sentence. Same array, same items,
+  one of them simply not drawn — the data does not fork, the rendering does.
 -->
 <script lang="ts">
   export interface Crumb {
@@ -38,7 +48,7 @@
           {#if crumb.href && i < trail.length - 1}
             <a href={crumb.href}>{crumb.label}</a>
           {:else}
-            <span aria-current="page">{crumb.label}</span>
+            <span class="vh" aria-current="page">{crumb.label}</span>
           {/if}
         </li>
       {/each}
@@ -78,12 +88,11 @@
     text-decoration: underline;
     text-underline-offset: 4px;
   }
-  /* The page you are on: stated, not offered. Still the darkest thing in the
-     trail so the hierarchy survives the lightening, but muted rather than full
-     ink — the trail is orientation, and it should not compete with the title
-     directly beneath it. */
-  [aria-current='page'] {
-    color: var(--color-muted);
-    font-weight: 600;
+  /* The trailing separator is what is left of the last crumb, and it is the
+     point: the path ends open, and the title underneath completes it. The
+     rule below keeps the item from adding width once its label is hidden, so
+     the slash sits where a slash should and not a space away from it. */
+  li:last-child {
+    display: inline;
   }
 </style>
