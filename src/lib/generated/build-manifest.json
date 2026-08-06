@@ -17,11 +17,11 @@
       }
     },
     "og": {
-      "key": "3e88510f4526",
-      "ranAt": "2026-08-06T12:32:01.511Z",
-      "seconds": 6.57,
+      "key": "7c928549191f",
+      "ranAt": "2026-08-06T13:15:36.028Z",
+      "seconds": 22.43,
       "inputs": {
-        "scripts/gen-og.ts": "af1db53a730a",
+        "scripts/gen-og.ts": "936d93b36d54",
         "src/content/site.json": "8ba5cadeee47",
         "src/content/search.json": "40e99d4d8d35",
         "src/content/home/hero.json": "8a7ee371b628",
@@ -30,7 +30,7 @@
         "static/img/john-cutout.webp": "b1c92a4cfa9f"
       },
       "outputs": {
-        "static/img/og/home.png": "7190a90eb49e"
+        "static/img/og/home.png": "769e8c635372"
       }
     },
     "portrait-geometry": {

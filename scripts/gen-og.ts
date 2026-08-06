@@ -109,29 +109,53 @@ const LOCKUP_W = Math.floor(
 );
 
 /**
- * The disc: the plate's own gradient with the cutout composited onto it, and
- * a circular alpha, rendered by sharp and handed to satori as ONE image.
+ * The disc, WITH HIM BREAKING OUT OF IT, which is the hero's whole gesture.
  *
- * Two reasons it is built here rather than in the card's markup. satori has
- * no support for CSS masks, so the hero's two-layer construction cannot be
- * expressed in it at all. And satori has no webp decoder, while the cutouts
- * are webp, so sharp has to be in the path regardless.
+ * The card used to hard-clip him to the circle: everything outside it was
+ * thrown away, so the card had a photograph in a hole where the page has a man
+ * standing in front of a disc. It read as a different treatment of the same
+ * picture, which is what the geometry file exists to prevent.
  *
- * The cutout is drawn at the same fraction of the disc as on the page, and
- * bottom-anchored the same way, so the card reads as the site rather than as
- * a different treatment of the same photograph.
+ * The page builds it from two masked layers over one file
+ * (src/routes/(site)/+page.svelte, `.layerIn` and `.layerOut`):
+ *
+ *   INSIDE the circle  — the plate's colour with the cut-out over it.
+ *   OUTSIDE it         — the cut-out alone on nothing, faded to transparent
+ *                        down the page between `outFadeStart` and
+ *                        `outFadeEnd`, so his shoulders leave the frame
+ *                        rather than being sliced off by it.
+ *
+ * satori supports neither CSS masks nor webp, so both layers are composited
+ * here by sharp and handed over as ONE png carrying its own alpha — and the
+ * image is no longer disc-sized, because the part of him outside the disc is
+ * the point. It reports where the circle sits inside that image so `markup`
+ * can place it with the CIRCLE where the disc always was and the overhang
+ * falling outside it.
  *
  * Returns null rather than throwing: a missing or unreadable portrait should
  * cost us the photo, not the whole prebuild.
  */
-async function discDataUri(): Promise<string | null> {
+interface Disc {
+  uri: string;
+  width: number;
+  height: number;
+  /** Where the circle's top-left corner sits inside the image. */
+  circleLeft: number;
+  circleTop: number;
+}
+
+async function discDataUri(): Promise<Disc | null> {
   try {
     const geom = JSON.parse(read('src/lib/generated/portrait-geometry.json').toString()) as {
       plateImgWidth: string;
       headShift: string;
+      layerPad: string;
+      outFadeStart: string;
+      outFadeEnd: string;
     };
-    const imgW = Math.round((parseFloat(geom.plateImgWidth) / 100) * DISC);
-    const shift = Math.round((parseFloat(geom.headShift) / 100) * imgW);
+    const pct = (v: string) => parseFloat(v) / 100;
+    const imgW = Math.round(pct(geom.plateImgWidth) * DISC);
+    const shift = Math.round(pct(geom.headShift) * imgW);
 
     // The KEYED matte, for the same reason the hero uses it inside its disc:
     // the plain knockout's fringe still carries the white cyclorama, and this
@@ -145,44 +169,87 @@ async function discDataUri(): Promise<string | null> {
       .toBuffer();
     const { height: cutH = DISC } = await sharp(cutout).metadata();
 
-    // Build on a canvas the size of the CUTOUT and extract the disc's window
-    // from it, rather than compositing onto a disc-sized canvas: he is drawn
-    // wider than the plate, and sharp refuses to composite an image larger
-    // than what it is going onto.
+    // The LAYER BOX, in the page's own terms: the cut-out at `plateImgWidth`
+    // of the plate, with `layerPad` of headroom above it. A percentage padding
+    // in CSS resolves against the containing block's WIDTH, and that block is
+    // the plate, so the pad is a fraction of DISC rather than of the image.
+    const padTop = Math.round(pct(geom.layerPad) * DISC);
+    const boxW = imgW;
+    const boxH = padTop + cutH;
+
+    // The circle inside that box. Its bottom is the box's bottom, because the
+    // layer is `bottom: 0` on the plate and the disc IS the plate; and it is
+    // centred on the box and then moved by `headShift`, which is what puts his
+    // head rather than his image in the middle of it.
+    const circleLeft = Math.max(0, Math.round((boxW - DISC) / 2 - shift));
+    const circleTop = boxH - DISC;
+    const cx = circleLeft + DISC / 2;
+    const cy = circleTop + DISC / 2;
+    const r = DISC / 2;
+
+    const onBox = (input: Buffer, background: sharp.Color) =>
+      sharp({ create: { width: boxW, height: boxH, channels: 4, background } })
+        .composite([{ input, left: 0, top: padTop }])
+        .png()
+        .toBuffer();
+
+    // INSIDE: plate and cut-out, kept only within the circle.
+    const inside = await sharp(await onBox(cutout, PLATE))
+      .composite([
+        {
+          input: Buffer.from(
+            `<svg width="${boxW}" height="${boxH}"><circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff"/></svg>`
+          ),
+          blend: 'dest-in'
+        }
+      ])
+      .png()
+      .toBuffer();
+
+    // OUTSIDE: the cut-out on nothing, faded down the box, with the circle
+    // punched out. The two stops are fractions of the LAYER BOX, which is what
+    // the page's `mask-size: 100% 100%` makes them.
     //
-    // The window is placed exactly as the page places it. He is centred on
-    // the plate and then shifted so his HEAD rather than his image is in the
-    // middle, so the disc sits that much the other way within him; and his
-    // feet are on the plate's bottom, so the window's bottom is the cutout's.
-    const windowLeft = Math.max(0, Math.round((imgW - DISC) / 2 - shift));
-    const windowTop = Math.max(0, cutH - DISC);
-
-    const plate = await sharp({
-      create: { width: imgW, height: cutH, channels: 4, background: PLATE }
-    })
-      .composite([{ input: cutout, left: 0, top: 0 }])
-      .png()
-      .toBuffer();
-
-    // Circular alpha, drawn as an SVG and applied with `dest-in`.
-    const circle = Buffer.from(
-      `<svg width="${DISC}" height="${DISC}"><circle cx="${DISC / 2}" cy="${DISC / 2}" r="${DISC / 2}" fill="#fff"/></svg>`
+    // The punched circle is half a pixel SMALLER than the one filled above, so
+    // the two layers OVERLAP along the join. Wider was tried and drew exactly
+    // what it should have: a half-pixel ring belonging to neither layer, which
+    // let the card's dark ground through as a line across his crown, right
+    // where the circle crosses his head. This is `--mask-overlap` on the page
+    // and it points the same way there.
+    const outMask = Buffer.from(
+      `<svg width="${boxW}" height="${boxH}" xmlns="http://www.w3.org/2000/svg">
+         <defs>
+           <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+             <stop offset="${parseFloat(geom.outFadeStart).toFixed(3)}%" stop-color="#fff"/>
+             <stop offset="${parseFloat(geom.outFadeEnd).toFixed(3)}%" stop-color="#000"/>
+           </linearGradient>
+           <mask id="m">
+             <rect width="${boxW}" height="${boxH}" fill="url(#fade)"/>
+             <circle cx="${cx}" cy="${cy}" r="${r - 0.5}" fill="#000"/>
+           </mask>
+         </defs>
+         <rect width="${boxW}" height="${boxH}" fill="#fff" mask="url(#m)"/>
+       </svg>`
     );
-    const disc = await sharp(plate)
-      .extract({
-        left: Math.min(windowLeft, Math.max(0, imgW - DISC)),
-        top: Math.min(windowTop, Math.max(0, cutH - DISC)),
-        width: Math.min(DISC, imgW),
-        height: Math.min(DISC, cutH)
-      })
-      .composite([{ input: circle, blend: 'dest-in' }])
+    const outside = await sharp(await onBox(cutout, { r: 0, g: 0, b: 0, alpha: 0 }))
+      .composite([{ input: outMask, blend: 'dest-in' }])
       .png()
       .toBuffer();
 
-    // PNG here, not JPEG, because the alpha outside the circle is the point.
-    // It is one 470px image, so the pure-JS decode is affordable where the
-    // full-size master was not.
-    return `data:image/png;base64,${disc.toString('base64')}`;
+    // Disjoint by construction — one is the circle, the other its complement —
+    // so which goes on top of which does not matter.
+    const disc = await sharp(outside)
+      .composite([{ input: inside, blend: 'over' }])
+      .png()
+      .toBuffer();
+
+    return {
+      uri: `data:image/png;base64,${disc.toString('base64')}`,
+      width: boxW,
+      height: boxH,
+      circleLeft,
+      circleTop
+    };
   } catch (e) {
     console.warn(
       `og: disc unusable (${(e as Error).message.split('\n')[0]}); rendering without it`
@@ -190,6 +257,7 @@ async function discDataUri(): Promise<string | null> {
     return null;
   }
 }
+
 
 interface Card {
   slug: string;
@@ -213,12 +281,16 @@ const CARDS: Card[] = [
     title: search.og?.title?.trim() || hero.title?.trim() || search.title?.trim() || ''
   }
 ];
-
-function markup(card: Card, disc: string | null): string {
-  // The disc is absolutely positioned so it can sit against the card's right
-  // without dragging the text column around.
+function markup(card: Card, disc: Disc | null): string {
+  // Absolutely positioned so it can sit against the card's right without
+  // dragging the text column around — and placed by its CIRCLE, not by its
+  // own corner. The image is bigger than the disc now, because it carries the
+  // part of him that stands outside it, so its top-left is offset by exactly
+  // where the circle sits within it. Everything downstream — the column width,
+  // the lockup's clearance from the curve — is measured off DISC_X and DISC_Y
+  // and none of it moves.
   const discImg = disc
-    ? `<img src="${disc}" width="${DISC}" height="${DISC}" style="position:absolute;left:${DISC_X}px;top:${DISC_Y}px;width:${DISC}px;height:${DISC}px;" />`
+    ? `<img src="${disc.uri}" width="${disc.width}" height="${disc.height}" style="position:absolute;left:${DISC_X - disc.circleLeft}px;top:${DISC_Y - disc.circleTop}px;width:${disc.width}px;height:${disc.height}px;" />`
     : '';
   // Two things in the column, pushed apart: the title, and his lockup. A
   // longer title pushes the lockup down rather than overprinting it.
