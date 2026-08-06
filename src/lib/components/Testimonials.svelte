@@ -388,8 +388,14 @@
     width: 20px;
     height: 20px;
   }
+  /* The accent on hover — in its LIGHT-GROUND form. `--color-accent` is the
+     acid lime itself and measures about 1:1 against this band: on mist it is
+     not a colour, it is an absence. The token is a pair for exactly this, and
+     `--color-accent-ink` is the same hue family carried down until it reads.
+     These arrows are the control rather than decoration beside one, so 3:1 is
+     a floor rather than a preference — check-contrast gates the pairing. */
   .arrow:hover {
-    color: var(--color-deep);
+    color: var(--color-accent-ink);
   }
 
   .dots {
