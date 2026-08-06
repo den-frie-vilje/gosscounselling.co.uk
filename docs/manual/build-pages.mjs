@@ -26,8 +26,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE = join(HERE, "template", "whitepaper-template.pages");
 const SOURCE = join(HERE, "manual.md");
 const OUTPUT = join(HERE, "Editing-your-website.pages");
-// The site on the front page. Optional: `docs/manual/capture.sh site` makes it.
-const SITE_PICTURE = join(HERE, "images", "00-site.png");
+// The site on the front page. `docs/manual/capture.sh site` makes it.
+const SITE_PICTURE = join(HERE, "images", "00-homepage.png");
 const CONTENTS_TITLE = "Contents";
 
 const LETTERHEAD_DATE = "06-08-2026";
@@ -190,7 +190,10 @@ function parse(markdown) {
     const numbered = line.match(/^(\d+)\.\s+(.+)$/);
     if (numbered) {
       flush();
-      blocks.push({ kind: "numbered", md: numbered[2] });
+      // The number is kept as text. Pages' numbered lists run on from the
+      // previous list in the document — chapter 4 would start at 9 — and
+      // nothing here can restart one, so the source's own numbering is used.
+      blocks.push({ kind: "numbered", md: numbered[2], number: numbered[1] });
       continue;
     }
     const bullet = line.match(/^[-*]\s+(.+)$/);
@@ -295,7 +298,7 @@ const frontPictures = [];
 if (existsSync(SITE_PICTURE)) {
   const index = doc.appendParagraph("", "Normal");
   doc.paragraph(index).setListStyle("None").format({ spaceBefore: 28 });
-  frontPictures.push({ index, src: "images/00-site.png" });
+  frontPictures.push({ index, src: "images/00-homepage.png" });
 }
 
 const contentsHeading = doc.appendParagraph(CONTENTS_TITLE, OPENER);
@@ -309,7 +312,7 @@ for (const chapter of blocks.filter((b) => b.kind === "h2")) {
 // Chapters take Heading 1 — 14 pt GalaxiePolaris with space above it, the
 // template's real section heading. Their sub-headings take Heading 2 under it.
 const STYLE = { h2: "Heading 1", h3: "Heading 2", body: "Normal", bullet: "Normal", numbered: "Normal" };
-const LIST = { bullet: "Bullet", numbered: "Numbered List" };
+const LIST = { bullet: "Bullet" }; // ordered lists carry their own numbers as text
 const formatting = [];
 const pictures = [...frontPictures];
 const firstChapter = rest.find((b) => b.kind === "h2");
@@ -324,13 +327,15 @@ for (const block of rest) {
   const { text, bold, italic } = inline(block.md);
   // The first chapter opens the page after the contents.
   const style = block === firstChapter ? OPENER : STYLE[block.kind];
-  const index = doc.appendParagraph(text, style);
+  const prefix = block.number ? block.number + ".  " : "";
+  const index = doc.appendParagraph(prefix + text, style);
   // An appended paragraph inherits list membership from the one above, so
   // every paragraph states its own — otherwise the first list turns the rest
   // of the document, headings included, into list items.
   doc.paragraph(index).setListStyle(LIST[block.kind] ?? "None");
-  for (const [s, e] of bold) formatting.push({ index, s, e, format: { bold: true } });
-  for (const [s, e] of italic) formatting.push({ index, s, e, format: { italic: true } });
+  const shift = prefix.length;
+  for (const [s, e] of bold) formatting.push({ index, s: s + shift, e: e + shift, format: { bold: true } });
+  for (const [s, e] of italic) formatting.push({ index, s: s + shift, e: e + shift, format: { italic: true } });
 }
 
 // 4. Character formatting. No text length changes, so offsets stay valid.
@@ -409,7 +414,7 @@ const counts = {
   pictures: (text.match(/￼/g) ?? []).length,
   markdownLeft: (text.match(/\*\*|^#{1,3} |^- |^> /gm) ?? []).length,
 };
-const expectedListItems = rest.filter((b) => b.kind === "bullet" || b.kind === "numbered").length;
+const expectedListItems = rest.filter((b) => b.kind === "bullet").length;
 const expectedPictures = rest.filter((b) => b.kind === "image").length + frontPictures.length + 1; // + the logo
 const expectedHeadings = rest.filter((b) => b.kind === "h2").length;
 const expectedSubheadings = rest.filter((b) => b.kind === "h3").length;
