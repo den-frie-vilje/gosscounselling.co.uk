@@ -18,7 +18,7 @@
 <div class="border-line mt-10 border-t">
   {#each items as item (item.q)}
     <details>
-      <summary>{item.q}</summary>
+      <summary class="mark-band">{item.q}</summary>
       <div class="body">
         <Prose md={item.a} />
       </div>
