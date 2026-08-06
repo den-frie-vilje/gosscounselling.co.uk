@@ -84,7 +84,7 @@ case "${1:-editor}" in
     # The site itself, for the front page of the manual. Staging, not
     # production: production still carries the old site.
     echo "capturing the site from $BASE"
-    shot 00-site.png / 900
+    shot 00-homepage.png / 900
     ;;
 
   login)
