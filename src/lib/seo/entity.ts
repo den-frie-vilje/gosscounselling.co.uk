@@ -40,7 +40,7 @@ export interface FeeRowLike {
  * The bodies John belongs to, as Organization nodes.
  *
  * The filter is the whole function, and it is here rather than inline because
- * of what it prevents. Two of the four entries in `site.memberships` are not
+ * of what it prevents. Two of the four entries in `memberships` are not
  * memberships: the Professional Standards Authority accredits the NCPS
  * register he is on, and Men's Therapy Hub is a directory that lists him.
  * Both belong in the qualifications block on the page, where the note beside

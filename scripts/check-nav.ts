@@ -185,26 +185,40 @@ function checkFit(labels: string[]): { ok: boolean; message: string } {
 /**
  * The labels as they will actually render.
  *
- * Read from BOTH files, because the label is written in two places by design:
- * `nav` in index.ts names a content path and a fallback, and home.json holds
- * what John typed. The first version of this read only the fallbacks out of
- * the source, so it happily passed "Questions people ask" — the exact wording
- * this gate exists to refuse — because that string was in the JSON and the
- * gate was reading the code.
+ * Read from BOTH places, because the label is written in two by design:
+ * `nav` in index.ts names a content path and a fallback, and the section's
+ * own file holds what John typed. The first version of this read only the
+ * fallbacks out of the source, so it happily passed "Questions people ask" —
+ * the exact wording this gate exists to refuse — because that string was in
+ * the JSON and the gate was reading the code.
  *
  * Each nav line carries both halves, so both are parsed off the SAME line and
  * neither is a list kept in step by hand:
  *
  *   { id: 'faq', href: ..., label: navLabel(home.faq?.navLabel, 'Questions') }
  *                                       ^^^ path            ^^^ fallback
+ *
+ * The path names the section, and a section is now one file:
+ * `home.faq` is `src/content/home/faq.json`. A file that will not parse —
+ * or is not there, which is what a renamed section looks like from here —
+ * contributes no wording, so the fallback stands and the gate still measures
+ * a bar somebody could actually see.
  */
+function sectionNavLabel(section: string): string | undefined {
+  try {
+    const json = JSON.parse(read(`src/content/home/${section}.json`)) as { navLabel?: string };
+    return json.navLabel?.trim() || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function navLabels(): string[] {
   const src = read('src/lib/content/index.ts');
   const start = src.indexOf('export const nav: NavItem[] = [');
   if (start < 0) return [];
   const block = src.slice(start, src.indexOf('];', start));
 
-  const home = JSON.parse(read('src/content/home.json')) as Record<string, { navLabel?: string }>;
   const out: string[] = [];
   // Two shapes: a label read from content with a fallback, or a bare literal.
   const line = /label:\s*(?:navLabel\(\s*home\.(\w+)\?\.navLabel\s*,\s*'([^']+)'\s*\)|'([^']+)')/g;
@@ -213,8 +227,7 @@ function navLabels(): string[] {
       out.push(m[3]);
       continue;
     }
-    const written = home[m[1]]?.navLabel?.trim();
-    out.push(written || m[2]);
+    out.push(sectionNavLabel(m[1]) || m[2]);
   }
   return out;
 }

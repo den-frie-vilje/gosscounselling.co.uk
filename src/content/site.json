@@ -1,7 +1,6 @@
 {
   "name": "John Goss",
   "tagline": "Counselling & Supervision",
-  "description": "Counselling and supervision in Bletchley, Milton Keynes, and online. Fees, session lengths and what happens when you get in touch, set out in full.",
   "footerNote": "© {year} John Goss, Counselling & Supervision, Bletchley, Milton Keynes MK3.",
   "schema": {
     "jobTitle": "Counsellor and Clinical Supervisor",
@@ -29,39 +28,5 @@
       "Milton Keynes",
       "United Kingdom"
     ]
-  },
-  "memberships": [
-    {
-      "abbr": "NCPS",
-      "name": "National Counselling & Psychotherapy Society",
-      "note": "Accredited Member, and on the Children & Young People's Register",
-      "logo": "/img/logos/NCPS_RGB.png",
-      "href": null,
-      "isMembership": true
-    },
-    {
-      "abbr": "COSRT",
-      "name": "College of Sex & Relationship Therapists",
-      "note": "The UK professional body for sex and relationship therapy",
-      "logo": "/img/logos/cosrt.png",
-      "href": null,
-      "isMembership": true
-    },
-    {
-      "abbr": "PSA",
-      "name": "Professional Standards Authority",
-      "note": "The NCPS register I'm on is accredited by the Authority",
-      "logo": "/img/logos/professional-standards-authority.svg",
-      "href": null,
-      "isMembership": false
-    },
-    {
-      "abbr": "MTH",
-      "name": "Men's Therapy Hub",
-      "note": "Listed in the directory",
-      "logo": "/img/logos/mth-mono.png",
-      "href": "https://menstherapyhub.co.uk/therapist/john-goss/",
-      "isMembership": false
-    }
-  ]
+  }
 }

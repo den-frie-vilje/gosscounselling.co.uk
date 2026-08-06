@@ -29,6 +29,78 @@
     index = (to + items.length) % items.length;
   }
 
+  /* ---- dragging ----
+     A horizontal drag moves between quotes. Pointer events rather than touch
+     events, so a mouse and a pen do the same thing as a finger without a
+     second code path.
+
+     VERTICAL IS THE PAGE'S. `touch-action: pan-y` on the rail tells the
+     browser up front that only horizontal gestures are ours, so a scroll that
+     starts on a quote scrolls the page — on a phone the rail is most of the
+     screen, and a carousel that swallows vertical drags is a trap. The
+     direction test below is the same rule in JavaScript, for the pointer
+     types `touch-action` does not cover.
+
+     The quotes are stacked in one grid cell and crossfade, so there is no
+     track to slide: the CURRENT quote follows the finger and fades as it
+     goes, and on release either its neighbour takes over or it returns. */
+  let dragging = $state(false);
+  let drag = $state(0);
+  let startX = 0;
+  let startY = 0;
+  /** null until the gesture has declared itself horizontal or vertical. */
+  let horizontal: boolean | null = null;
+
+  /** Enough travel to be a decision rather than a twitch: a proportion of the
+   *  rail, floored so a narrow screen still needs a real movement. */
+  function threshold(el: HTMLElement): number {
+    return Math.max(44, el.getBoundingClientRect().width * 0.12);
+  }
+
+  function onPointerDown(event: PointerEvent) {
+    if (!many || event.button !== 0) return;
+    startX = event.clientX;
+    startY = event.clientY;
+    horizontal = null;
+    dragging = true;
+  }
+
+  function onPointerMove(event: PointerEvent) {
+    if (!dragging) return;
+    const dx = event.clientX - startX;
+    const dy = event.clientY - startY;
+
+    if (horizontal === null) {
+      // Wait for enough movement to tell the two apart; 8px is about where a
+      // deliberate gesture separates from the noise of putting a finger down.
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      horizontal = Math.abs(dx) > Math.abs(dy);
+      if (!horizontal) {
+        // Theirs. Let go entirely rather than half-tracking it.
+        dragging = false;
+        drag = 0;
+        return;
+      }
+      (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+    }
+
+    // Damped, so the quote moves with the finger without travelling as far as
+    // it does: this is a hand-over, not a pane being pushed off screen.
+    drag = dx * 0.55;
+  }
+
+  function onPointerUp(event: PointerEvent) {
+    if (!dragging) return;
+    const el = event.currentTarget as HTMLElement;
+    const dx = event.clientX - startX;
+    dragging = false;
+    if (horizontal && Math.abs(dx) > threshold(el)) {
+      go(dx < 0 ? index + 1 : index - 1);
+    }
+    drag = 0;
+    horizontal = null;
+  }
+
   // Left and right move between quotes while the focus is on any of the
   // controls, which is what a keyboard user tries before hunting for a button.
   function onKeydown(event: KeyboardEvent) {
@@ -57,9 +129,15 @@
            keyboard user's focus already is. -->
       <div
         class="quotes"
+        class:dragging
+        style="--drag: {drag}px"
         role="group"
         aria-roledescription="carousel"
         aria-label={testimonials.kicker}
+        onpointerdown={onPointerDown}
+        onpointermove={onPointerMove}
+        onpointerup={onPointerUp}
+        onpointercancel={onPointerUp}
       >
         <div class="viewport" aria-live="polite" aria-atomic="true">
           {#each items as item, i (item.quote)}
@@ -165,9 +243,31 @@
   .quote.is-current {
     opacity: 1;
     visibility: visible;
+    transform: translateX(var(--drag, 0px));
     transition:
       opacity var(--dur-base) var(--ease-brand),
+      transform var(--dur-base) var(--ease-brand),
       visibility 0s;
+  }
+  /* While the finger is down the quote tracks it exactly — a transition here
+     would make it lag behind the touch, which reads as the page being slow
+     rather than as easing. It comes back on release, which is what makes the
+     return a movement rather than a jump. */
+  .quotes.dragging .quote.is-current {
+    transition: none;
+  }
+  /* Only horizontal gestures are ours. Declared to the browser rather than
+     only handled in JavaScript, so a vertical scroll that starts on a quote is
+     never delayed while a script decides whether to keep it. */
+  .quotes {
+    touch-action: pan-y;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .quote,
+    .quote.is-current {
+      transition: none;
+      transform: none;
+    }
   }
   @media (prefers-reduced-motion: reduce) {
     .quote,

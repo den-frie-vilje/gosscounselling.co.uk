@@ -11,7 +11,7 @@
   Practice's warm ground and air. Nothing on this page is a card.
 -->
 <script lang="ts">
-  import { contact, home, servicePath, services, site } from '$lib/content';
+  import { contact, home, memberships, servicePath, services } from '$lib/content';
   import { buildPageSeo, faqNode, reviewNodes } from '$lib/seo/structured-data';
   import { renderInline } from '$lib/markdown';
   import { scrollDraw } from '$lib/actions/scroll-draw';
@@ -348,7 +348,7 @@
            "counsellor" is not a protected title in the UK, so being on a
            PSA-accredited register is the real gate. -->
       <ul class="bodylist">
-        {#each site.memberships as body (body.abbr + body.name)}
+        {#each memberships as body (body.abbr + body.name)}
           <li class="chip">
             <span class="chipmark">
               <img src={body.logo} alt="" />

@@ -1,0 +1,55 @@
+{
+  "kicker": "Fees",
+  "heading": "What sessions cost",
+  "navLabel": "Fees",
+  "intro": "In person in MK3, or online. Fees are shown as a range.",
+  "rows": [
+    {
+      "title": "Individual counselling",
+      "lines": [
+        {
+          "label": "In person, 50 minutes",
+          "value": "£70–90"
+        },
+        {
+          "label": "In person, 90 minutes",
+          "value": "£90–110"
+        },
+        {
+          "label": "Online, 50 minutes",
+          "value": "£60–80"
+        }
+      ]
+    },
+    {
+      "title": "Relationship counselling",
+      "lines": [
+        {
+          "label": "50 minutes",
+          "value": "£80–100"
+        }
+      ]
+    },
+    {
+      "title": "Clinical supervision",
+      "lines": [
+        {
+          "label": "45 minutes",
+          "value": "£45"
+        },
+        {
+          "label": "1 hour",
+          "value": "£60"
+        },
+        {
+          "label": "1.5 hours",
+          "value": "£80"
+        }
+      ]
+    }
+  ],
+  "note": {
+    "title": "If you're on a low income",
+    "body": "To keep counselling accessible, I'm sometimes able to offer appointments at a lower fee. [Get in touch]({mailto}) to find out more."
+  }
+}

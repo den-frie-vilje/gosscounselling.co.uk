@@ -7,7 +7,7 @@
  * and each has its own way of going quietly wrong. A wrong fee is caught by
  * the fee table printed underneath it. These are not.
  *
- *   1. `memberOf` — the bodies he belongs to. `site.memberships` holds four
+ *   1. `memberOf` — the bodies he belongs to. `memberships.json` holds four
  *      entries and only two are memberships: the Professional Standards
  *      Authority accredits the NCPS register he is on, and Men's Therapy Hub
  *      is a directory that lists him. Declaring either as a body he belongs to
@@ -63,8 +63,8 @@ interface Result {
    1. memberOf
    --------------------------------------------------------------------------- */
 
-/** A row as `site.json` writes it: the shipping shape plus the abbreviation,
- *  so a failure can name the row the way the CMS shows it to John. */
+/** A row as `memberships.json` writes it: the shipping shape plus the
+ *  abbreviation, so a failure can name the row the way the CMS shows it. */
 interface MembershipRow extends MembershipLike {
   abbr: string;
 }
@@ -99,7 +99,7 @@ export function checkMemberOf(
     return {
       ok: false,
       message:
-        `check-seo: ${wrong.length} entr(y/ies) in src/content/site.json reach \`memberOf\` but are ` +
+        `check-seo: ${wrong.length} entr(y/ies) in src/content/memberships.json reach \`memberOf\` but are ` +
         `not memberships: ${wrong.map((m) => `${m.abbr} (${m.name})`).join(', ')}.\n` +
         '  A body that accredits or lists him is not a body he belongs to.'
     };
@@ -336,11 +336,13 @@ export function checkOgCards(files: Array<{ file: string; source: string }>): Re
    self-test
    --------------------------------------------------------------------------- */
 
-const site = readJson('src/content/site.json') as { memberships: MembershipRow[] };
+const membershipsFile = readJson('src/content/memberships.json') as { items: MembershipRow[] };
 const social = readJson('src/content/social.json') as { profiles: Array<{ url: string }> };
-const home = readJson('src/content/home.json') as { fees: { rows: FeeRow[] } };
+/* The fee table is one section of the home page and one file: see the note on
+   the Home collection in static/admin/config.yml. */
+const fees = readJson('src/content/home/fees.json') as { rows: FeeRow[] };
 const doc = read(PROFILES_DOC);
-const memberships = site.memberships;
+const memberships = membershipsFile.items;
 
 function die(message: string): never {
   console.error(`check-seo: SELF-TEST FAILED — ${message}`);
@@ -348,11 +350,11 @@ function die(message: string): never {
 }
 
 // memberOf. The content has to contain the case for the gate to be worth
-// anything at all: if every body in site.json were a membership, a filter that
+// anything at all: if every body in the file were a membership, a filter that
 // had stopped filtering would still produce the right answer and this check
 // would pass forever without testing anything.
 if (memberships.every((m) => m.isMembership)) {
-  die('every body in site.json is a membership, so nothing here is being kept out.');
+  die('every body in memberships.json is a membership, so nothing here is being kept out.');
 }
 if (checkMemberOf(memberships).ok !== true) {
   die('the real memberships were reported as wrong.');
@@ -383,7 +385,7 @@ if (checkSameAs(realSameAs, new Set()).ok) {
 }
 
 // priceRange: a fee outside the range the graph publishes.
-if (checkPriceRange(home.fees.rows).ok !== true) {
+if (checkPriceRange(fees.rows).ok !== true) {
   die('the real fee table was reported as inconsistent with its own range.');
 }
 if (checkPriceRange([{ lines: [{ value: '£10' }, { value: 'ask me' }] }]).ok !== true) {
@@ -419,7 +421,7 @@ if (checkOgCards([]).ok) {
 const results = [
   checkMemberOf(memberships),
   checkSameAs(realSameAs, verified),
-  checkPriceRange(home.fees.rows),
+  checkPriceRange(fees.rows),
   checkOgCards(sources)
 ];
 

@@ -144,7 +144,12 @@ function report(r: KeyResult, label: string) {
   console.log(`                             is within ${DEFAULTS.sepLoSnr}x the backing noise and the solve cannot speak`);
   console.log(`    clipped fringe           ${pct(r.clippedFringe, 1)} — where the plate is clipped at the`);
   console.log('                             backing\'s own end and the equation carries nothing at all');
-  console.log(`    interior depth           ${r.coreDepthPx.toFixed(2)}px; past it the figure is settled opaque`);
+  console.log(`    soft edge, measured      ${r.softBand.medianPx.toFixed(1)}px median, ${r.softBand.p99Px.toFixed(1)}px at the 99th, ` +
+    `${r.softBand.maxPx.toFixed(1)}px worst${r.softBand.maxPx >= r.softBand.capPx ? ' — AT THE CEILING' : ''}`);
+  console.log(`                             how far partial coverage reaches inside the silhouette, of ` +
+    `${r.softBand.capPx}px measurable.`);
+  console.log('                             Nothing is settled opaque inside it, whatever its width.');
+  console.log(`    interior depth           ${r.coreDepthPx.toFixed(2)}px; the floor under that verdict, not a substitute for it`);
 
   if (r.transfer.length) {
     console.log('\n  THE FALLBACK CURVE, fitted from the pixels where the equation does speak');
@@ -475,6 +480,19 @@ interface SynthOpts {
   fg?: [number, number, number];
   /** How much of the frame he fills; 1 is the reference framing. */
   scale?: number;
+  /**
+   * How wide the soft edge is, px. The default 3 is a shoulder against a cyclorama: the
+   * silhouette is in focus and the transition is a pixel or two of the lens and the
+   * sensor. Hair is not that, which is what `crownRamp` is for.
+   */
+  ramp?: number;
+  /**
+   * The ramp over the TOP ARC only, px — a crown of hair rather than a shoulder, blended
+   * into `ramp` down the sides so the frame has both kinds of edge in it at once. This is
+   * the case a keyer gets wrong invisibly: a wide ramp is still a ramp, and calling it
+   * opaque leaves the backing inside the subject where no fringe audit looks.
+   */
+  crownRamp?: number;
 }
 
 function synth(o: SynthOpts): Synth {
@@ -486,6 +504,8 @@ function synth(o: SynthOpts): Synth {
   const backing: [number, number, number] = o.backing ?? [250, 249, 246];
   const fg: [number, number, number] = o.fg ?? [64, 96, 150];
   const scale = o.scale ?? 1;
+  const ramp = o.ramp ?? 3;
+  const crownRamp = o.crownRamp ?? ramp;
   const rgb = new Uint8Array(w * h * 3);
   const alpha = new Float32Array(w * h);
   const rand = rng(20260805);
@@ -496,12 +516,17 @@ function synth(o: SynthOpts): Synth {
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const i = y * w + x;
-      // A soft-edged ellipse: signed distance in ellipse units, ramped over 3px.
+      // A soft-edged ellipse: signed distance in px, ramped over `ramp` — widening to
+      // `crownRamp` over the top arc, smoothstepped down the sides so the frame carries a
+      // sharp edge and a soft one at once. The ramp is centred on the silhouette, so it
+      // reaches half its width outside the ellipse and half inside.
       let a = 0;
       if (subject) {
         const d = Math.hypot((x - cx) / rx, (y - cy) / ry);
         const px = (1 - d) * Math.min(rx, ry);
-        a = Math.min(1, Math.max(0, (px + 1.5) / 3));
+        const u = Math.min(1, Math.max(0, ((cy - y) / ry - 0.35) / 0.3));
+        const rw = ramp + (crownRamp - ramp) * (u * u * (3 - 2 * u));
+        a = Math.min(1, Math.max(0, (px + rw / 2) / rw));
       }
       alpha[i] = a;
       for (let c = 0; c < 3; c++) {
@@ -652,6 +677,95 @@ function selfTest(): number {
     { alphaTol: 0.03, fgTol: 4 }
   );
 
+  console.log('\n  THE SOFT EDGE — the pixels every check above is blind to, by construction\n');
+
+  /**
+   * A MATTE THAT CALLS A MIXTURE OPAQUE IS WRONG IN A PLACE NOTHING ELSE LOOKS.
+   *
+   * Once alpha is 1 the pixel has left the fringe, and every safeguard in the pipeline is
+   * keyed off that same verdict: the gamut bound in `keyer.ts` skips it and hands back the
+   * plate, `r.purity` buckets only 0.02 < a < 0.98 so it reads +0 levels and sees nothing,
+   * and `keys()` above samples the foreground only where the SYNTHETIC alpha is already
+   * 0.999 — which excludes the bad pixels by definition. So the error is invisible to all
+   * three at once, and the thing that made it invisible is the error itself.
+   *
+   * This asserts on exactly that set: TRUE coverage partial, SOLVED coverage opaque.
+   *
+   * `minTrue` 0.90 is twice the measurement's own resolution. `keyer.ts` calls a pixel
+   * solid when the distance from the backing has stopped rising to within `keyLo` (3)
+   * multiples of the measured backing noise, which is a coverage of keyLo/SNR — about 5%
+   * on these frames — so a pixel called opaque at 0.95 true coverage is the method working
+   * as specified and one at 0.65 is not. `fgTol` 12 levels follows from it: a pixel at 0.90
+   * coverage over a white cyclorama can carry at most a tenth of the 158 levels between
+   * this subject and that backing, so ~16 levels at the very floor and well under it on
+   * average. Both are bounds on what the METHOD admits, not tolerances fitted to a run.
+   *
+   * `alphaTol` is here so the assertion cannot be passed by a matte that dodges the tail
+   * by going transparent instead: an empty over-declared set is only good news if the
+   * frame was keyed correctly as well.
+   */
+  const softEdge = (name: string, o: SynthOpts, e: { minTrue: number; fgTol: number; alphaTol: number }) => {
+    const s = synth(o);
+    let r: KeyResult;
+    try {
+      r = key(s.rgb, s.w, s.h);
+    } catch (err) {
+      ok(name, false, `refused a frame it should have keyed: ${(err as Error).message}`);
+      return;
+    }
+    const LUMA = [0.2126, 0.7152, 0.0722];
+    const lum = (v: ArrayLike<number>, j: number) => LUMA[0] * v[j] + LUMA[1] * v[j + 1] + LUMA[2] * v[j + 2];
+    const want = lum(s.fg, 0);
+    // Positive is TOWARD the backing, which is the only direction contamination can push;
+    // on a dark backdrop that is downward, so the sign follows the backing.
+    const toward = lum(s.backing, 0) > want ? 1 : -1;
+    let n = 0;
+    let sumTrue = 0;
+    let minTrue = 1;
+    let sumDev = 0;
+    let worstDev = 0;
+    let mad = 0;
+    for (let i = 0; i < s.w * s.h; i++) {
+      mad += Math.abs(r.alpha[i] / 255 - s.alpha[i]);
+      if (r.alpha[i] / 255 < 0.995 || s.alpha[i] >= 0.995) continue;
+      n++;
+      sumTrue += s.alpha[i];
+      if (s.alpha[i] < minTrue) minTrue = s.alpha[i];
+      const dev = toward * (lum(r.rgb, i * 3) - want);
+      sumDev += dev;
+      if (dev > worstDev) worstDev = dev;
+    }
+    mad /= s.w * s.h;
+    const meanDev = n ? sumDev / n : 0;
+    const pass = minTrue >= e.minTrue && meanDev < e.fgTol && mad < e.alphaTol;
+    ok(
+      name,
+      pass,
+      `${n.toLocaleString()} px solved opaque are really partial — true coverage ` +
+        `${n ? (sumTrue / n).toFixed(3) : 'n/a'} mean / ${n ? minTrue.toFixed(3) : 'n/a'} lowest (floor ${e.minTrue}), ` +
+        `their foreground ${meanDev >= 0 ? '+' : ''}${meanDev.toFixed(1)} mean / ` +
+        `${worstDev >= 0 ? '+' : ''}${worstDev.toFixed(1)} worst levels toward the backing (limit ${e.fgTol}), ` +
+        `soft band ${r.softBand.medianPx.toFixed(1)}/${r.softBand.p99Px.toFixed(1)}/${r.softBand.maxPx.toFixed(1)}px ` +
+        `median/p99/max of ${r.softBand.capPx}px measurable, mean |da| ${mad.toFixed(4)}`
+    );
+  };
+
+  // The reference frame again, read the other way round. Its 3px ramp is narrower than the
+  // interior depth, so this used to be the case that looked fine: 169 px of it were solved
+  // opaque at a true coverage down to 0.65, carrying +79 levels of cyclorama.
+  softEdge('a 3px edge is not opaque before it is opaque', {}, { minTrue: 0.9, fgTol: 12, alphaTol: 0.01 });
+
+  // A CROWN OF HAIR: 24px of ramp over the top arc, on a cyclorama one level off clipping.
+  // Both halves matter. The wide ramp is wider than the interior depth, so a settle-to-1
+  // gated on depth swallows the whole thing; and the near-clipped backing is where the
+  // measured noise hits its floor, which is the regime where a per-pixel rise of a third
+  // of a level has to be read as a ramp anyway.
+  softEdge(
+    'a 24px crown on a near-clipped cyclorama stays a ramp',
+    { backing: [253, 253, 252], crownRamp: 24 },
+    { minTrue: 0.9, fgTol: 12, alphaTol: 0.01 }
+  );
+
   console.log('\n  REFUSES — the path that matters, because a bad matte does not announce itself\n');
   refuses('a noisy backing', synth({ noise: 40 }), 'too uneven');
   refuses('a backing gradient just over tolerance', synth({ backing: [206, 202, 196], tilt: 24 }), 'varies too much');
@@ -687,14 +801,22 @@ function selfTest(): number {
  * still refuses to guess between two.
  */
 function sourceFromContent(): string | null {
-  let home: { hero?: { portrait?: string } };
+  // The hero is its own file since the Home entry was split into one editor
+  // page per section. This read used to be `src/content/home.json` and
+  // `home.hero?.portrait`, and when that file was split the catch below
+  // swallowed the miss: the script fell back to scanning the folder, the build
+  // stayed green, and the CMS field simply stopped being obeyed. A field that
+  // does nothing is the failure this repo keeps removing, so it is worth
+  // saying that `scripts/gen-assets.ts` gates this step on the same path —
+  // they agree, and if either moves again the gate re-keys and this refuses.
+  let hero: { portrait?: string };
   try {
-    home = JSON.parse(readFileSync(resolve(root, 'src/content/home.json'), 'utf8'));
+    hero = JSON.parse(readFileSync(resolve(root, 'src/content/home/hero.json'), 'utf8'));
   } catch {
     // The content file is svelte-check's business, not this script's.
     return null;
   }
-  const declared = home.hero?.portrait?.trim();
+  const declared = hero.portrait?.trim();
   if (!declared) return null;
 
   const p = resolve(root, 'static', declared.replace(/^\//, ''));
@@ -849,6 +971,12 @@ const audit = {
     medianSeparation: Number(result.medianSeparation.toFixed(4)),
     medianSnr: Number(result.medianSnr.toFixed(1)),
     interiorDepthPx: Number(result.coreDepthPx.toFixed(3)),
+    softEdgePx: {
+      median: Number(result.softBand.medianPx.toFixed(2)),
+      p99: Number(result.softBand.p99Px.toFixed(2)),
+      max: Number(result.softBand.maxPx.toFixed(2)),
+      measurableTo: result.softBand.capPx
+    },
     fallbackCurve: result.transfer.map((t) => ({
       crude: Number(t.crude.toFixed(4)),
       solved: Number(t.solved.toFixed(4)),

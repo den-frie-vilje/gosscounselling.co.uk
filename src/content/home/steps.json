@@ -1,0 +1,19 @@
+{
+  "kicker": "No mystery",
+  "heading": "What happens when you get in touch",
+  "intro": "Nothing is hidden behind an enquiry. Fees are on this page, in full, including the lower-fee appointments I can sometimes offer if you're on a low income.",
+  "items": [
+    {
+      "title": "You ring, email or WhatsApp",
+      "body": "Whichever suits you: the number, the address and the WhatsApp link are on this page. Nothing to fill in first."
+    },
+    {
+      "title": "We talk about what's going on",
+      "body": "We talk about what you're looking for, what I do, and whether I'm the right person for it."
+    },
+    {
+      "title": "We agree a time and a fee",
+      "body": "Session lengths and fees are set out below, in person in MK3 or online."
+    }
+  ]
+}
