@@ -273,10 +273,13 @@
     color: var(--color-gold);
     font-variant-numeric: tabular-nums;
   }
+  /* No rule and no top margin of its own. It had both from when it was the
+     only thing at the foot of a post; wrapping it in `.after`, which draws the
+     rule for the whole block, left two hairlines with an empty band between
+     them — the second one fencing off a heading that was not there. The
+     divider belongs to the block, not to the first thing inside it. */
   .back {
-    margin: 48px 0 0;
-    padding-top: 28px;
-    border-top: 1px solid var(--color-line);
+    margin: 0;
     font-size: 16px;
   }
   .back a {
