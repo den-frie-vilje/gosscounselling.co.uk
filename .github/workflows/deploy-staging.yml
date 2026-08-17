@@ -11,7 +11,7 @@ on:
 
 jobs:
   deploy:
-    uses: den-frie-vilje/nas-sites/.github/workflows/build-and-sign.yml@main
+    uses: den-frie-vilje/nas-sites/.github/workflows/build-and-sign.yml@v1
     with:
       environment: staging
       dockerfile: deploy/Dockerfile
