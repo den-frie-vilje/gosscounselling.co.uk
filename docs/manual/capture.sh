@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Screen captures for the manual, taken the same way every time.
 #
+#     docs/manual/capture.sh site            the site itself, for the front page
 #     docs/manual/capture.sh public          the screens anyone can see
 #     docs/manual/capture.sh login           sign in once, by hand, in a real window
 #     docs/manual/capture.sh editor          the signed-in editor screens
@@ -79,6 +80,13 @@ case "${1:-editor}" in
     shot 01-sign-in.png /admin/ 620
     ;;
 
+  site)
+    # The site itself, for the front page of the manual. Staging, not
+    # production: production still carries the old site.
+    echo "capturing the site from $BASE"
+    shot 00-homepage.png / 900
+    ;;
+
   login)
     echo "Opening a real Chrome window on the profile the captures use."
     echo "Sign in to the editor, then close the window. Nothing here types anything."
@@ -113,7 +121,7 @@ case "${1:-editor}" in
     ;;
 
   *)
-    echo "usage: $0 [public|login|editor]" >&2
+    echo "usage: $0 [site|public|login|editor]" >&2
     exit 1
     ;;
 esac
