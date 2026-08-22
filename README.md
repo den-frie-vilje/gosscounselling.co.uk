@@ -4,7 +4,8 @@ Site for **John Goss** — counsellor and clinical supervisor in Bletchley, Milt
 A rebuild of `goss-counselling.co.uk` (WordPress on HealthHosts) onto his own unhyphenated
 domain, which matches his email address.
 
-**Status: building.** John has chosen, and the site is the two directions he picked, combined:
+**Status: content-complete, awaiting launch to John's own host** (see "Stack and deployment").
+The design is the two directions he picked, combined:
 Clear Water's blue, bold opening band and divided-not-boxed layout, lightened with Quiet
 Practice's warm ground and air. See [DECISIONS.md](DECISIONS.md) §16.
 
@@ -54,9 +55,9 @@ that has never been seen to fail is not a checker. `pnpm check:cms:selftest`,
 
 ### A gate may stop us. It may not stop John
 
-The image build runs **`pnpm check:publish`**, not `pnpm check`. That build IS John's publish: he
-saves in Sveltia, the push builds this image, and if a gate fails, his change does not go live and
-the reason is in a CI log he has no reason to know exists. A site that refuses to publish because a
+Both deploy paths run **`pnpm check:publish`**, not `pnpm check`. That run IS John's publish: he
+saves in Sveltia, the push builds, and if a gate failed his change would not go live and the
+reason would sit in a CI log he has no reason to know exists. A site that refuses to publish because a
 nav label came out two characters long is worse than one with a long nav label.
 
 So the gates that judge **his content** — cms, nav, social, contact, seo, portrait-fit, mattes —
@@ -177,8 +178,19 @@ it is gone, and what replaced it is the rule below.
   and his shoulders, so a portrait of different proportions gets a shorter fade rather than a
   failed build.
 
-## Intended stack
+## Stack and deployment
 
-Follows `chrishemmings.co.uk`: SvelteKit 2 with Svelte 5 runes, TypeScript, Tailwind v4,
-adapter-static, Sveltia CMS at `/admin`, pkgx, deployed via the shared pull-only CD model.
-Scaffolded once a direction is chosen.
+SvelteKit 2 with Svelte 5 runes, TypeScript, Tailwind v4, adapter-static, Sveltia CMS at
+`/admin`, pkgx. Two deployment shapes, on purpose (decided with John, 2026-08-22):
+
+- **Production — John's own Fasthosts shared hosting.** A push to `main` runs
+  `deploy-static-host.yml`: build, copy `build/` to the host (rsync / sftp / ftps), verify the
+  live page names the commit. No container; `static/.htaccess` replaces `deploy/nginx.conf`.
+  The editor signs in with a GitHub personal access token — no OAuth broker.
+- **Staging — the shared NAS pull-only CD model**, unchanged, for design work on the `staging`
+  branch. `deploy-production.yml` (the container path) is manual-only, kept as a fallback.
+
+`/admin/config.yml` is a prerendered route that swaps the backend per mode
+(`PUBLIC_CMS_BACKEND`, fail-closed to staging); the authored source is `src/lib/cms/config.yml`.
+The branch rule that keeps two branches sane: content changes land on `main` (John's editor),
+code changes on `staging`, staging rebased onto main.
