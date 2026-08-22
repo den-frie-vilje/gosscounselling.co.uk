@@ -1,6 +1,6 @@
 {
   "note": "Written by scripts/run-gates.ts on every check. Read by the editor page so John hears about a problem where he works, rather than in a build log. Committed so a dev server has something to render.",
-  "sha": "b063cb4",
+  "sha": "65e61b1",
   "checked": 7,
   "forJohn": [],
   "forUs": []

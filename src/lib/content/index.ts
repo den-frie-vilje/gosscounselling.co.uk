@@ -69,6 +69,16 @@ export interface Site {
   tagline: string;
   /** Carries `{year}`, filled in at render time by `footerNote()`. */
   footerNote: string;
+  /**
+   * The quiet line in the fine print. Markdown, because the claim carries its
+   * own link to the evidence — which is the whole point of the wording: the
+   * host is not named, and the link is what makes the claim checkable rather
+   * than an assertion in John's voice about somebody else's electricity.
+   *
+   * Optional. Emptying the field removes the line, which is the right lever if
+   * he ever changes host.
+   */
+  footerEthos?: string;
   /* There is no `serviceType`. It was in the CMS and in this interface for
      months, and nothing ever read it: `schema.org/serviceType` has domain
      Service, not LocalBusiness, so the graph could not use it and used
