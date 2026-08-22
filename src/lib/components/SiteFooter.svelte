@@ -23,6 +23,7 @@
 -->
 <script lang="ts">
   import { contact, footerNote, site, social } from '$lib/content';
+  import { renderInline } from '$lib/markdown';
   import SocialIcon from './SocialIcon.svelte';
   import { PUBLIC_BUILD_TIME, PUBLIC_GIT_SHA } from '$env/static/public';
 
@@ -75,7 +76,12 @@
     </div>
 
     <div class="fine">
-      <p class="m-0">{footerNote(year)}</p>
+      <p class="m-0">
+        {footerNote(year)}{#if site.footerEthos}<span class="ethos">
+            <span class="dot" aria-hidden="true">·</span>
+            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+            {@html renderInline(site.footerEthos)}</span>{/if}
+      </p>
       {#if PUBLIC_GIT_SHA}
         <p class="stamp m-0">
           <!-- The separator carries its own non-breaking space: Svelte trims
@@ -182,6 +188,17 @@
   .socials a:hover,
   .socials a:focus-visible {
     color: #fff;
+  }
+
+  .ethos :global(a) {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: rgb(255 255 255 / 0.25);
+    text-underline-offset: 3px;
+  }
+  .ethos :global(a:hover) {
+    color: var(--color-on-deep);
+    text-decoration-color: currentColor;
   }
 
   /* 3. The fine print, below its own hairline. */

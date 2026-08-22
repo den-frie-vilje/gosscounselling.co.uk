@@ -634,6 +634,19 @@ collections:
               widget: string,
               hint: 'Use {year} for the year.'
             }
+          # Markdown so the claim can carry the link that substantiates it.
+          # The host is deliberately not named: the link is the attribution,
+          # and naming a supplier in a counsellor's footer is advertising.
+          - {
+              name: footerEthos,
+              label: The quiet line under it,
+              widget: markdown,
+              buttons: [link],
+              editor_components: [],
+              modes: [rich_text],
+              required: false,
+              hint: 'Empty removes the line. The link is what lets a reader check the claim, so keep one if you keep the claim.'
+            }
           - name: schema
             label: What search engines are told
             widget: object

@@ -17,12 +17,12 @@
       }
     },
     "og": {
-      "key": "e3cdae4de968",
-      "ranAt": "2026-08-06T14:06:53.012Z",
-      "seconds": 11.34,
+      "key": "66bf99f1823e",
+      "ranAt": "2026-08-22T14:22:13.369Z",
+      "seconds": 9.79,
       "inputs": {
         "scripts/gen-og.ts": "936d93b36d54",
-        "src/content/site.json": "8ba5cadeee47",
+        "src/content/site.json": "801e64242d39",
         "src/content/search.json": "40e99d4d8d35",
         "src/content/home/hero.json": "2f3888396efe",
         "src/lib/generated/portrait-geometry.json": "c0a057a56d04",

@@ -1,0 +1,51 @@
+# Apache configuration for the shared host, replacing what deploy/nginx.conf
+# does inside the container.
+#
+# ROUTING IS DELIBERATELY ABSENT. Every route prerenders to
+# `<path>/index.html` (`trailingSlash: 'always'` in src/routes/+layout.ts),
+# which Apache's own DirectoryIndex serves without being asked. nginx.conf says
+# the same thing from the other side: "If a URL only works because of a rule in
+# this file, it is broken on the other host." Nothing here is load-bearing —
+# delete the whole file and every page still resolves. What is lost is caching
+# and the 404 STATUS, which are quality, not correctness.
+
+# The prerendered not-found page. Without this Apache serves its own, and a
+# mistyped address loses the header, the phone number and the way back.
+ErrorDocument 404 /404.html
+
+# Directory listings, on a host that would otherwise offer them. Every
+# directory here has an index.html, so this only matters the day one does not.
+Options -Indexes
+
+<IfModule mod_headers.c>
+  # Hashed build assets: the name changes when the content does, so they can
+  # be kept forever. This is the one rule that actually matters for speed.
+  <IfModule mod_setenvif.c>
+    SetEnvIf Request_URI "^/_app/immutable/" IMMUTABLE_ASSET=1
+  </IfModule>
+  Header set Cache-Control "public, max-age=31536000, immutable" env=IMMUTABLE_ASSET
+
+  # HTML changes on every deploy and is cheap to revalidate. Without this a
+  # shared host's default can leave John looking at yesterday's words after a
+  # save, which is the one thing that would make him distrust the editor.
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+
+  # Pictures and fonts: not hashed, but they rarely change.
+  <FilesMatch "\.(jpg|jpeg|png|webp|avif|gif|ico|svg|woff2?|eot|ttf|otf)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+</IfModule>
+
+# NOT here, on purpose:
+#
+#   A force-HTTPS redirect. The host terminates TLS in front of Apache, so a
+#   naive `RewriteCond %{HTTPS} off` sees "off" on every request and loops the
+#   browser to death. If it is wanted, it has to be written against whatever
+#   header their proxy actually sets, checked on the live host first.
+#
+#   Security headers. The site sets its own where they belong (the editor's CSP
+#   is in src/routes/admin/+page.svelte, the robots directives are in the
+#   prerendered route), and a second copy here would be a second place to keep
+#   in step.

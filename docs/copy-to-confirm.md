@@ -139,6 +139,16 @@ which today reads *"Writing from John Goss, Counsellor and Clinical Supervisor. 
 Bletchley, Milton Keynes, or online."* Only "Writing from" is ours. **A standfirst for the blog in
 his own words would be better than any of this**, and is the thing to ask for if he wants one.
 
+## 5a. The sustainability line in the footer
+
+> Hosted in the UK on [100% renewable electricity](https://www.fasthosts.co.uk/about/data-centres). This site sets no cookies and tracks nobody.
+
+Ours, not his — added 22 Aug 2026 at Ole's direction. The renewable-electricity claim is his host's
+(the link IS the attribution; the host is deliberately not named, and there is no logo). The
+no-cookies half is ours and is measured against the production build: no third-party requests, no
+cookies, no analytics. If John changes host, the field to empty is General → Site → "The quiet
+line under it".
+
 ## 6. Where he is, and how much of it to publish
 
 An SEO pass raised four questions that nobody here can answer for him. None of them is on the site

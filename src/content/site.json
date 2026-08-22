@@ -1,7 +1,8 @@
 {
   "name": "John Goss",
   "tagline": "Counselling & Supervision",
-  "footerNote": "© {year} John Goss, Counselling & Supervision, Bletchley, Milton Keynes MK3.",
+  "footerNote": "© {year} John Goss",
+  "footerEthos": "Hosted in the UK on [100% renewable electricity](https://www.fasthosts.co.uk/about/data-centres). This site sets no cookies and tracks nobody.",
   "schema": {
     "jobTitle": "Counsellor and Clinical Supervisor",
     "bio": "Counselling and clinical supervision in Bletchley, Milton Keynes, and online. Individual, relationship and psychosexual therapy, and clinical supervision for therapists.",
