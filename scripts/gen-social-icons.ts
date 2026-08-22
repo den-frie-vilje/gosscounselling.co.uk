@@ -191,7 +191,7 @@ const file = `/**
  * link still works and is still visible.
  *
  * One list, three consumers: the icons, the editor's dropdown (checked by
- * scripts/check-cms.ts against static/admin/config.yml) and the default name
+ * scripts/check-cms.ts against src/lib/cms/config.yml) and the default name
  * for a profile John has not named himself.
  */
 export interface SocialPlatform {

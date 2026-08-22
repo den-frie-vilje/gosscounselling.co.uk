@@ -1,7 +1,7 @@
 /**
  * Gate: if the editor can be signed in to, the stack can serve the sign-in.
  *
- * `static/admin/config.yml` names a `backend.base_url`. That is not decoration
+ * `src/lib/cms/config.yml` names a `backend.base_url`. That is not decoration
  * — Sveltia builds its whole OAuth handshake from it, asking for
  * `${base_url}/auth` and then `${base_url}/callback`. If nothing is listening
  * on that path, "Sign In with GitHub" opens a window that 404s, and the editor
@@ -34,7 +34,7 @@ import { parse } from 'yaml';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p: string) => readFileSync(resolve(root, p), 'utf8');
 
-const CMS_CONFIG = 'static/admin/config.yml';
+const CMS_CONFIG = 'src/lib/cms/config.yml';
 const COMPOSE = 'deploy/compose.staging.yml';
 const CADDYFILE = 'deploy/Caddyfile.staging';
 const ENV_EXAMPLE = 'deploy/staging.env.example';
@@ -195,9 +195,29 @@ if (problems.length) {
   process.exit(1);
 }
 
+// The other half of the seam, since the config became a generated route: the
+// route must exist, and each mode file must name the backend it means. A
+// missing or mistyped value falls back to staging (fail-closed in the route),
+// which would silently point the LIVE editor at the staging branch — his
+// saves would publish nowhere he can see.
+const ROUTE = 'src/routes/admin/config.yml/+server.ts';
+if (!existsSync(resolve(root, ROUTE))) {
+  console.error(`\ncheck-deploy: ${ROUTE} is missing — /admin/config.yml would 404 and the editor cannot load at all.`);
+  process.exit(1);
+}
+for (const [envFile, want] of [
+  ['.env.staging', 'PUBLIC_CMS_BACKEND=staging'],
+  ['.env.production', 'PUBLIC_CMS_BACKEND=production']
+] as const) {
+  if (!read(envFile).includes(want)) {
+    console.error(`\ncheck-deploy: ${envFile} does not declare ${want} — the route falls back to the staging backend, and that mode's editor writes to the wrong branch.`);
+    process.exit(1);
+  }
+}
+
 const authPath = authPathFrom(
   (parse(read(CMS_CONFIG)) as { backend?: { base_url?: string } }).backend?.base_url
 );
 console.log(
-  `check-deploy: the editor signs in through ${authPath}, and staging serves it — a proxy service, a prefix-stripping route to it, and both OAuth variables documented.`
+  `check-deploy: staging serves the sign-in at ${authPath} (proxy, stripping route, documented credentials); the config route exists and both mode files name their backend.`
 );

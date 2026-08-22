@@ -1,10 +1,16 @@
-# Sveltia CMS configuration — single locale (English).
+# Sveltia CMS configuration — single locale (English). THE AUTHORED SOURCE.
 #
-# Editing happens on STAGING (gosscounselling-co-uk.stage.denfrievilje.dk/admin)
-# against the GitHub backend through the OAuth proxy (Caddy `/auth/*` →
-# sveltia-auth). Prose fields use the `markdown` widget so copy stays flowing
-# prose rather than arrays of bullets, and the toolbar is cut back to what the
-# copy actually needs: a full toolbar invites structure the design has no place
+# What the editor actually loads is /admin/config.yml, a PRERENDERED ROUTE
+# (src/routes/admin/config.yml/+server.ts) that takes everything below and
+# swaps the `backend:` block per build mode: staging writes to the staging
+# branch through the NAS OAuth proxy; production writes to main and signs in
+# with a personal access token, no proxy anywhere. The backend block in THIS
+# file is the staging one, kept here so check-deploy can hold the staging
+# stack to it — the route is the authority on what ships.
+#
+# Prose fields use the `markdown` widget so copy stays flowing prose rather
+# than arrays of bullets, and the toolbar is cut back to what the copy
+# actually needs: a full toolbar invites structure the design has no place
 # for.
 #
 # Four collections, in the order John reaches for them rather than the order
@@ -50,8 +56,6 @@ backend:
   base_url: https://gosscounselling-co-uk.stage.denfrievilje.dk/auth
   site_domain: gosscounselling-co-uk.stage.denfrievilje.dk
 
-# Staging writes go straight to the staging branch; publishing to production
-# is a separate, deliberate step.
 publish_mode: simple
 
 media_folder: static/img

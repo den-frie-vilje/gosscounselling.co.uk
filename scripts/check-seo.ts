@@ -339,7 +339,7 @@ export function checkOgCards(files: Array<{ file: string; source: string }>): Re
 const membershipsFile = readJson('src/content/memberships.json') as { items: MembershipRow[] };
 const social = readJson('src/content/social.json') as { profiles: Array<{ url: string }> };
 /* The fee table is one section of the home page and one file: see the note on
-   the Home collection in static/admin/config.yml. */
+   the Home collection in src/lib/cms/config.yml. */
 const fees = readJson('src/content/home/fees.json') as { rows: FeeRow[] };
 const doc = read(PROFILES_DOC);
 const memberships = membershipsFile.items;
