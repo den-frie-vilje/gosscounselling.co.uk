@@ -8,7 +8,7 @@ Measured 2026-08-04 with `dig` and `curl`. John believes a friend "did something
 | | |
 | --- | --- |
 | Nameservers | `ns1/ns2/ns3.livedns.co.uk` (Namesco / names.co.uk) |
-| A record | `88.208.252.9` (Namesco hosting) |
+| A record | `88.208.252.9` — labelled "Namesco" in the 08-04 pass, WRONGLY: `livedns.co.uk` / `livemail.co.uk` are Fasthosts infrastructure brands. Domain + mail are at Fasthosts (John's own account). Re-measured 2026-08-22: apex A unchanged; `www` now resolves `77.68.64.43` (Fasthosts webspace range) — his Grow package waiting for files. |
 | `www` | same `88.208.252.9` |
 | MX | `10 mailserver.livemail.co.uk` (Namesco mail) |
 | HTTP | `302 Found` → `https://goss-counselling.co.uk` (nginx, ASP.NET behind it) |
@@ -44,10 +44,12 @@ signature and in other people's referrals; dropping it turns those into dead end
 
 ## Migration order (draft, for when a direction is signed off)
 
-1. Build and stage the new site on `gosscounselling-co-uk.stage.denfrievilje.dk`.
+1. Build and stage the new site on `gosscounselling-co-uk.stage.denfrievilje.dk`. ✓
 2. John reviews and signs off the content.
-3. Get Namesco DNS access. Lower the TTL on the `A` record first.
-4. Point `A` / `www` at the new host. **Touch nothing else in the zone.**
+3. DNS lives in John's own Fasthosts panel (not Namesco — see above). Lower the `A` TTL first.
+4. Deploy to the Grow webspace (`deploy-static-host.yml`), verify on the Fasthosts preview/www
+   host, then point the apex `A` at the webspace. **Touch nothing else in the zone** — the MX
+   (`mailserver.livemail.co.uk`) is his live Fasthosts mail.
 5. Verify TLS and that mail to `info@gosscounselling.co.uk` still lands — send a test both ways.
 6. Only then: set the HealthHosts site to 301 → the new domain, and close the account.
 7. Keep the old WordPress export and this scrape as the archive.

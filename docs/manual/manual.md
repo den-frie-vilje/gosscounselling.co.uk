@@ -50,14 +50,20 @@ Send it to me however suits — text, WhatsApp, email. One word is enough.
 
 ## 2. Signing in to the editor
 
-Go to your site's address with `/admin` on the end, and choose **Sign In with GitHub**.
+Go to your site's address with `/admin` on the end, and choose **Sign In Using Access Token**.
 
 ![The editor's sign-in screen](images/01-sign-in.png)
 
-The first time, GitHub asks whether you want to let the editor act on your behalf. Say yes. It
-will not ask again on that device.
+A token is a long password that GitHub makes for you, and the editor is about to help you make
+one. The dialog that opens has a link to the right page on GitHub with everything pre-selected —
+follow it, press the green button at the bottom, and copy what appears. Paste it into the editor's
+box, once. That device is then signed in and stays signed in.
 
-If you are ever signed out, it is the same three steps.
+Treat the token like a password: it is one. Do not send it to anyone — including me. If you ever
+lose a device, tell me and we delete that token on GitHub, which signs that device out and touches
+nothing else.
+
+If you are ever signed out, it is the same steps, with a fresh token.
 
 ---
 
@@ -270,8 +276,10 @@ the editor is unrecoverable, so there is no hurry and nothing to be careful abou
 
 ## Still to come
 
-This is a preliminary edition, written before the site went live. Two things will be filled in
-once they are settled:
+This is a preliminary edition, written just before the site went live. One thing is settled and
+one is still to fill in:
 
-- **The live address**, and whether saving publishes straight to it or whether there is a step in
-  between.
+- **Saving publishes straight to your live site.** There is no step in between: you save, and a
+  couple of minutes later the change is on the site. Chapter 5 is the safety net, and it is a
+  real one.
+- **The live address** — gosscounselling.co.uk, once it points at the new site.

@@ -97,7 +97,7 @@ All from **staging**, 1100px wide at 2× scale, each already placed in `manual.m
 
 | # | File | Shows | Chapter |
 | --- | --- | --- | --- |
-| 01 | `01-sign-in.png` | The sign-in screen, GitHub button | 2 |
+| 01 | `01-sign-in.png` | The sign-in screen (retake from production once live — see below) | 2 |
 | 02 | `02-collections.png` | Home / Services / General / Blog, and Home's eight sections | 3 |
 | 03 | `03-entry.png` | A section open, its fields, hints and Save | 3 |
 | 04 | `04-save-button.png` | The entry's top bar: where you are, and Save | 4 |
@@ -118,21 +118,22 @@ describes that step in words. **Do not add one.**
 
 ---
 
-## Two things in the text that are not settled
+## One thing in the text is still open
 
-Both are flagged in the manual's closing section, where John can see them:
-
-- **The live address.** The manual says "your site's address with `/admin` on the end" rather than
-  naming a host, because production is not live. Staging is
-  `https://gosscounselling-co-uk.stage.denfrievilje.dk/admin/`. **Do not name a production address
-  that does not resolve.**
-- **Whether saving publishes straight to the live site**, or whether a step sits between. That is a
-  decision for Ole and John; it is written up with both shapes and a recommendation in
-  `docs/emails/2026-08-06-site-walkthrough.md`.
-
-Leave both as they are.
+- **The live address.** The manual says "your site's address with `/admin` on the end" until
+  gosscounselling.co.uk actually points at the new site. **Do not name a production address that
+  does not resolve.** The publish model is SETTLED (22 Aug 2026): saving publishes straight to the
+  live site, and the closing section says so.
 
 ---
+
+## Changed since the .pages was first set (22 Aug 2026)
+
+Chapter 2 now teaches **token sign-in** (the production editor uses a personal access token — no
+"Sign In with GitHub" on the live site), and "Still to come" says saving publishes straight to
+the live site. The `.pages` document predates this: regenerate it from `manual.md`. Capture
+`01-sign-in.png` should also be retaken from the PRODUCTION /admin once live — the staging
+screen shows an OAuth button production does not have.
 
 ## When it is done
 
