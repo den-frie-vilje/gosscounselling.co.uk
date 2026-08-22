@@ -6,7 +6,7 @@
  *
  * Three lists have to agree, and none of them can see the others:
  *
- *   static/admin/config.yml            what John may CHOOSE
+ *   src/lib/cms/config.yml            what John may CHOOSE
  *   src/lib/generated/social-icons.ts  what the footer can DRAW
  *   src/content/social.json            what he has actually chosen
  *
@@ -29,7 +29,7 @@ import { dirname, resolve } from 'node:path';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p: string) => readFileSync(resolve(root, p), 'utf8');
 
-const CONFIG = 'static/admin/config.yml';
+const CONFIG = 'src/lib/cms/config.yml';
 const TABLE = 'src/lib/generated/social-icons.ts';
 const CONTENT = 'src/content/social.json';
 

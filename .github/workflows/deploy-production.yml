@@ -7,9 +7,11 @@
 
 name: Deploy to production
 
+# MANUAL ONLY since 22 Aug 2026. Production moved to John's own web host —
+# deploy-static-host.yml owns the push-to-main deploy now. This container
+# path is kept runnable by hand in case the NAS ever needs to serve as a
+# fallback origin, and so the image recipe does not rot unnoticed.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:

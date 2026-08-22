@@ -38,7 +38,7 @@
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { parse } from 'yaml';
 
-const CONFIG = 'static/admin/config.yml';
+const CONFIG = 'src/lib/cms/config.yml';
 
 interface Field {
   name?: string;
