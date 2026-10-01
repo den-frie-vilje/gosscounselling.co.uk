@@ -13,7 +13,7 @@ in it, and when you save, the site rebuilds itself. The change is live a couple 
 There is no HTML, nothing to install, and nothing you can break by typing in the wrong box.
 
 You need two things: a **GitHub account**, which is free and takes about two minutes, and the
-**address of the editor**, which is your site's address with `/admin` on the end.
+**address of the editor**: **gosscounselling.co.uk/admin**.
 
 ---
 
@@ -37,8 +37,9 @@ editor with, and it is the only account involved.
    the page.
 
 That last one matters more than it sounds. Your account exists, but it has nothing to do with your
-website until I connect the two — and I connect them by username. Until I have it you can sign in
-to the editor perfectly well and find nothing there to edit.
+website until I connect the two — and I connect them by username. When I have, GitHub emails you an
+invitation to the website: open it and press **Accept**. Until you do, you can sign in to the editor
+perfectly well and find nothing there to edit.
 
 **Where to find it:** click your picture in the top right corner of github.com. Your username is at
 the top of the menu, under "Signed in as". It is the short name you chose in step 4, not your email
@@ -50,14 +51,23 @@ Send it to me however suits — text, WhatsApp, email. One word is enough.
 
 ## 2. Signing in to the editor
 
-Go to your site's address with `/admin` on the end, and choose **Sign In Using Access Token**.
+Go to **gosscounselling.co.uk/admin**. Two buttons appear. Ignore the blue **Sign In with GitHub**;
+it does nothing on your site. Choose the white one under it, **Sign In Using Access Token**.
 
 ![The editor's sign-in screen](images/01-sign-in.png)
 
-A token is a long password that GitHub makes for you, and the editor is about to help you make
-one. The dialog that opens has a link to the right page on GitHub with everything pre-selected —
-follow it, press the green button at the bottom, and copy what appears. Paste it into the editor's
-box, once. That device is then signed in and stays signed in.
+A token is a long password that GitHub makes for you, one for each device you edit from. To make
+one:
+
+1. Signed in to GitHub, go to **github.com/settings/tokens/new?scopes=repo**. It opens the right
+   page with the right box, **repo**, already ticked. Leave the ticks as they are.
+2. In **Note**, name the device: "John's laptop".
+3. Set **Expiration** to **No expiration**. Otherwise the editor signs you out on that date without
+   warning.
+4. Press the green **Generate token** at the bottom, and copy what appears. GitHub shows it once.
+
+Back in the editor, paste it into the box and press **Sign In**. That device is then signed in and
+stays signed in.
 
 Treat the token like a password: it is one. Do not send it to anyone — including me. If you ever
 lose a device, tell me and we delete that token on GitHub, which signs that device out and touches
@@ -274,12 +284,11 @@ the editor is unrecoverable, so there is no hurry and nothing to be careful abou
 
 ---
 
-## Still to come
+## About this edition
 
-This is a preliminary edition, written just before the site went live. One thing is settled and
-one is still to fill in:
+Written as the site went live, on 1 October 2026.
 
 - **Saving publishes straight to your live site.** There is no step in between: you save, and a
   couple of minutes later the change is on the site. Chapter 5 is the safety net, and it is a
   real one.
-- **The live address** — gosscounselling.co.uk, once it points at the new site.
+- **The live address is gosscounselling.co.uk**, and the editor is at gosscounselling.co.uk/admin.

@@ -12,24 +12,23 @@
 - `Editing-your-website.pages` — the typeset manual, eight pages.
 - `HANDOVER.md` — the brief this was built from.
 
-**Status: set and ready to export, once the front-page capture is taken.**
+**Status: set and ready to export.** Regenerated 1 October 2026, the day the site went live:
+chapter 2 teaches token sign-in as the live screen actually offers it, the opener and the closer
+name the live address, and both public captures are from gosscounselling.co.uk. Ole exports the
+PDF from the `.pages` himself.
 
-Ten chapters, 2,079 words, nine captures. `Editing-your-website.pages` is set in the whitepaper
-template: title page, contents, then the chapters. One thing is outstanding — the picture of the
-site on the front page. Take it and rebuild:
+When the text changes, rebuild:
 
 ```
-pnpm add -D cupertino-files      # once; the site build does not need it
-docs/manual/capture.sh site      # the site itself → images/00-site.png
+pnpm install                      # cupertino-files is a devDependency
+docs/manual/capture.sh public     # the sign-in screen, from the live site
+docs/manual/capture.sh site       # the home page, from the live site
 node docs/manual/build-pages.mjs
 ```
 
-`capture.sh site` photographs the public home page from staging and needs no signed-in session.
-It does not touch the nine editor captures, which came from an authenticated one and are not
-retaken.
-
-The build reports `front picture: MISSING` until that capture exists, and places it under the
-title once it does.
+The two public captures come from the live site, which needs no signed-in session. The eight
+editor captures came from an authenticated session on staging and are not retaken; the editor is
+the same on both.
 
 The script checks itself as it writes: page setup and style indents unchanged, no markdown left in
 the text, every list item and picture accounted for, no heading swept into a list, and the footer

@@ -33,7 +33,11 @@
 #   picture at all.
 set -euo pipefail
 
+# The signed-in editor captures come from staging, where the capture profile is
+# signed in. The public screens come from the live site: the live sign-in
+# screen is the one John sees, and it differs from staging's.
 BASE="${BASE:-https://gosscounselling-co-uk.stage.denfrievilje.dk}"
+LIVE="${LIVE:-https://gosscounselling.co.uk}"
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 OUT="$HERE/images"
@@ -76,15 +80,14 @@ mkdir -p "$OUT"
 
 case "${1:-editor}" in
   public)
-    echo "capturing the public screens from $BASE"
-    shot 01-sign-in.png /admin/ 620
+    echo "capturing the public screens from $LIVE"
+    BASE="$LIVE" shot 01-sign-in.png /admin/ 620
     ;;
 
   site)
-    # The site itself, for the front page of the manual. Staging, not
-    # production: production still carries the old site.
-    echo "capturing the site from $BASE"
-    shot 00-homepage.png / 900
+    # The site itself, for the front page of the manual, from the live address.
+    echo "capturing the site from $LIVE"
+    BASE="$LIVE" shot 00-homepage.png / 900
     ;;
 
   login)

@@ -48,6 +48,9 @@ importers:
       bootstrap-icons:
         specifier: ^1.13.1
         version: 1.13.1
+      cupertino-files:
+        specifier: ^0.4.0
+        version: 0.4.0
       satori:
         specifier: ^0.26.0
         version: 0.26.0
@@ -763,6 +766,11 @@ packages:
 
   css-to-react-native@3.2.0:
     resolution: {integrity: sha512-e8RKaLXMOFii+02mOlqwjbD00KSEKqblnpO9e++1aXS1fPQOpS1YoqdVHBqPjHNoxeF2mimzVqawm2KCbEdtHQ==}
+
+  cupertino-files@0.4.0:
+    resolution: {integrity: sha512-eZ2cSs4Mb3MyQSb6Cg3ASCQuNeTKFBmEIHwO6CRnMwpcv8K8E0e7yLyAvyY6OUt/dPfH0Seh4di/Ippq2G+s3Q==}
+    engines: {node: '>=22'}
+    hasBin: true
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -1947,6 +1955,8 @@ snapshots:
       camelize: 1.0.1
       css-color-keywords: 1.0.0
       postcss-value-parser: 4.2.0
+
+  cupertino-files@0.4.0: {}
 
   debug@4.4.3:
     dependencies:

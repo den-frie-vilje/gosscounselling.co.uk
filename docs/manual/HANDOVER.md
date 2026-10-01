@@ -73,7 +73,7 @@ and `pages_list_templates` failed outright. Do not spend time on it.
 `manual.md` was written to survive this conversion without editing:
 
 - **One H1** — the document title.
-- **An H2 per chapter**, numbered 1–10, plus an unnumbered "Before you start" and "Still to come".
+- **An H2 per chapter**, numbered 1–10, plus an unnumbered "Before you start" and "About this edition".
 - **H3s inside chapters 5 and 6 only**, where a chapter genuinely has subsections. Nowhere else.
 - **Short paragraphs**, no long runs.
 - **Bold** on the words John must find on screen — button names, field labels, menu items. Keep
