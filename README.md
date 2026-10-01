@@ -134,7 +134,6 @@ five it must refuse.
 - [docs/social-profiles.md](docs/social-profiles.md) — the profiles claimed as his, with the
   evidence for each. `check-seo.ts` refuses a `sameAs` URL this file does not record as VERIFIED
 - [docs/content-coverage.md](docs/content-coverage.md) — what the old site said and where it went
-- [docs/emails/](docs/emails/) — drafted for Ole to send, facts checked against the scrapes
 - [docs/source-assets/](docs/source-assets/) — his portraits and membership logos from the old
   site. READ-ONLY: the hand-retouched crown lives here and nothing regenerates it
 

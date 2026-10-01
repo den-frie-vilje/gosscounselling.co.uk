@@ -84,8 +84,8 @@ Carried over from [content-coverage.md](content-coverage.md):
 
 **The site now links to that listing.** It is in the qualifications block as a chip,
 `https://menstherapyhub.co.uk/therapist/john-goss/`, so the discrepancies below are no
-longer only his business: a visitor can follow the link and read them. The email in
-`docs/emails/2026-08-05-listing-discrepancies.md` asks him to correct them. If he would
+longer only his business: a visitor can follow the link and read them. Ole's email of
+5 August 2026 asks him to correct them. If he would
 rather not, remove the `href` from the MTH entry in `src/content/memberships.json` and the chip
 shows the name unlinked.
 
@@ -162,7 +162,7 @@ each other about his address and about which domain is his. His own site is the 
 
 - **Does he want his street address on the site?** Six directories and his Google Business Profile
   already publish `221 Whaddon Way, Bletchley, Milton Keynes MK3 7DZ` — Google says `221A`, the
-  rest say `221`. [The listings email](emails/2026-08-05-listing-discrepancies.md) asks him both
+  rest say `221`. Ole's listings email of 5 August 2026 asks him both
   questions, because they belong with the other "how you appear on other people's sites" ones
   rather than with the copy. His own site publishes only the outward code. Either answer is fine and neither is our decision; what is not
   fine is the site staying quieter than the directories while the directories disagree.
