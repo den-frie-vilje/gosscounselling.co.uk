@@ -11,7 +11,7 @@
  * pinned via `package.json` devDependencies; the copied bundle is a
  * build artefact (git-ignored under `static/admin/`).
  *
- * Runs as the `prebuild` lifecycle hook before `vite build`. Node 25
+ * Runs as the `prebuild` lifecycle hook before `vite build`. Node 26
  * strips TypeScript types natively, so this runs as
  * `node scripts/copy-sveltia.ts` with no build step.
  */

@@ -41,7 +41,7 @@
     "check:deploy:selftest": "node scripts/check-deploy.ts --self-test"
   },
   "engines": {
-    "node": "~25",
+    "node": "~26",
     "pnpm": "~10"
   },
   "devDependencies": {
